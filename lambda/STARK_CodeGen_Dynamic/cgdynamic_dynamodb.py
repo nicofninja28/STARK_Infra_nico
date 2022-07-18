@@ -14,6 +14,7 @@ def create(data):
     entity         = data["Entity"]
     columns        = data["Columns"]
     ddb_table_name = data["DynamoDB Name"]
+    bucket_name    = data['website_bucket']
 
     #Convert human-friendly names to variable-friendly names
     entity_varname = converter.convert_to_system_name(entity)
@@ -31,7 +32,8 @@ def create(data):
 
     #Create the dict value retrieval code for the add/edit function body
     dict_to_var_code = f"""pk = data.get('pk', '')
-        sk = data.get('sk', '')"""
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
     for col, col_type in columns.items():
         col_varname = converter.convert_to_system_name(col)
 
@@ -51,7 +53,7 @@ def create(data):
     for col in columns:
         col_varname = converter.convert_to_system_name(col)
         update_expression += f"""#{col_varname} = :{col_varname}, """
-    update_expression = update_expression[:-2]
+    update_expression += ", #STARKListViewsk = :STARKListViewsk"
 
     source_code = f"""\
     #Python Standard Library
@@ -61,14 +63,22 @@ def create(data):
 
     #Extra modules
     import boto3
+    import csv
+    import uuid
+    from io import StringIO
+    import os
 
     ddb = boto3.client('dynamodb')
+    s3 = boto3.client("s3")
 
     #######
     #CONFIG
     ddb_table   = "{ddb_table_name}"
+    pk_field    = "{pk_varname}"
     default_sk  = "{default_sk}"
     sort_fields = ["{pk_varname}", ]
+    bucket_name = "{bucket_name}"
+    region_name = os.environ['AWS_REGION']
     page_limit  = 10
 
     def lambda_handler(event, context):
@@ -134,7 +144,7 @@ def create(data):
 
             elif method == "POST":
                 if data['STARK_isReport']:
-                    response = report(default_sk, data)
+                    response = report(data, default_sk)
                 else:
                     response = add(data)
 
@@ -192,7 +202,7 @@ def create(data):
             }}
         }}
 
-    def report(sk, data):
+    def report(data, sk=default_sk):
         #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
         #   ENHANCED LISTVIEW LOGIC LATER WHEN WE ACTUALLY IMPLEMENT REPORTING
         
@@ -229,27 +239,14 @@ def create(data):
 
         #Map to expected structure
         #FIXME: this is duplicated code, make this DRY by outsourcing the mapping to a different function.
-        items = []
-        for record in raw:
-            item = {{}}
-            item['{pk_varname}'] = record.get('pk', {{}}).get('S','')
-            item['sk'] = record.get('sk',{{}}).get('S','')"""
-    for col, col_type in columns.items():
-        col_varname = converter.convert_to_system_name(col)
-        col_type_id = set_type(col_type)
-
-        source_code +=f"""
-            item['{col_varname}'] = record.get('{col_varname}',{{}}).get('{col_type_id}','')"""
-
-    source_code += f"""
-            items.append(item)
-
+        items = map_results(raw)
+        csv_filename = generate_csv(items)
         #Get the "next" token, pass to calling function. This enables a "next page" request later.
         next_token = response.get('LastEvaluatedKey')
 
-        return items, next_token
+        return items, next_token, csv_filename
 
-    def get_all(sk, lv_token=None):
+    def get_all(sk=default_sk, lv_token=None):
 
         if lv_token == None:
             response = ddb.query(
@@ -281,27 +278,14 @@ def create(data):
 
         #Map to expected structure
         #FIXME: this is duplicated code, make this DRY by outsourcing the mapping to a different function.
-        items = []
-        for record in raw:
-            item = {{}}
-            item['{pk_varname}'] = record.get('pk', {{}}).get('S','')
-            item['sk'] = record.get('sk',{{}}).get('S','')"""
-    for col, col_type in columns.items():
-        col_varname = converter.convert_to_system_name(col)
-        col_type_id = set_type(col_type)
-
-        source_code +=f"""
-            item['{col_varname}'] = record.get('{col_varname}',{{}}).get('{col_type_id}','')"""
-
-    source_code += f"""
-            items.append(item)
+        items = map_results(raw)
 
         #Get the "next" token, pass to calling function. This enables a "next page" request later.
         next_token = response.get('LastEvaluatedKey')
 
         return items, next_token
 
-    def get_by_pk(pk, sk):
+    def get_by_pk(pk, sk=default_sk):
         response = ddb.query(
             TableName=ddb_table,
             Select='ALL_ATTRIBUTES',
@@ -319,27 +303,14 @@ def create(data):
         raw = response.get('Items')
 
         #Map to expected structure
-        items = []
-        for record in raw:
-            item = {{}}
-            item['{pk_varname}'] = record.get('pk', {{}}).get('S','')
-            item['sk'] = record.get('sk',{{}}).get('S','')"""
-    for col, col_type in columns.items():
-        col_varname = converter.convert_to_system_name(col)
-        col_type_id = set_type(col_type)
-
-        source_code +=f"""
-            item['{col_varname}'] = record.get('{col_varname}',{{}}).get('{col_type_id}','')"""
-
-    source_code += f"""
-            items.append(item)
-        #FIXME: Mapping is duplicated code, make this DRY
+        items = map_results(raw)
 
         return items
 
     def delete(data):
         pk = data.get('pk','')
         sk = data.get('sk','')
+        if sk == '': sk = default_sk
 
         response = ddb.delete_item(
             TableName=ddb_table,
@@ -363,6 +334,7 @@ def create(data):
             '#{col_varname}' : '{col_varname}',"""  
  
     source_code += f"""
+            '#STARKListViewsk' : 'STARK-ListView-sk'
         }}
         ExpressionAttributeValuesDict = {{"""
 
@@ -374,13 +346,8 @@ def create(data):
             ':{col_varname}' : {{'{col_type_id}' : {col_varname} }},"""  
 
     source_code += f"""
+            ':STARKListViewsk' : {{'S' : data['STARK-ListView-sk']}}
         }}
-
-        #If STARK-ListView-sk is part of the data payload, it should be added to the update expression
-        if data.get('STARK-ListView-sk','') != '':
-            UpdateExpressionString += ", #STARKListViewsk = :STARKListViewsk"
-            ExpressionAttributeNamesDict['#STARKListViewsk']  = 'STARK-ListView-sk'
-            ExpressionAttributeValuesDict[':STARKListViewsk'] = {{'S' : data['STARK-ListView-sk']}}
 
         response = ddb.update_item(
             TableName=ddb_table,
@@ -411,8 +378,11 @@ def create(data):
 
     source_code += f"""
 
-        if data.get('STARK-ListView-sk','') != '':
+        if data.get('STARK-ListView-sk','') == '':
+            item['STARK-ListView-sk'] = {{'S' : create_listview_index_value(data)}}
+        else:
             item['STARK-ListView-sk'] = {{'S' : data['STARK-ListView-sk']}}
+
 
         response = ddb.put_item(
             TableName=ddb_table,
@@ -448,6 +418,56 @@ def create(data):
             composed_filter_dict['expression_values'][f":{{key}}"] = {{data['type'] : data['value'].strip()}}
 
         return composed_filter_dict
+
+    def create_listview_index_value(data):
+        ListView_index_values = []
+        for field in sort_fields:
+            if field == pk_field:
+                ListView_index_values.append(data['pk'])
+            else:
+                ListView_index_values.append(data.get(field))
+        STARK_ListView_sk = "|".join(ListView_index_values)
+        return STARK_ListView_sk
+    
+    def map_results(raw_response):
+        items = []
+        for record in raw_response:
+            item = {{}}
+            item['{pk_varname}'] = record.get('pk', {{}}).get('S','')
+            item['sk'] = record.get('sk',{{}}).get('S','')"""
+    for col, col_type in columns.items():
+        col_varname = converter.convert_to_system_name(col)
+        col_type_id = set_type(col_type)
+
+        source_code +=f"""
+            item['{col_varname}'] = record.get('{col_varname}',{{}}).get('{col_type_id}','')"""
+
+    source_code += f"""
+            items.append(item)
+        return items
+
+    def generate_csv(mapped_results = []): 
+        #dynamic csv_header = ["""
+    for col in columns:
+        col_varname = converter.convert_to_system_name(col)
+        source_code += f"'{col_varname}',"    
+    source_code += f"""]
+
+        file_buff = StringIO()
+        writer = csv.DictWriter(file_buff, fieldnames=csv_header)
+        writer.writeheader()
+        for rows in mapped_results:
+            rows.pop("sk")
+            writer.writerow(rows)
+        filename = f"{{str(uuid.uuid4())}}.csv"
+        test = s3.put_object(
+            ACL='public-read',
+            Body= file_buff.getvalue(),
+            Bucket=bucket_name,
+            Key='tmp/'+filename
+        )
+        
+        return bucket_name+".s3."+ environ_region + ".amazonaws.com/tmp/" +filename    
     """
 
     return textwrap.dedent(source_code)
