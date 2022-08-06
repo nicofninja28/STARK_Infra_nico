@@ -186,10 +186,6 @@ def create(data, cli_mode=False):
                 WebsiteConfiguration:
                     ErrorDocument: {s3_error_document}
                     IndexDocument: {s3_index_document}
-        BucketPolicyForUploadedFiles:
-            Type: AWS::S3::BucketPolicy
-            Properties:
-                Bucket: !Ref UserWebsiteBucketNameParameter
                 PolicyDocument:
                     Version: 2012-10-17
                     Statement:
