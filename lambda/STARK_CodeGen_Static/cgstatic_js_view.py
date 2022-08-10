@@ -121,6 +121,7 @@ def create(data):
                 page_token_map: {{1: ''}},
                 curr_page: 1,
                 showReport: false,
+                s3_link_prefix: "",
                 temp_csv_link: "",
                 temp_pdf_link: "",
                 showError: false,
@@ -248,6 +249,7 @@ def create(data):
                             root.{entity_varname}.STARK_uploaded_s3_keys['{col_varname}'] = root.{entity_varname}.{col_varname} != "" ? root.{entity_varname}.STARK_uploaded_s3_keys.{col_varname}.S : ""
                             root.STARK_upload_elements['{col_varname}'].file              = root.{entity_varname}.{col_varname} != "" ? root.{entity_varname}.{col_varname} : ""
                             root.STARK_upload_elements['{col_varname}'].progress_bar_val  = root.{entity_varname}.{col_varname} != "" ? 100 : 0
+                            root.s3_link_prefix                                           = data[1]
                             """
 
     #If there are 1:1 rel fields, we need to assign their initial value to the still-unpopulated drop-down list so that it displays 
@@ -483,8 +485,9 @@ def create(data):
                         root.lists.{foreign_field} = []
 
                         //FIXME: for now, generic list() is used. Can be optimized to use a list function that only retrieves specific columns
-                        {foreign_entity}_app.list().then( function(data) {{
-                            data['Items'].forEach(function(arrayItem) {{
+                        field = '{foreign_field}'
+                        {foreign_entity}_app.get_field(field).then( function(data) {{
+                            data.forEach(function(arrayItem) {{
                                 value = arrayItem['{foreign_field}']
                                 text  = arrayItem['{foreign_display}']"""
                 if has_one != '': 
