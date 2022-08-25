@@ -34,13 +34,37 @@ def create(data):
         var root = new Vue({{
             el: "#vue-root",
             data: {{
-                stark_permissions: {{
-                    '{entity}|View': false,
-                    '{entity}|Add': false,
-                    '{entity}|Delete': false,
-                    '{entity}|Edit': false,
-                    '{entity}|Report': false,
+                metadata: {{
+                    '{pk_varname}': {{
+                        'value': '',
+                        'required': true,
+                        'max_length': '',
+                        'data_type': ''
+                    }},"""
+    
+    for col in cols:
+        col_varname = converter.convert_to_system_name(col)
+        source_code += f"""
+                    '{col_varname}': {{
+                        'value': '',
+                        'required': true,
+                        'max_length': '',
+                        'data_type': ''
+                    }},""" 
+                    
+    source_code += f"""
                 }},
+                
+                auth_config: {{ }},
+
+                auth_list: {{
+                    'View': {{'permission': 'Customer Type|View', 'allowed': false}},
+                    'Add': {{'permission': 'Customer Type|Add', 'allowed': false}},
+                    'Delete': {{'permission': 'Customer Type|Delete', 'allowed': false}},
+                    'Edit': {{'permission': 'Customer Type|Edit', 'allowed': false}},
+                    'Report': {{'permission': 'Customer Type|Report', 'allowed': false}}
+                }},
+
                 listview_table: '',
                 STARK_report_fields: [],
                 {entity_varname}: {{
@@ -204,7 +228,6 @@ def create(data):
                 }},
 
                 add: function () {{
-                    loading_modal.show()
                     console.log("VIEW: Inserting!")"""
     for col, col_type in cols.items():
         col_varname = converter.convert_to_system_name(col)
@@ -215,18 +238,26 @@ def create(data):
                     this.{entity_varname}.{col_varname} = (root.multi_select_values.{col_varname}.sort()).join(', ')"""
     
     source_code += f"""
+                    response = this.validate_form(root.metadata, root.{entity_varname}""" 
+    if with_upload:
+        source_code += f", root.STARK_upload_elements"
 
-                    let data = {{ {entity_varname}: this.{entity_varname} }}
+    source_code += f""")
+                    this.metadata = response['new_metadata']
+                    if(response['is_valid_form']) {{
+                        loading_modal.show()
+                        let data = {{ {entity_varname}: this.{entity_varname} }}
 
-                    {entity_app}.add(data).then( function(data) {{
-                        console.log("VIEW: INSERTING DONE!");
-                        loading_modal.hide()
-                        window.location.href = "{entity_varname}.html";
-                    }}).catch(function(error) {{
-                        console.log("Encountered an error! [" + error + "]")
-                        alert("Request Failed: System error or you may not have enough privileges")
-                        loading_modal.hide()
-                    }});
+                        {entity_app}.add(data).then( function(data) {{
+                            console.log("VIEW: INSERTING DONE!");
+                            loading_modal.hide()
+                            window.location.href = "{entity_varname}.html";
+                        }}).catch(function(error) {{
+                            console.log("Encountered an error! [" + error + "]")
+                            alert("Request Failed: System error or you may not have enough privileges")
+                            loading_modal.hide()
+                        }});
+                    }}
                 }},
 
                 delete: function () {{
@@ -249,7 +280,6 @@ def create(data):
                 }},
 
                 update: function () {{
-                    loading_modal.show()
                     console.log("VIEW: Updating!")"""
     for col, col_type in cols.items():
         col_varname = converter.convert_to_system_name(col)
@@ -260,19 +290,28 @@ def create(data):
                     this.{entity_varname}.{col_varname} = (root.multi_select_values.{col_varname}.sort()).join(', ')"""
     
     source_code += f"""
-                    let data = {{ {entity_varname}: this.{entity_varname} }}
+                    response = this.validate_form(root.metadata, root.{entity_varname}""" 
+    if with_upload:
+        source_code += f", root.STARK_upload_elements"
 
-                    {entity_app}.update(data).then( function(data) {{
-                        console.log("VIEW: UPDATING DONE!");
-                        console.log(data);
-                        loading_modal.hide()
-                        window.location.href = "{entity_varname}.html";
-                    }})
-                    .catch(function(error) {{
-                        console.log("Encountered an error! [" + error + "]")
-                        alert("Request Failed: System error or you may not have enough privileges")
-                        loading_modal.hide()
-                    }});
+    source_code += f""")
+                    this.metadata = response['new_metadata']
+                    if(response['is_valid_form']) {{
+                        loading_modal.show()
+                        let data = {{ {entity_varname}: this.{entity_varname} }}
+
+                        {entity_app}.update(data).then( function(data) {{
+                            console.log("VIEW: UPDATING DONE!");
+                            console.log(data);
+                            loading_modal.hide()
+                            window.location.href = "{entity_varname}.html";
+                        }})
+                        .catch(function(error) {{
+                            console.log("Encountered an error! [" + error + "]")
+                            alert("Request Failed: System error or you may not have enough privileges")
+                            loading_modal.hide()
+                        }});
+                    }}
                 }},
 
                 get: function () {{
@@ -337,18 +376,6 @@ def create(data):
 
                list: function (lv_token='', btn='') {{
                     spinner.show()
-                    data = {{}}
-                    data['stark_permissions'] = this.stark_permissions
-                    STARK.auth(data).then( function(data) {{
-                        console.log("Auth Request Done!");
-                        console.log(data);
-                        root.stark_permissions = data;
-                    }})
-                    .catch(function(error) {{
-                        console.log("Encountered an error! [" + error + "]")
-                        alert("Request Failed: System error or you may not have enough privileges")
-                        loading_modal.hide()
-                    }});
                     
                     payload = []
                     if (btn == 'next') {{
@@ -592,6 +619,8 @@ def create(data):
                                 }}
                             }}).on('httpUploadProgress', function (progress) {{
                             root.STARK_upload_elements[file_upload_element].progress_bar_val = parseInt((progress.loaded * 100) / progress.total);
+                            root.metadata[file_upload_element].state = true
+                            root.metadata[file_upload_element].feedback = "" 
                         }});
                     }}
                     else
@@ -599,7 +628,8 @@ def create(data):
                         //do not show alert when file upload is opened then closed
                         if(upload_processed['message'] != 'initial')
                         {{
-                            alert(upload_processed['message'])
+                            root.metadata[file_upload_element].state = false
+                            root.metadata[file_upload_element].feedback = upload_processed['message'] 
                         }}
                     }}
 
