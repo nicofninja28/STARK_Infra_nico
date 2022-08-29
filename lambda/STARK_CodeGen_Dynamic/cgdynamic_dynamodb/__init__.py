@@ -102,12 +102,12 @@ def create(data):
     relationships     = {relationships}
     entity_upload_dir = stark_core.upload_dir + "{entity_varname}/"
     metadata          = {{
-        "{pk_varname}": : {{
+        "{pk_varname}": {{
             'value': '',
-            'required': true,
+            'required': True,
             'max_length': '',
             'data_type': '',
-            'state': null,
+            'state': None,
             'feedback': ''
         }},"""
         
@@ -117,10 +117,10 @@ def create(data):
         source_code += f"""
         '{col_varname}': {{
             'value': '',
-            'required': true,
+            'required': True,
             'max_length': '',
             'data_type': '',
-            'state': null,
+            'state': None,
             'feedback': ''
         }},""" 
                     
