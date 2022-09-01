@@ -44,12 +44,13 @@ def create(data, special="none"):
             <script src="js/STARK.js" defer></script>
             <script src="js/STARK_spinner.js" defer></script>
             <script src="js/STARK_loading_modal.js" defer></script>
+            <script src="js/STARK_nav_bar.js" defer></script>
             """
 
     if special == "HomePage":
         source_code += f"""\
             <script src="js/STARK_home.js" defer></script>
-"""
+            """
 
     else:
         source_code += f"""
@@ -82,8 +83,8 @@ def create(data, special="none"):
             <script src="js/generic_root_get.js" defer></script>"""
     elif(special == "New"):
         source_code += f"""
-        <script src="js/generic_check_auth_add.js" defer></script>
-        <script src="js/generic_root_get.js" defer></script>"""
+            <script src="js/generic_check_auth_add.js" defer></script>
+            <script src="js/generic_root_get.js" defer></script>"""
     elif(special == "Edit"):
         source_code += f"""
             <script src="js/generic_root_get.js" defer></script>
@@ -98,8 +99,7 @@ def create(data, special="none"):
             <script src="js/generic_check_auth_view.js" defer></script>"""
     elif(special == "Report"):
         source_code += f"""
-        <script src="js/generic_check_auth_report.js" defer></script>
-        """
+            <script src="js/generic_check_auth_report.js" defer></script>"""
     elif(special == "Listview"):
         source_code += f"""
             <script src="js/generic_root_list.js" defer></script>
