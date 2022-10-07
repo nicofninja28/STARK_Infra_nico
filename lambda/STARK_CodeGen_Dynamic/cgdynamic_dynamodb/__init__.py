@@ -439,16 +439,31 @@ def create(data):
                 temp_dict = {{}}
                 #remove primary identifiers and STARK attributes
                 if not aggregate_report:
-                    key.pop("sk")
+                    key.pop("sk")"""
+    if with_upload:
+        source_code += f"""
+                    key.pop("STARK uploaded s3 keys")"""
+    source_code += f"""
                 for index, value in key.items():
                     temp_dict[index.replace("_"," ")] = value
                 report_list.append(temp_dict)
 
-            csv_file = utilities.create_csv(report_list, report_header, diff_list)
+            report_list = utilities.filter_report_list(report_list, diff_list)
+            csv_file = utilities.create_csv(report_list, report_header)
             pdf_file = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
 
         csv_bucket_key = bucket_tmp + csv_file
         pdf_bucket_key = bucket_tmp + pdf_file
+
+        if not aggregate_report:
+            report_list = items
+            new_report_list = []
+            for row in report_list:
+                temp_dict = {{}}
+                for index, value in row.items():
+                    temp_dict[index.replace("_"," ")] = value
+                new_report_list.append(temp_dict)
+            report_list = new_report_list
 
         return report_list, csv_bucket_key, pdf_bucket_key
 
