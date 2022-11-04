@@ -149,6 +149,19 @@ def create(data):
                     loading_modal.hide();
                 }});
             }}
+        }},
+        many_validation() {{
+            is_valid_form = true
+            for (let index = 0; index < this.module_fields.length; index++) {{
+                console.log(this.module_fields[index])
+                response = STARK.validate_form(this.metadata, this.module_fields[index])
+                this.validation_properties[index] = response['validation_properties']
+                if (response['is_valid_form'] == false)
+                {{
+                    is_valid_form = false
+                }}
+            }}
+            return is_valid_form
         }},"""
 
     source_code += f"""
@@ -197,21 +210,6 @@ def create(data):
     source_code += f"""
             this.module_fields.push(new_row)
             this.validation_properties.push(new_validation_property)
-        }},"""
-
-    source_code += f"""
-        many_validation() {{
-            is_valid_form = true
-            for (let index = 0; index < this.module_fields.length; index++) {{
-                console.log(this.module_fields[index])
-                response = STARK.validate_form(this.metadata, this.module_fields[index])
-                this.validation_properties[index] = response['validation_properties']
-                if (response['is_valid_form'] == false)
-                {{
-                    is_valid_form = false
-                }}
-            }}
-            return is_valid_form
         }},
         remove_row: function (index) {{
             this.module_fields.splice(index, 1);
@@ -273,7 +271,6 @@ def create(data):
                 }}
             }}
 
-            this.{entity_varname}.push(new_row)
         }},
         process_upload_file(file_upload_element, index) {{
             var upload_processed = {{
