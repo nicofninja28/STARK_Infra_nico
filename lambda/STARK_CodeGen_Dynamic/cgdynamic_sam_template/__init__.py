@@ -271,6 +271,21 @@ def create(data, cli_mode=False):
                 CatalogId: !Ref AWS::AccountId
                 DatabaseInput:
                     Name: stark_{project_varname.lower()}_db
+        STARKAnalyticsAthenaWorkGroup:
+            Type: AWS::Athena::WorkGroup
+            Properties:
+                Name: STARK_{project_varname}_workgroup
+                Description: My WorkGroup Updated
+                State: ENABLED
+                WorkGroupConfiguration:
+                    BytesScannedCutoffPerQuery: 200000000
+                    EnforceWorkGroupConfiguration: false
+                    PublishCloudWatchMetricsEnabled: false
+                    RequesterPaysEnabled: true
+                    ResultConfiguration:
+                        OutputLocation: s3://{s3_athena_bucket_name}/output/
+            DependsOn:
+                - STARKAnalyticsAthenaBucket
         STARKAnalyticsGlueJobRole:
             Type: AWS::IAM::Role
             Properties:
