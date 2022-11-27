@@ -283,7 +283,7 @@ def create(data, cli_mode=False):
                     PublishCloudWatchMetricsEnabled: false
                     RequesterPaysEnabled: true
                     ResultConfiguration:
-                        OutputLocation: s3://{s3_athena_bucket_name}/output/
+                        OutputLocation: s3://{s3_athena_bucket_name}/
             DependsOn:
                 - STARKAnalyticsAthenaBucket
         STARKAnalyticsGlueJobRole:
