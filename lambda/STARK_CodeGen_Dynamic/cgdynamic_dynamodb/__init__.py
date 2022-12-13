@@ -135,7 +135,11 @@ def create(data):
         col_varname = converter.convert_to_system_name(col)
         data_type = set_data_type(col_type)
         rel = ''
-        
+        if isinstance(col_type, dict) and col_type["type"] == "relationship":
+            has_many_ux = col_type.get('has_many_ux', None)
+            if has_many_ux == 'repeater': 
+                rel = '1-M'
+                
         source_code += f"""
                 '{col_varname}': {{
                     'value': '',
@@ -147,21 +151,21 @@ def create(data):
                     'feedback': '',
                     'relationship': '{rel}'
                 }},""" 
-    if relationships.get('has_many', '') != '':
-        for relation in relationships.get('has_many'):
-            if relation.get('type') == 'repeater':
-                rel_entity = converter.convert_to_system_name(relation.get('entity'))
-                source_code += f"""
-                '{rel_entity}': {{
-                    'value': '',
-                    'key': '',
-                    'required': True,
-                    'max_length': '',
-                    'data_type': 'string',
-                    'state': None,
-                    'feedback': '',
-                    'relationship': '1-M'
-                }},"""
+    # if relationships.get('has_many', '') != '':
+    #     for relation in relationships.get('has_many'):
+    #         if relation.get('type') == 'repeater':
+    #             rel_entity = converter.convert_to_system_name(relation.get('entity'))
+    #             source_code += f"""
+    #             '{rel_entity}': {{
+    #                 'value': '',
+    #                 'key': '',
+    #                 'required': True,
+    #                 'max_length': '',
+    #                 'data_type': 'string',
+    #                 'state': None,
+    #                 'feedback': '',
+    #                 'relationship': '1-M'
+    #             }},"""
     # for rel_ent in rel_model:
     #     rel_cols = rel_model[rel_ent]["data"]
     #     rel_pk = rel_model[rel_ent]["pk"]
@@ -626,8 +630,10 @@ def create(data):
 
             report_list = utilities.filter_report_list(report_list, diff_list)
             csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
-            utilities.save_object_to_bucket(file_buff_value, csv_file)
-
+            utilities.save_object_to_bucket(file_buff_value, csv_file)"""
+            
+    if len(rel_model) > 0:
+                source_code += f"""
             merge_metadata = {{}}
             for relation in relationships.get('has_many', []):
                 if relation.get('type', '') == 'repeater':
@@ -638,7 +644,9 @@ def create(data):
                         new_child_ent = relation['entity'] + '_' + child_entity
                         new_child_metadata.update({{new_child_ent: child_data}})
                     merge_metadata.update(new_child_metadata)
-            metadata.update(merge_metadata) 
+            metadata.update(merge_metadata)"""
+
+    source_code += f"""
             pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
             utilities.save_object_to_bucket(pdf_output, pdf_file)
 
@@ -821,8 +829,11 @@ def create(data):
 
     for col in columns:
         col_varname = converter.convert_to_system_name(col)
-        source_code +=f"""
-            '#{col_varname}' : '{col_varname}',"""  
+        if col in repeater_fields:
+            pass
+        else:
+            source_code +=f"""
+            '#{col_varname}' : '{col_varname}',""" 
     
     if with_upload or with_upload_on_many:
         source_code += f"""
@@ -832,11 +843,14 @@ def create(data):
         }}
         ExpressionAttributeValuesDict = {{"""
 
+
     for col, col_type in columns.items():
         col_varname = converter.convert_to_system_name(col)
         col_type_id = set_type(col_type)
-
-        source_code +=f"""
+        if col in repeater_fields:
+            pass
+        else:    
+            source_code +=f"""
             ':{col_varname}' : {{'{col_type_id}' : {col_varname} }},"""  
 
     if with_upload or with_upload_on_many:
