@@ -1,7 +1,7 @@
 {
   "Parameters" : {
-    "UserCICDPipelineBucketNameParameter" : "pipeline-nico-test",
-    "UserCodeGenBucketNameParameter" : "codegen-nico-test",
-    "UserWebsiteBucketNameParameter" : "web-nico-test"
+    "UserCICDPipelineBucketNameParameter" : "pipeline-test-nico",
+    "UserCodeGenBucketNameParameter" : "codegen-test-nico",
+    "UserWebsiteBucketNameParameter" : "web-test-nico"
   }
 }
