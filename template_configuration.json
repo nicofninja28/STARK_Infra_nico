@@ -1,7 +1,7 @@
 {
   "Parameters" : {
-    "UserCICDPipelineBucketNameParameter" : "pipeline-test-nico",
-    "UserCodeGenBucketNameParameter" : "codegen-test-nico",
-    "UserWebsiteBucketNameParameter" : "web-test-nico"
+    "UserCICDPipelineBucketNameParameter" : "stark-dev-pipeline-serverlessninja-nico",
+    "UserCodeGenBucketNameParameter" : "stark-dev-codegen-serverlessninja-nico",
+    "UserWebsiteBucketNameParameter" : "stark-dev-web-serverlessninja-nico"
   }
 }
