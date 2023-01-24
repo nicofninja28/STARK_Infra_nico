@@ -77,11 +77,23 @@ var root = new Vue({
                 valid_form = false
                 this.validation_properties.default_pass.feedback = 'Please enter password.'
                 this.validation_properties.default_pass.state = false
-                this.validation_properties.confirm_default_pass.state = false
+                if((!this.default_pass.length) && (this.confirm_default_pass.length)) 
+                {
+                    console.log('a.a')
+                    this.validation_properties.confirm_default_pass.state = false
+                    this.validation_properties.confirm_default_pass.feedback = ''
+                }
+                else if((!this.default_pass.length) && (!this.confirm_default_pass.length)) 
+                {
+                    this.validation_properties.confirm_default_pass.feedback = ''
+                    this.validation_properties.confirm_default_pass.state = null
+                }
+                
             } 
             
             if((this.default_pass.length) && (!this.confirm_default_pass.length)) 
             {
+                console.log('b')
                 valid_form = false
                 
                 this.validation_properties.confirm_default_pass.feedback = 'Please confirm password.'
@@ -95,6 +107,7 @@ var root = new Vue({
                     valid_form = false
                     console.log('d')
                     this.validation_properties.confirm_default_pass.feedback = 'Passwords do not match'
+                    this.validation_properties.default_pass.feedback = ''
                     this.validation_properties.confirm_default_pass.state = false
                 } 
                 else {
