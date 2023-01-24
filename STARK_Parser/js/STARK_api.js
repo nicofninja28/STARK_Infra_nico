@@ -73,6 +73,7 @@ var root = new Vue({
 
             if((!this.default_pass.length)) 
             {
+                message.push('Default Password')
                 console.log('a')
                 valid_form = false
                 this.validation_properties.default_pass.feedback = 'Please enter password.'
@@ -80,11 +81,13 @@ var root = new Vue({
                 if((!this.default_pass.length) && (this.confirm_default_pass.length)) 
                 {
                     console.log('a.a')
+                    message.push('Default Password')
                     this.validation_properties.confirm_default_pass.state = false
                     this.validation_properties.confirm_default_pass.feedback = ''
                 }
                 else if((!this.default_pass.length) && (!this.confirm_default_pass.length)) 
                 {
+                    message.push('Default Password')
                     this.validation_properties.confirm_default_pass.feedback = ''
                     this.validation_properties.confirm_default_pass.state = null
                 }
@@ -93,6 +96,7 @@ var root = new Vue({
             
             if((this.default_pass.length) && (!this.confirm_default_pass.length)) 
             {
+                message.push('Default Password')
                 console.log('b')
                 valid_form = false
                 
@@ -104,6 +108,7 @@ var root = new Vue({
                 console.log('c')
                 if(this.default_pass != this.confirm_default_pass)
                 {
+                    message.push('Default Password')
                     valid_form = false
                     console.log('d')
                     this.validation_properties.confirm_default_pass.feedback = 'Passwords do not match'
@@ -111,6 +116,7 @@ var root = new Vue({
                     this.validation_properties.confirm_default_pass.state = false
                 } 
                 else {
+                    
                     console.log('e')
                     this.validation_properties.default_pass.state = true
                     this.validation_properties.confirm_default_pass.state = true
