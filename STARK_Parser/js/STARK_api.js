@@ -61,6 +61,9 @@ var root = new Vue({
                 message.push('Name')
             }
 
+            console.log(this.default_pass)
+            console.log(this.confirm_default_pass)
+
             if(this.yaml_file == null && this.form.data_model_temp == "")
             {
                 valid_form = false;
