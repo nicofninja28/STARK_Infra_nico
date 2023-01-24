@@ -60,7 +60,17 @@
                         <b-button id="btn_generate" variant="primary" class="mt-2" v-on:click="validate_form()">Generate</b-button>
                         <b-button id="btn_deploy" variant="success" class="mt-2" v-on:click="deploy_STARK()" :style="{visibility: deploy_visibility}">Deploy</b-button>
                     </b-form-group>
-            
+                    
+                    <div class="form-group">
+                        <label for="default_pass">Enter Password</label>
+                        <b-form-input type="password" class="form-control" id="default_pass" placeholder="" v-model="default_pass"></b-form-input>
+                    </div> 
+
+                    <div class="form-group">
+                        <label for="confirm_default_pass">Confirm Password</label>
+                        <b-form-input type="password" class="form-control" id="confirm_default_pass" placeholder="" v-model="confirm_default_pass"></b-form-input>
+                    </div> 
+
                     <b-tooltip target="model_textarea" triggers="hover">
                         Data model refers to your tables, columns and related metadata that together define the entities your system will process
                     </b-tooltip>

@@ -7,6 +7,8 @@ var root = new Vue({
         },
         project_name: "",
         yaml_file: null,
+        default_pass: "",
+        confirm_default_pass: "",
         api_key: '',
         current_stack: 0,
         deploy_time_end: '',
