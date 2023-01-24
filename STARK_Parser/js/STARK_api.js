@@ -22,7 +22,17 @@ var root = new Vue({
         ui_visibility: 'block',
         visibility: 'visible',
         wait_counter: 0,
-        wait_limit: 12
+        wait_limit: 12, 
+        validation_properties: {
+            'default_pass': {
+                'state': null,
+                'feedback': ''
+            },
+            'confirm_default_pass': {
+                'state': null,
+                'feedback': ''
+            },
+        }
     },
     methods:{
         readAsText() {
@@ -61,11 +71,20 @@ var root = new Vue({
                 message.push('Name')
             }
 
-            if(this.default_pass != this.confirm_default_pass) 
+            if((!this.default_pass.length)) 
             {
                 valid_form = false
-                message.push('Passwords do not match')
+                this.validation_properties.default_pass.feedback = 'Please enter password.'
+            } 
+            else if (!this.confirm_default_pass)
+            {
+                valid_form = false
+                this.validation_properties.confirm_default_pass.feedback = 'Please confirm password.'
+            } else if (this.default_pass != this.confirm_default_pass) {
+                valid_form = false
+                this.validation_properties.confirm_default_pass.feedback = 'Passwords do not match!'
             }
+            
 
             if(this.yaml_file == null && this.form.data_model_temp == "")
             {
