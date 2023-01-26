@@ -25,14 +25,13 @@ def create(data):
                 - BUCKET={cicd_bucket}
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
-                - aws s3 cp default_password.txt s3://$BUCKET/{project_varname}/
+                - echo "Hello, World!" | aws s3 cp - s3://$BUCKET/{project_varname}//default_password.txt
 
         artifacts:
             files:
                 - template.yml
                 - outputtemplate.yml
                 - template_configuration.json
-                - default_password.txt
         """
 
     return textwrap.dedent(source_code)
