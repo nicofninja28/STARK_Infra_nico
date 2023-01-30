@@ -48,6 +48,7 @@ helper = CfnResource() #We're using the AWS-provided helper library to minimize 
 @helper.create
 @helper.update
 def create_handler(event, context):
+    print(event.get('ResourceProperties', {}))
     #Project name from our CF template
     project_name    = event.get('ResourceProperties', {}).get('Project','')
     repo_name       = event.get('ResourceProperties', {}).get('RepoName','')

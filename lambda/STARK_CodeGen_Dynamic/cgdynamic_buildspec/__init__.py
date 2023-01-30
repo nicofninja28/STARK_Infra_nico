@@ -8,9 +8,11 @@ import textwrap
 #Private modules
 import convert_friendly_to_system as converter
 
+
 def create(data):
 
     project_varname = data['project_varname']
+    
 
     source_code = f"""\
         version: 0.2

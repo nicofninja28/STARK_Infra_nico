@@ -52,7 +52,7 @@ var root = new Vue({
                 fr.readAsText(this.yaml_file)
                 fr.onload = function() {
                     root.form.data_model_temp = fr.result;
-                    root.form.data_model = `__STARK_project_name__: ${root.project_name}\n${fr.result}`
+                    root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__:${root.default_pass}\n${fr.result}`
                 }; 
             }
             else
@@ -145,7 +145,7 @@ var root = new Vue({
             let data = {
                 data_model: this.form.data_model
             }
-
+            console.log(data)
             console.log(JSON.stringify(data))
             
             let fetchData = {
