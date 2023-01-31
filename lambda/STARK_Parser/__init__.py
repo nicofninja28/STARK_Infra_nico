@@ -90,22 +90,23 @@ def lambda_handler(event, context):
     with_cloudfront = False
 
     for key in data_model:
-        if key == "__STARK_project_name__":
-            project_name = data_model[key]
-            if not project_name:                
-                return {
-                    "isBase64Encoded": False,
-                    "statusCode": 200,
-                    "body": json.dumps("Code:NoProjectName"),
-                    "headers": default_response_headers
-            }
-            project_varname = converter.convert_to_system_name(project_name)
+        if "__STARK" in key:
+            if key == "__STARK_project_name__":
+                project_name = data_model[key]
+                if not project_name:                
+                    return {
+                        "isBase64Encoded": False,
+                        "statusCode": 200,
+                        "body": json.dumps("Code:NoProjectName"),
+                        "headers": default_response_headers
+                }
+                project_varname = converter.convert_to_system_name(project_name)
 
-        elif key == "__STARK_advanced__":
-            for advance_config in data_model[key]:
-                if advance_config == 'CloudFront':
-                    pass
-
+            elif key == "__STARK_advanced__":
+                for advance_config in data_model[key]:
+                    if advance_config == 'CloudFront':
+                        pass
+                    
         else:
             entities.append(key)
 
