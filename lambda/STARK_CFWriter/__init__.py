@@ -14,7 +14,7 @@ import boto3
 
 #Private modules
 import convert_friendly_to_system as converter
-import stark_scrypt as scrypt
+
 
 
 #Get environment type - this will allow us to take different branches depending on whether we are LOCAL or PROD (or any other future valid value)
@@ -364,14 +364,7 @@ def lambda_handler(event, context):
             }
         )
 
-        response = s3.put_object(
-            Body=scrypt.create_hash("abc-pass"),
-            Bucket=codegen_bucket_name,
-            Key=f'codegen_dynamic/{project_varname}/default_password.txt',
-            Metadata={
-                'STARK_Description': 'Default pass'
-            }
-        )
+        
     else:
         print(textwrap.dedent(cf_template))
 
