@@ -30,6 +30,7 @@ cloudfront_parser  = importlib.import_module(f"{prepend_dir}parse_cloudfront")
 
 
 import convert_friendly_to_system as converter
+import stark_scrypt as scrypt
 
 #Get environment variable - this will allow us to take different branches depending on whether we are LOCAL or PROD (or any other future valid value)
 ENV_TYPE = os.environ['STARK_ENVIRONMENT_TYPE']
@@ -90,22 +91,23 @@ def lambda_handler(event, context):
     with_cloudfront = False
 
     for key in data_model:
-        if key == "__STARK_project_name__":
-            project_name = data_model[key]
-            if not project_name:                
-                return {
-                    "isBase64Encoded": False,
-                    "statusCode": 200,
-                    "body": json.dumps("Code:NoProjectName"),
-                    "headers": default_response_headers
-            }
-            project_varname = converter.convert_to_system_name(project_name)
+        if "__STARK" in key:
+            if key == "__STARK_project_name__":
+                project_name = data_model[key]
+                if not project_name:                
+                    return {
+                        "isBase64Encoded": False,
+                        "statusCode": 200,
+                        "body": json.dumps("Code:NoProjectName"),
+                        "headers": default_response_headers
+                }
+                project_varname = converter.convert_to_system_name(project_name)
 
-        elif key == "__STARK_advanced__":
-            for advance_config in data_model[key]:
-                if advance_config == 'CloudFront':
-                    pass
-
+            elif key == "__STARK_advanced__":
+                for advance_config in data_model[key]:
+                    if advance_config == 'CloudFront':
+                        pass
+                    
         else:
             entities.append(key)
 
@@ -121,6 +123,9 @@ def lambda_handler(event, context):
         'project_name': project_name,
         'project_varname': project_varname
     }
+
+    #Default Password
+    cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
 
     #Data Model ###
     cloud_resources["Data Model"] = model_parser.parse(data)
@@ -167,12 +172,15 @@ def lambda_handler(event, context):
     #       Payload=json.dumps(yaml.dump(cloud_resources))
 
     if ENV_TYPE == "PROD":
+        print(data['data_model']['__STARK_default_password__'])
         response = lambda_client.invoke(
             FunctionName = CFWriter_FuncName,
             InvocationType = 'RequestResponse',
             LogType= 'Tail',
             Payload=json.dumps(cloud_resources)
         )
+
+        
     else:
         print(json.dumps(cloud_resources))
 
