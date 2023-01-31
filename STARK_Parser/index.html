@@ -40,6 +40,7 @@
                         </div>
                         <div v-html="loading_message" :style="{visibility: visibility}"></div>
                         <div v-html="success_message"></div>
+                        <div v-html="error_message" v-if="deploy_visibility == 'visible'"></div>
                     </div>
                 </div>
             </div>
@@ -51,7 +52,8 @@
                         label="Project Name"
                         label-for="project-name"
                     >
-                        <b-form-input id="project-name" v-model="project_name" trim :readonly="model_readonly"></b-form-input>
+                        <b-form-input id="project-name" v-model="project_name" trim :readonly="model_readonly" :state="validation_properties.project_name.state"></b-form-input>
+                        <b-form-invalid-feedback id="aria-project_name">{{validation_properties.project_name.feedback}}</b-form-invalid-feedback>
                     </b-form-group>
 
                     
@@ -70,15 +72,17 @@
 
                     <b-form-group
                       label="Data model (YAML file):"
-                      label-for="textarea-formatter"
+                      label-for="yaml-file"
                       description="STARK will use your data model to architect a complete serverless solution. Magic!"
+                      :state="validation_properties.yaml_file.state"
+                      :invalid-feedback="validation_properties.yaml_file.feedback"
                     >
-                        <b-form-file v-model="yaml_file"  drop-placeholder="Drop file here..." @input="readAsText" :readonly="model_readonly"></b-form-file>
+                        <b-form-file v-model="yaml_file" id="yaml-file" :state="validation_properties.yaml_file.state" drop-placeholder="Drop file here..." @input="readAsText" :readonly="model_readonly" ></b-form-file>
                     </b-form-group>
 
                     
                     <b-button id="btn_generate" variant="primary" class="mt-2" v-on:click="validate_form()">Generate</b-button>
-                    <b-button id="btn_deploy" variant="success" class="mt-2" v-on:click="deploy_STARK()" :style="{visibility: deploy_visibility}">Deploy</b-button>
+                    <b-button id="btn_deploy" variant="success" class="mt-2" v-on:click="deploy_STARK()" :style="{visibility: deploy_visibility}" :disabled="enable_deploy_button">Deploy</b-button>
                      
 
                     <b-tooltip target="model_textarea" triggers="hover">
@@ -99,24 +103,14 @@
         </div>
         <div class="col-md-6 ml-auto" :style="{display: ui_visibility}">
             <b-form-group
-                        label="Data Model"
+                        label="Generation Logs:"
                         label-for="model_textarea"
                         v-if="deploy_visibility == 'visible' && yaml_file != ''"
                     >
-                        <!-- <b-form-textarea
-                            id="model_textarea"
-                            placeholder=""
-                            rows="23"
-                            max-rows="23"
-                            class="mt-2"
-                            size="md"
-                            v-model="validation_results.toString()"
-                            readonly
-                        ></b-form-textarea>    -->
                         
                         <template v-for="(table_content, index) in validation_results">
                             
-                            <div class="row">
+                            <div class="row" style="padding-left:30px" v-if="table_content.error_messages.length > 0 || table_content.warning_messages > 0">
                                 {{index}}
                                 <div class="container ml-2">
                                     <!-- Columns:
@@ -126,24 +120,29 @@
                                             <div class="col-sm-4">{{status}}</div>
                                         </div>
                                     </template> -->
-                                    Errors:
-                                    <template v-for="error in table_content.error_messages">
-                                        <div class="row ml-4">
-                                            <ul>
-                                                <li class="">{{error}}</li>
-                                            </ul>
-                                            
-                                        </div>
+                                    <template v-if="table_content.error_messages.length > 0">
+                                        Errors:
+                                        <template v-for="error in table_content.error_messages">
+                                            <div class="row ml-4">
+                                                <ul>
+                                                    <li class="">{{error}}</li>
+                                                </ul>
+                                                
+                                            </div>
+                                        </template>
+
                                     </template>
-                                    Warnings:
-                                    <template v-for="warning in table_content.warning_messages">
-                                        <div class="row ml-4">
-                                            <ul>
-                                                <li class="">{{warning}}</li>
-                                            </ul>
-                                            
-                                        </div>
-                                    </template>
+                                    <template v-if="table_content.warning_messages.length > 0">
+                                        Warnings:
+                                        <template v-for="warning in table_content.warning_messages">
+                                            <div class="row ml-4">
+                                                <ul>
+                                                    <li class="">{{warning}}</li>
+                                                </ul>
+                                                
+                                            </div>
+                                        </template>
+                                    </template> 
                                     
 
 
