@@ -16,6 +16,7 @@ import boto3
 import convert_friendly_to_system as converter
 
 
+
 #Get environment type - this will allow us to take different branches depending on whether we are LOCAL or PROD (or any other future valid value)
 ENV_TYPE = os.environ['STARK_ENVIRONMENT_TYPE']
 if ENV_TYPE == "PROD":
@@ -53,7 +54,7 @@ else:
 def lambda_handler(event, context):
 
     cloud_resources = event
-
+    print(cloud_resources)
     #Get Project Name
     #FIXME: Project Name is used here as unique identifier. For now it's a user-supplied string, which is unreliable
     #       as a unique identifier. Make this a GUID for prod use.
@@ -360,6 +361,15 @@ def lambda_handler(event, context):
             Key=f'codegen_dynamic/{project_varname}/STARK_SAM_{project_varname}.yaml',
             Metadata={
                 'STARK_Description': 'Writer output for CloudFormation'
+            }
+        )
+
+        response = s3.put_object(
+            Body=cloud_resources["Default Password"],
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{project_varname}/default_password.txt',
+            Metadata={
+                'STARK_Description': 'Default pass'
             }
         )
     else:
