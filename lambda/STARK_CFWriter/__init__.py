@@ -54,7 +54,7 @@ else:
 def lambda_handler(event, context):
 
     cloud_resources = event
-
+    print(cloud_resources)
     #Get Project Name
     #FIXME: Project Name is used here as unique identifier. For now it's a user-supplied string, which is unreliable
     #       as a unique identifier. Make this a GUID for prod use.
