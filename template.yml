@@ -194,6 +194,7 @@ Resources:
             Layers:
                 - !Ref PyYamlLayer
                 - !Ref STARKFriendlyToSystemNamesLayer
+                - !Ref STARKScryptLayer
             Timeout: 60
             Architectures:
                 - arm64
