@@ -13,6 +13,8 @@
     <script src="js/bootstrap-vue.min.js" defer></script>
     <script src="js/STARK_settings.js" defer></script>
     <script src="js/STARK_api.js" defer></script>
+    <script src="js/STARK_validator.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/yamljs@0.3.0/dist/yaml.js"></script>
 
     <title>STARK Web Parser :: Beta 1</title>
 </head>
@@ -83,16 +85,53 @@
                         label-for="model_textarea"
                         v-if="deploy_visibility == 'visible' && yaml_file != ''"
                     >
-                        <b-form-textarea
+                        <!-- <b-form-textarea
                             id="model_textarea"
                             placeholder=""
                             rows="23"
                             max-rows="23"
                             class="mt-2"
                             size="md"
-                            v-model="form.data_model_temp"
+                            v-model="validation_results.toString()"
                             readonly
-                        ></b-form-textarea>   
+                        ></b-form-textarea>    -->
+                        
+                        <template v-for="(table_content, index) in validation_results">
+                            
+                            <div class="row">
+                                {{index}}
+                                <div class="container ml-2">
+                                    <!-- Columns:
+                                    <template v-for="(status, index) in table_content.columns">
+                                        <div class="row ml-4">
+                                            <div class="col-sm-4">{{index}}</div>
+                                            <div class="col-sm-4">{{status}}</div>
+                                        </div>
+                                    </template> -->
+                                    Errors:
+                                    <template v-for="error in table_content.error_messages">
+                                        <div class="row ml-4">
+                                            <ul>
+                                                <li class="">{{error}}</li>
+                                            </ul>
+                                            
+                                        </div>
+                                    </template>
+                                    Warnings:
+                                    <template v-for="warning in table_content.warning_messages">
+                                        <div class="row ml-4">
+                                            <ul>
+                                                <li class="">{{warning}}</li>
+                                            </ul>
+                                            
+                                        </div>
+                                    </template>
+                                    
+
+
+                                </div>
+                            </div>
+                        </template>
             </b-form-group>
         </div>
     </div>

@@ -17,6 +17,8 @@ var root = new Vue({
         msg_counter: 0,
         spinner_display: 'block',
         success_message: 'Welcome to STARK: Serverless Transformation and Acceleration Resource Kit.<br> The STARK Parser is idle',
+        error_message: "",
+        validation_results:"",
         ui_visibility: 'block',
         visibility: 'visible',
         wait_counter: 0,
@@ -53,25 +55,24 @@ var root = new Vue({
         {
             var valid_form = true;
             var message = []
-            if(this.project_name == "")
-            {
+            if(this.project_name == "") {
                 valid_form = false
                 message.push('Name')
             }
 
-            if(this.yaml_file == null && this.form.data_model_temp == "")
-            {
+            if(this.yaml_file == null && this.form.data_model_temp == "") {
                 valid_form = false;
                 message.push('Data Model')
             }
 
-            if(valid_form)
-            {
-                root.send_to_STARK()
+            this.validation_results = STARK_Validator.validate_data_model(this.form.data_model_temp)
+            
+            root.deploy_visibility = 'visible';
+            if(valid_form) {
+                // root.send_to_STARK()
             }
-            else
-            {
-                root.success_message = `Sorry, but we can't start if you don't provide the ${message.join(" and ")} of your project.`
+            else {
+                root.error_message = `Sorry, but we can't start if you don't provide the ${message.join(" and ")} of your project.`
             }
         },
         send_to_STARK: function () {
