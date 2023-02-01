@@ -74,7 +74,7 @@ def create(cloud_resources, project_basedir):
                         key[value] = converter.convert_to_system_name(key[value])
         data = {
             "Entity": entity_varname,
-            "Sequence": models[entity]["sequence"], 
+            # "Sequence": models[entity]["sequence"], 
             "Columns": models[entity]["data"],
             "PK": models[entity]["pk"],
             "DynamoDB Name": ddb_table_name,
