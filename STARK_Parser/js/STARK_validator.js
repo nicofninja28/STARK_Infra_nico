@@ -13,6 +13,7 @@ const STARK_Validator = {
         'MISSING_DATA_ATTRIBUTE': "No 'data' attribute found in '${1}'",
         'INVALID_PK': "Invalid 'pk' attribute in '${1}'. Expecting string as data type, '${2}' provided.",
         'INVALID_DATA_ATTRIBUTES': "Invalid 'data' attribute in '${1}'. Expecting array as data type, '${2}' provided.",
+        'INVALID_SEQUENCE_ATTRIBUTES': "Invalid sequence attribute for '${1}'. Expecting object as data type, '${2}' provided.",
         'INVALID_COLUMN_ATTRIBUTES': "Invalid column attribute for '${1}'. Expecting object as data type, '${2}' provided.",
         'INVALID_COLUMN_FORMAT': "Invalid column format found in '${1}': Column position '${2}' must be a single key-value pair",
         'INVALID_CONTROL_TYPE': "Invalid control type for '${1}' column",
@@ -25,10 +26,10 @@ const STARK_Validator = {
         'ARRAY_ONLY': "Invalid '${1}' value for '${2}'. Acceptable value: Array",
         'ARRAY_STRING_ONLY': "Invalid '${1}' value for '${2}'. Acceptable value: Array of strings",
         'ARRAY_VALUE_MUST_HAVE_AT_LEAST_ONE_DATA': "Array value for '${1}' of '${2}' must have atleast one data",
-        'NO_RELATIONSHIP_TYPE': "No relationship type define for '${1}'. Columns that have 'type': 'relationship' must have either 'has_one' or 'has_many' as key and table name as value specified",
+        'NO_RELATIONSHIP_TYPE': "No relationship type defined for '${1}'. Columns that have 'type': 'relationship' must have either 'has_one' or 'has_many' as key and table name as value specified",
         'ONE_RELATION_TYPE_ONLY': "Two relationship defined in ${1}. Only one relationship allowed per column.",
         'TABLE_NOT_FOUND': "Cannot find table ${1} defined in ${2} of ${3}.",
-        'DUPLICATE_TABLE': "Table ${1} is already existing."
+        'DUPLICATE_TABLE': "Table ${1} already exists."
     },
     warning_message_template: {
         'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column."
@@ -88,6 +89,23 @@ const STARK_Validator = {
                     else {
                         
                         this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_PK',[table, typeof table_element['pk']]))
+                        valid_column = false
+                    }
+                    
+                }
+                else {
+                    this.validation_results[table]['error_messages'].push(this.fetch_error_message('MISSING_PK', [table]))
+                    valid_column = false
+                }
+                // sequences are optional
+                if(table_element.hasOwnProperty('sequence')) {
+                    //sequence must be object
+                    if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof !Array) {
+                        //start checking here
+                    }
+                    else {
+                        
+                        this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
                         valid_column = false
                     }
                     
