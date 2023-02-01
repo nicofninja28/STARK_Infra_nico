@@ -223,9 +223,9 @@ var root = new Vue({
                     
                     let error_count = 0;
                     let warning_count = 0;
-                    for (const entity in this.validation_results) {
-                        if (Object.hasOwnProperty.call(this.validation_results, entity)) {
-                            const element = this.validation_results[entity];
+                    for (const entity in root.validation_results) {
+                        if (Object.hasOwnProperty.call(root.validation_results, entity)) {
+                            const element = root.validation_results[entity];
                             error_count += element['error_messages'].length
                             warning_count += element['warning_messages'].length
                         }
