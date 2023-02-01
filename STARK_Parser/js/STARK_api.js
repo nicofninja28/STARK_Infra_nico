@@ -185,8 +185,6 @@ var root = new Vue({
                 data_model: this.form.data_model,
                 validation_results: this.validation_results
             }
-            console.log(data)
-            console.log(JSON.stringify(data))
             
             let fetchData = {
                 mode: 'cors',
@@ -195,7 +193,6 @@ var root = new Vue({
                 method: "POST",
             }
 
-            console.log(fetchData);
 
             fetch(STARK.parser_url, fetchData)
             .then( function(response) {

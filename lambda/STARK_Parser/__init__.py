@@ -9,8 +9,7 @@ from collections import OrderedDict
 #Extra modules
 import yaml
 import boto3
-from datetime import datetime
-import pytz
+import datetime
 from io import StringIO
 import csv
 
@@ -116,7 +115,8 @@ def lambda_handler(event, context):
         else:
             entities.append(key)
     if ENV_TYPE == 'PROD':
-        ts_in_hms = datetime.now(pytz.timezone('Asia/Singapore')).strftime("%H:%M:%S")
+        time_zone = datetime.timezone(datetime.timedelta(hours=8))
+        ts_in_hms = datetime.datetime.now(time_zone).strftime("%H:%M:%S")
 
         error_list = []
         warning_list = []

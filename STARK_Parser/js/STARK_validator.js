@@ -64,12 +64,10 @@ const STARK_Validator = {
     },
     validate_data_model: function(data_model_string) {
         data_model = YAML.parse(data_model_string)
-        console.log(data_model)
         table_list = Object.keys(data_model)
         this.validation_results = {}
 
         for(let table in data_model) {
-            console.log(Object.keys(this.validation_results))
             if(Object.keys(this.validation_results).indexOf(table) === -1) {
                 this.validation_results[table] = {
                                                     'columns': {},
