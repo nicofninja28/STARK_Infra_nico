@@ -110,10 +110,6 @@ const STARK_Validator = {
                     }
                     
                 }
-                else {
-                    this.validation_results[table]['error_messages'].push(this.fetch_error_message('MISSING_PK', [table]))
-                    valid_column = false
-                }
                 // must have data with value of array
                 if(table_element.hasOwnProperty('data')) {
                     table_attributes = table_element['data']
