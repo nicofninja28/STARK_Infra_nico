@@ -232,7 +232,7 @@ var root = new Vue({
                     }
 
                     if((error_count > 0 || warning_count > 0)) {
-                        this.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
+                        root.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
 
                     }
                     root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
