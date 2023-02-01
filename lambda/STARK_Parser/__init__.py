@@ -73,7 +73,7 @@ def lambda_handler(event, context):
           "body": json.dumps("STARK Internal Error - no CFWriter function name found!"),
           "headers": default_response_headers
         }
-
+    response_message = "Success"
     isBase64Encoded = event.get('isBase64Encoded', False)
     raw_data = event.get('body', '')
 
@@ -138,7 +138,7 @@ def lambda_handler(event, context):
 
             error_csv_file = "error_logs.csv"
             response = s3.put_object(
-                Body=file_buff.value(),
+                Body=file_buff.getvalue(),
                 Bucket=codegen_bucket_name,
                 Key=f'logs/{project_varname}/{ts_in_hms}/{error_csv_file}',
                 Metadata={
@@ -155,7 +155,7 @@ def lambda_handler(event, context):
         if len(warning_list) > 0:
             warning_csv_file = "warning_logs.csv"
             response = s3.put_object(
-                Body=file_buff.value(),
+                Body=file_buff.getvalue(),
                 Bucket=codegen_bucket_name,
                 Key=f'logs/{project_varname}/{ts_in_hms}/{warning_csv_file}',
                 Metadata={
@@ -171,7 +171,7 @@ def lambda_handler(event, context):
                     'STARK_Description': 'Log filename for the generation'
                 }
             )
-    if error_list < 1:
+    if len(error_list) < 1:
     #####################################################
     ###START OF INFRA LIST CREATION #####################
 
@@ -243,10 +243,11 @@ def lambda_handler(event, context):
             
         else:
             print(json.dumps(cloud_resources))
-
+    else:
+        response_message = "YAML Error"
     return {
         "isBase64Encoded": False,
         "statusCode": 200,
-        "body": json.dumps("Success"),
+        "body": json.dumps(response_message),
         "headers": default_response_headers
     }
