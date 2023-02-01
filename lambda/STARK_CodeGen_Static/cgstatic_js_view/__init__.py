@@ -1048,15 +1048,15 @@ def create(data):
                                 }}
                             }}).on('httpUploadProgress', function (progress) {{
                             root.STARK_upload_elements[file_upload_element].progress_bar_val = parseInt((progress.loaded * 100) / progress.total);
-                            root.metadata[file_upload_element].state = true
-                            root.metadata[file_upload_element].feedback = "" 
+                            root.validation_properties[file_upload_element].state = true
+                            root.validation_properties[file_upload_element].feedback = "" 
                         }});
                     }}
                     else {{
                         //do not show alert when file upload is opened then closed
                         if(upload_processed['message'] != 'initial') {{
-                            root.metadata[file_upload_element].state = false
-                            root.metadata[file_upload_element].feedback = upload_processed['message'] 
+                            root.validation_properties[file_upload_element].state = false
+                            root.validation_properties[file_upload_element].feedback = upload_processed['message'] 
                         }}
                     }}
 
