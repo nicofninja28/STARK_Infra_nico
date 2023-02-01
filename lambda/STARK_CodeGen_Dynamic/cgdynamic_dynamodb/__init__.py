@@ -9,15 +9,18 @@ import textwrap
 import convert_friendly_to_system as converter
 
 def create(data):
-  
+    print('data')
+    print(data)
     pk             = data["PK"]
     entity         = data["Entity"]
+    sequence       = data["Sequence"]
     columns        = data["Columns"]
     ddb_table_name = data["DynamoDB Name"]
     bucket_name    = data['Bucket Name']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
-    
+    print('sequence')
+    print(sequence)
     #Convert human-friendly names to variable-friendly names
     entity_varname = converter.convert_to_system_name(entity)
     pk_varname     = converter.convert_to_system_name(pk)
