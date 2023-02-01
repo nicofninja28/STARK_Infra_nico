@@ -9,6 +9,7 @@ from collections import OrderedDict
 #Extra modules
 import yaml
 import boto3
+from datetime import datetime
 
 #Private modules
 import importlib
@@ -72,14 +73,19 @@ def lambda_handler(event, context):
         }
 
     isBase64Encoded = event.get('isBase64Encoded', False)
-    raw_data_model = event.get('body', '')
+    raw_data = event.get('body', '')
 
     if isBase64Encoded:
-        raw_data_model = base64.b64decode(raw_data_model).decode()
+        raw_data = base64.b64decode(raw_data).decode()
 
-    jsonified_payload = json.loads(raw_data_model)
+    jsonified_payload = json.loads(raw_data)
     data_model = yaml.safe_load(jsonified_payload["data_model"])
-
+    validation_results = yaml.safe_load(jsonified_payload["validation_results"])
+    
+    response = s3.put(
+        Bucket=codegen_bucket_name,
+        Key=f'STARKConfiguration/STARK_config.yml'
+    )
     #Debugging only
     #print("****************************")
     #print(data_model.get('__STARK_project_name__'))
@@ -178,6 +184,25 @@ def lambda_handler(event, context):
             InvocationType = 'RequestResponse',
             LogType= 'Tail',
             Payload=json.dumps(cloud_resources)
+        )
+        
+        ts_in_hms = datetime.now().strftime("%H:%M:%S")
+        response = s3.put_object(
+            Body=ts_in_hms,
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{project_varname}/log_file.txt',
+            Metadata={
+                'STARK_Description': 'Log file for the generation'
+            }
+        )
+        
+        response = s3.put_object(
+            Body="sample_text",
+            Bucket=codegen_bucket_name,
+            Key=f'logs/{project_varname}/{ts_in_hms}.txt',
+            Metadata={
+                'STARK_Description': 'Log file for the generation'
+            }
         )
 
         
