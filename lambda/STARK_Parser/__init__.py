@@ -9,6 +9,9 @@ from collections import OrderedDict
 #Extra modules
 import yaml
 import boto3
+import datetime
+from io import StringIO
+import csv
 
 #Private modules
 import importlib
@@ -70,16 +73,17 @@ def lambda_handler(event, context):
           "body": json.dumps("STARK Internal Error - no CFWriter function name found!"),
           "headers": default_response_headers
         }
-
+    response_message = "Success"
     isBase64Encoded = event.get('isBase64Encoded', False)
-    raw_data_model = event.get('body', '')
+    raw_data = event.get('body', '')
 
     if isBase64Encoded:
-        raw_data_model = base64.b64decode(raw_data_model).decode()
+        raw_data = base64.b64decode(raw_data).decode()
 
-    jsonified_payload = json.loads(raw_data_model)
+    jsonified_payload = json.loads(raw_data)
     data_model = yaml.safe_load(jsonified_payload["data_model"])
-
+    validation_results = jsonified_payload["validation_results"]
+    
     #Debugging only
     #print("****************************")
     #print(data_model.get('__STARK_project_name__'))
@@ -110,83 +114,140 @@ def lambda_handler(event, context):
                     
         else:
             entities.append(key)
+    if ENV_TYPE == 'PROD':
+        time_zone = datetime.timezone(datetime.timedelta(hours=8))
+        ts_in_hms = datetime.datetime.now(time_zone).strftime("%H:%M:%S")
 
+        error_list = []
+        warning_list = []
+        for element, element_data in validation_results.items():
+            for index in element_data.get("error_messages",[]):
+                temp_dict = {"Table": element, "Message": index}
+                error_list.append(temp_dict)
+
+            for index in element_data.get("warning_messages",[]):
+                temp_dict = {"Table": element, "Message": index}
+                warning_list.append(temp_dict)
+
+        if len(error_list) > 0:
+            file_buff = StringIO()
+            writer = csv.DictWriter(file_buff, fieldnames=['Table','Message'],quoting=csv.QUOTE_ALL)
+            writer.writeheader()
+            for rows in error_list:
+                writer.writerow(rows)
+
+            error_csv_file = "error_logs.csv"
+            response = s3.put_object(
+                Body=file_buff.getvalue(),
+                Bucket=codegen_bucket_name,
+                Key=f'logs/{project_varname}/{ts_in_hms}/{error_csv_file}',
+                Metadata={
+                    'STARK_Description': 'Log file for the generation'
+                }
+            )
+
+            file_buff = StringIO()
+            writer = csv.DictWriter(file_buff, fieldnames=['Table','Message'],quoting=csv.QUOTE_ALL)
+            writer.writeheader()
+            for rows in warning_list:
+                writer.writerow(rows)
+        
+        if len(warning_list) > 0:
+            warning_csv_file = "warning_logs.csv"
+            response = s3.put_object(
+                Body=file_buff.getvalue(),
+                Bucket=codegen_bucket_name,
+                Key=f'logs/{project_varname}/{ts_in_hms}/{warning_csv_file}',
+                Metadata={
+                    'STARK_Description': 'Log file for the generation'
+                }
+            )
+
+        response = s3.put_object(
+            Body=ts_in_hms,
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{project_varname}/log_directory.txt',
+            Metadata={
+                'STARK_Description': 'Log filename for the generation'
+            }
+        )
+    if len(error_list) < 1:
     #####################################################
     ###START OF INFRA LIST CREATION #####################
 
-    cloud_resources = {}
-    cloud_resources = {"Project Name": project_name} 
+        cloud_resources = {}
+        cloud_resources = {"Project Name": project_name} 
 
-    data = {
-        'entities': entities,
-        'data_model': data_model,
-        'project_name': project_name,
-        'project_varname': project_varname
-    }
+        data = {
+            'entities': entities,
+            'data_model': data_model,
+            'project_name': project_name,
+            'project_varname': project_varname
+        }
 
-    #Default Password
-    cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
+        #Default Password
+        cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
 
-    #Data Model ###
-    cloud_resources["Data Model"] = model_parser.parse(data)
+        #Data Model ###
+        cloud_resources["Data Model"] = model_parser.parse(data)
 
-    #S3 Bucket ###
-    cloud_resources["S3 webserve"] = s3_parser.parse(data)
+        #S3 Bucket ###
+        cloud_resources["S3 webserve"] = s3_parser.parse(data)
 
-    #API Gateway ###
-    data.update({'raw_data_model': cloud_resources["Data Model"]})
-    cloud_resources["API Gateway"] = api_gateway_parser.parse(data)
+        #API Gateway ###
+        data.update({'raw_data_model': cloud_resources["Data Model"]})
+        cloud_resources["API Gateway"] = api_gateway_parser.parse(data)
 
-    #DynamoDB ###
-    cloud_resources["DynamoDB"] = dynamodb_parser.parse(data)
+        #DynamoDB ###
+        cloud_resources["DynamoDB"] = dynamodb_parser.parse(data)
 
-    #Lambda ###
-    cloud_resources["Lambda"] = lambda_parser.parse(data)
+        #Lambda ###
+        cloud_resources["Lambda"] = lambda_parser.parse(data)
 
-    #Lambda Layers###
-    cloud_resources["Layers"] = layer_parser.parse(data)
+        #Lambda Layers###
+        cloud_resources["Layers"] = layer_parser.parse(data)
 
-    #CloudFront ##################
-    cloud_resources["CloudFront"] = cloudfront_parser.parse(data)
+        #CloudFront ##################
+        cloud_resources["CloudFront"] = cloudfront_parser.parse(data)
 
-    #SQS #######################
-    #Disable for now, not yet implemented, just contains stub
-    #cloud_resources["SQS"] = sqs_parser.parse(data)
-    
-
-    #For debugging: pretty-print the resulting JSON
-    #json_formatted_str = json.dumps(cloud_resources, indent=2)
-    #print(json_formatted_str)
-
-    #############################################################
-    #FUTURE: STARK-specific settings parsing will be done here 
-    #cloud_resources["STARK_settings"] = stark_settings_parser.parse(data)
-    #Above is just a stub; in the future, settings parser may be the first call,
-    #and its results passed to all other sub-parsers above, as these STARK
-    #settings may be used to modify the default behavior of the sub-parsers
-
-
-    ##############################################################
-    #PAYLOAD FORMAT NOTE:
-    #   If parser needs to specifically pass a YAML document, use:
-    #       Payload=json.dumps(yaml.dump(cloud_resources))
-
-    if ENV_TYPE == "PROD":
-        print(data['data_model']['__STARK_default_password__'])
-        response = lambda_client.invoke(
-            FunctionName = CFWriter_FuncName,
-            InvocationType = 'RequestResponse',
-            LogType= 'Tail',
-            Payload=json.dumps(cloud_resources)
-        )
-
+        #SQS #######################
+        #Disable for now, not yet implemented, just contains stub
+        #cloud_resources["SQS"] = sqs_parser.parse(data)
         
-    else:
-        print(json.dumps(cloud_resources))
 
+        #For debugging: pretty-print the resulting JSON
+        #json_formatted_str = json.dumps(cloud_resources, indent=2)
+        #print(json_formatted_str)
+
+        #############################################################
+        #FUTURE: STARK-specific settings parsing will be done here 
+        #cloud_resources["STARK_settings"] = stark_settings_parser.parse(data)
+        #Above is just a stub; in the future, settings parser may be the first call,
+        #and its results passed to all other sub-parsers above, as these STARK
+        #settings may be used to modify the default behavior of the sub-parsers
+
+
+        ##############################################################
+        #PAYLOAD FORMAT NOTE:
+        #   If parser needs to specifically pass a YAML document, use:
+        #       Payload=json.dumps(yaml.dump(cloud_resources))
+
+        if ENV_TYPE == "PROD":
+            print(data['data_model']['__STARK_default_password__'])
+            response = lambda_client.invoke(
+                FunctionName = CFWriter_FuncName,
+                InvocationType = 'RequestResponse',
+                LogType= 'Tail',
+                Payload=json.dumps(cloud_resources)
+            )
+            
+        else:
+            print(json.dumps(cloud_resources))
+    else:
+        response_message = "YAML Error"
     return {
         "isBase64Encoded": False,
         "statusCode": 200,
-        "body": json.dumps("Success"),
+        "body": json.dumps(response_message),
         "headers": default_response_headers
     }

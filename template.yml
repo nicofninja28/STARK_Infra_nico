@@ -169,7 +169,7 @@ Resources:
                     STARK_ENVIRONMENT_TYPE: PROD
                     CODEGEN_BUCKET_NAME: !Ref UserCodeGenBucketNameParameter
             Policies:
-                - AmazonS3ReadOnlyAccess
+                - AmazonS3FullAccess
                 - AWSLambda_FullAccess
             Layers:
                 - !Ref PyYamlLayer

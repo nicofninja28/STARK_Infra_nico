@@ -14,21 +14,32 @@ var root = new Vue({
         deploy_time_end: '',
         deploy_time_start: '',
         deploy_visibility: 'hidden',
+        disable_deploy_button: true,
         loading_message: '',
         model_readonly: false,
         msg_counter: 0,
         spinner_display: 'block',
         success_message: 'Welcome to STARK: Serverless Transformation and Acceleration Resource Kit.<br> The STARK Parser is idle',
+        error_message: "",
+        validation_results:"",
         ui_visibility: 'block',
         visibility: 'visible',
         wait_counter: 0,
         wait_limit: 12, 
         validation_properties: {
+            'project_name': {
+                'state': null,
+                'feedback': ''
+            },
             'default_pass': {
                 'state': null,
                 'feedback': ''
             },
             'confirm_default_pass': {
+                'state': null,
+                'feedback': ''
+            },
+            'yaml_file': {
                 'state': null,
                 'feedback': ''
             },
@@ -42,20 +53,25 @@ var root = new Vue({
                 var ext = file.name.split('.').pop()
                 if(ext != 'yml')
                 {
-                    root.success_message = "Sorry, but you uploaded a non YAML file. Please make sure to upload the correct file type."
+                    this.validation_properties.yaml_file.state = false
+                    this.validation_properties.yaml_file.feedback = "Sorry, but you uploaded a non YAML file. Please make sure to upload the correct file type."
                     root.yaml_file = null
                     root.form.data_model_temp = "";
                     root.form.data_model = "";
                     return false
                 }
-                var fr=new FileReader();
-                fr.readAsText(this.yaml_file)
-                fr.onload = function() {
-                    root.form.data_model_temp = fr.result;
-                    root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__: ${root.default_pass}\n${fr.result}`
-                    // root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__:${root.default_pass}\n${fr.result}`
-                    console.log(root.form.data_model)
-                }; 
+                else {
+                    var fr=new FileReader();
+                    fr.readAsText(this.yaml_file)
+                    fr.onload = function() {
+                        root.form.data_model_temp = fr.result;
+                        root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__: ${root.default_pass}\n${fr.result}`
+                        // root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__:${root.default_pass}\n${fr.result}`
+                        console.log(root.form.data_model)
+                    }; 
+                    this.validation_properties.yaml_file.state = true
+                    this.validation_properties.yaml_file.feedback = ""
+                }
             }
             else
             {
@@ -67,10 +83,30 @@ var root = new Vue({
         {
             var valid_form = true;
             var message = []
-            if(this.project_name == "")
-            {
+            this.error_message = ""
+            this.disable_deploy_button = true;
+
+            if(this.yaml_file == null) {
+                valid_form = false
+                this.validation_properties.yaml_file.feedback = 'Please upload a YAML file of your Data Model.'
+                this.validation_properties.yaml_file.state = false
+            }
+            else {
+                this.validation_properties.yaml_file.feedback = ''
+                this.validation_properties.yaml_file.state = true
+
+            }
+
+            if(this.project_name == "") {
                 valid_form = false
                 message.push('Name')
+                this.validation_properties.project_name.feedback = 'Please enter Project Name.'
+                this.validation_properties.project_name.state = false
+            }
+            else {
+                this.validation_properties.project_name.feedback = ''
+                this.validation_properties.project_name.state = true
+
             }
 
             if((!this.default_pass.length)) 
@@ -78,7 +114,7 @@ var root = new Vue({
                 message.push('Default Password')
                 console.log('a')
                 valid_form = false
-                this.validation_properties.default_pass.feedback = 'Please enter password.'
+                this.validation_properties.default_pass.feedback = 'Please enter Password.'
                 this.validation_properties.default_pass.state = false
                 if((!this.default_pass.length) && (this.confirm_default_pass.length)) 
                 {
@@ -100,7 +136,7 @@ var root = new Vue({
                 console.log('b')
                 valid_form = false
                 
-                this.validation_properties.confirm_default_pass.feedback = 'Please confirm password.'
+                this.validation_properties.confirm_default_pass.feedback = 'Please confirm Password.'
                 this.validation_properties.confirm_default_pass.state = false
                 this.validation_properties.default_pass.state = true
             }
@@ -129,26 +165,26 @@ var root = new Vue({
                 valid_form = false;
                 message.push('Data Model')
             }
-
-            if(valid_form)
-            {
-                root.send_to_STARK()
+            else {
+                this.validation_results = STARK_Validator.validate_data_model(this.form.data_model_temp)
+    
             }
-            else
-            {
-                root.success_message = `Sorry, but we can't start if you don't provide the ${message.join(" and ")} of your project.`
+
+
+            if(valid_form) {
+                root.send_to_STARK()
             }
         },
         send_to_STARK: function () {
+            root.deploy_visibility = 'hidden';
             root.success_message = ''
             root.loading_message = "STARK is parsing your YAML model..."
             root.spinner_show();
 
             let data = {
-                data_model: this.form.data_model
+                data_model: this.form.data_model,
+                validation_results: this.validation_results
             }
-            console.log(data)
-            console.log(JSON.stringify(data))
             
             let fetchData = {
                 mode: 'cors',
@@ -157,7 +193,6 @@ var root = new Vue({
                 method: "POST",
             }
 
-            console.log(fetchData);
 
             fetch(STARK.parser_url, fetchData)
             .then( function(response) {
@@ -181,10 +216,31 @@ var root = new Vue({
                     console.log("Error Code")
                     root.success_message = "Please enter a project name in the \"__STARK_project_name__\" attribute below"
 
-                }else {
+                }
+                else if(data=="YAML Error") {
+                    
+                    let error_count = 0;
+                    let warning_count = 0;
+                    for (const entity in root.validation_results) {
+                        if (Object.hasOwnProperty.call(root.validation_results, entity)) {
+                            const element = root.validation_results[entity];
+                            error_count += element['error_messages'].length
+                            warning_count += element['warning_messages'].length
+                        }
+                    }
+
+                    if((error_count > 0 || warning_count > 0)) {
+                        root.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
+
+                    }
+                    root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
+                    root.deploy_visibility = 'visible';
+                    root.model_readonly = true;
+                }
+                else {
                     console.log("Success")
                     console.log("DONE!");
-
+                    root.disable_deploy_button = false
                     root.success_message = "Nice! Your YAML looks valid according to the STARK Parser.<br>Click \"Deploy\" to launch your serverless system!"
 
                     root.deploy_visibility = 'visible';
@@ -194,7 +250,8 @@ var root = new Vue({
             .catch(function(error) {
                 root.loading_message = ""
                 root.spinner_hide();
-                root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
+                console.log(error)
+                root.error_message = "Something went wrong.. Check your network or contact the administrator for help."
             });
         },
         deploy_STARK: function () {
