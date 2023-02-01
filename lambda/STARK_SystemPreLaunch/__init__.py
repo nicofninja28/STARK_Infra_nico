@@ -83,9 +83,9 @@ def create_handler(event, context):
             business_module                      = {}
             business_module['pk']                = {'S' : pk}
             business_module['sk']                = {'S' : "STARK|sequence"}
-            business_module['Current_Counter']   = {'N' : current_counter}
+            business_module['Current_Counter']   = {'S' : current_counter}
             business_module['Prefix']            = {'S' : prefix}
-            business_module['Left_Pad']          = {'N' : left_pad}
+            business_module['Left_Pad']          = {'S' : left_pad}
             business_module['STARK-ListView-sk'] = {'S' : pk}
 
             response = ddb.put_item(
