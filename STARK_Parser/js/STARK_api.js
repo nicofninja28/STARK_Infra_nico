@@ -176,6 +176,7 @@ var root = new Vue({
             }
         },
         send_to_STARK: function () {
+            root.deploy_visibility = 'hidden';
             root.success_message = ''
             root.loading_message = "STARK is parsing your YAML model..."
             root.spinner_show();
