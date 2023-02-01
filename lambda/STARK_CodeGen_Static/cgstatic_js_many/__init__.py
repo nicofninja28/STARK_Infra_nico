@@ -94,11 +94,10 @@ def create(data):
                 with_upload = True 
                 upload_fields.append(col_varname)
                 ext_string += f"""
-                         "{col_varname}": "{str(col_type.get("allowed_ext",""))}","""
-                allowed_size = col_type.get("max_upload_size", "1 MB")
-                temp_split = allowed_size.split()
+                         "{col_varname}": "{col_type.get("allowed_ext",[])}","""
+                allowed_size = col_type.get("max_upload_size", 1)
                 allowed_size_string += f"""
-                         "{col_varname}": {int(temp_split[0])},"""
+                         "{col_varname}": {float(allowed_size)},"""
                 upload_elems_string += f"""
                         "{col_varname}": [],"""
                 uploaded_s3_keys_string += f"""
