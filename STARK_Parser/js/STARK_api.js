@@ -170,18 +170,6 @@ var root = new Vue({
             else {
                 this.validation_results = STARK_Validator.validate_data_model(this.form.data_model_temp)
     
-                for (const entity in this.validation_results) {
-                    if (Object.hasOwnProperty.call(this.validation_results, entity)) {
-                        const element = this.validation_results[entity];
-                        error_count += element['error_messages'].length
-                        warning_count += element['warning_messages'].length
-                    }
-                }
-
-                if((error_count > 0 || warning_count > 0)) {
-                    this.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
-
-                }
             }
 
 
@@ -232,7 +220,26 @@ var root = new Vue({
                     console.log("Error Code")
                     root.success_message = "Please enter a project name in the \"__STARK_project_name__\" attribute below"
 
-                }else {
+                }
+                else if(data=="YAML Error") {
+                    
+                for (const entity in this.validation_results) {
+                    if (Object.hasOwnProperty.call(this.validation_results, entity)) {
+                        const element = this.validation_results[entity];
+                        error_count += element['error_messages'].length
+                        warning_count += element['warning_messages'].length
+                    }
+                }
+
+                if((error_count > 0 || warning_count > 0)) {
+                    this.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
+
+                }
+                    root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
+                    root.deploy_visibility = 'visible';
+                    root.model_readonly = true;
+                }
+                else {
                     console.log("Success")
                     console.log("DONE!");
 
@@ -243,10 +250,9 @@ var root = new Vue({
                 }
             })
             .catch(function(error) {
-                root.deploy_visibility = 'visible'
                 root.loading_message = ""
                 root.spinner_hide();
-                root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
+                root.error_message = "Something went wrong.. Check your network or contact the administrator for help."
             });
         },
         deploy_STARK: function () {
