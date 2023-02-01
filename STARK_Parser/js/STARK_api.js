@@ -159,8 +159,6 @@ var root = new Vue({
                 }
             }
             
-            let error_count = 0;
-            let warning_count = 0;
 
             if(this.yaml_file == null && this.form.data_model_temp == "")
             {
@@ -223,18 +221,20 @@ var root = new Vue({
                 }
                 else if(data=="YAML Error") {
                     
-                for (const entity in this.validation_results) {
-                    if (Object.hasOwnProperty.call(this.validation_results, entity)) {
-                        const element = this.validation_results[entity];
-                        error_count += element['error_messages'].length
-                        warning_count += element['warning_messages'].length
+                    let error_count = 0;
+                    let warning_count = 0;
+                    for (const entity in this.validation_results) {
+                        if (Object.hasOwnProperty.call(this.validation_results, entity)) {
+                            const element = this.validation_results[entity];
+                            error_count += element['error_messages'].length
+                            warning_count += element['warning_messages'].length
+                        }
                     }
-                }
 
-                if((error_count > 0 || warning_count > 0)) {
-                    this.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
+                    if((error_count > 0 || warning_count > 0)) {
+                        this.error_message = `Found ${error_count} error/s and ${warning_count} warning/s in your data model.`
 
-                }
+                    }
                     root.success_message = "Sorry, your YAML is invalid. Make sure it conforms to STARK syntax, then try again. "
                     root.deploy_visibility = 'visible';
                     root.model_readonly = true;
@@ -252,6 +252,7 @@ var root = new Vue({
             .catch(function(error) {
                 root.loading_message = ""
                 root.spinner_hide();
+                console.log(error)
                 root.error_message = "Something went wrong.. Check your network or contact the administrator for help."
             });
         },
