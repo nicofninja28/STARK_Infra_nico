@@ -10,6 +10,7 @@ from collections import OrderedDict
 import yaml
 import boto3
 from datetime import datetime
+import pytz
 from io import StringIO
 import csv
 
@@ -115,7 +116,7 @@ def lambda_handler(event, context):
         else:
             entities.append(key)
     if ENV_TYPE == 'PROD':
-        ts_in_hms = datetime.now().strftime("%H:%M:%S")
+        ts_in_hms = datetime.now(pytz.timezone('Asia/Singapore')).strftime("%H:%M:%S")
 
         error_list = []
         warning_list = []
@@ -127,8 +128,7 @@ def lambda_handler(event, context):
             for index in element_data.get("warning_messages",[]):
                 temp_dict = {"Table": element, "Message": index}
                 warning_list.append(temp_dict)
-        print("ERRORS",error_list)
-        print("WARNINGS",warning_list)
+
         if len(error_list) > 0:
             file_buff = StringIO()
             writer = csv.DictWriter(file_buff, fieldnames=['Table','Message'],quoting=csv.QUOTE_ALL)
@@ -163,14 +163,14 @@ def lambda_handler(event, context):
                 }
             )
 
-            response = s3.put_object(
-                Body=ts_in_hms,
-                Bucket=codegen_bucket_name,
-                Key=f'codegen_dynamic/{project_varname}/log_directory.txt',
-                Metadata={
-                    'STARK_Description': 'Log filename for the generation'
-                }
-            )
+        response = s3.put_object(
+            Body=ts_in_hms,
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{project_varname}/log_directory.txt',
+            Metadata={
+                'STARK_Description': 'Log filename for the generation'
+            }
+        )
     if len(error_list) < 1:
     #####################################################
     ###START OF INFRA LIST CREATION #####################
