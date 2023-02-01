@@ -12,7 +12,9 @@ def parse(data):
         parsed[entity] = {}
         parsed[entity]["pk"] = data_model.get(entity).get('pk')
         parsed[entity]["data"] = {}
+        parsed[entity]["sequence"] = {}
 
+        #for data
         attributes = ''
         for column_dict in data_model.get(entity).get("data"):
             # `column_dict` here is a dictionary with a single key and value: { "Column Name": "Column Type" }
@@ -33,6 +35,13 @@ def parse(data):
             elif isinstance(col_type, str):
                 attributes += column + "(" + col_type + "),"
         attributes = attributes[:-1]
+
+        #for sequence
+        attributes = ''
+        for column_dict in data_model.get(entity).get("sequence"):
+            key     = column_dict
+            value   = data_model.get(entity).get("sequence")[column_dict]
+            parsed[entity]["sequence"][key] = value
 
 
     return parsed
