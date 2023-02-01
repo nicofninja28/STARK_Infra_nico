@@ -1001,7 +1001,7 @@ def create(data):
                         uuid = STARK.create_UUID()
                         ext = file.name.split('.').pop()
 
-                        valid_file = STARK.get_file_ext_whitelist(root.ext_whitelist[file_upload_element], root.ext_whitelist_table).split(", ").includes(ext)
+                        valid_file = STARK.get_file_ext_whitelist(root.ext_whitelist[file_upload_element], root.ext_whitelist_table).includes(ext)
                         allowed_file_size = STARK.get_allowed_upload_size(root.allowed_size[file_upload_element], root.allowed_size_table)
                         if(!valid_file) {{
                             //check if file type is valid
