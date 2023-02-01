@@ -98,7 +98,7 @@ def create_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
         data = {
                 "Entity": entity, 
-                # "Sequence": models[entity]["sequence"], 
+                "Sequence": models[entity]["sequence"], 
                 "Columns": models[entity]["data"], 
                 "PK": models[entity]["pk"], 
                 "DynamoDB Name": ddb_table_name,
