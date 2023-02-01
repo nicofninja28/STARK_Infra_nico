@@ -14,7 +14,7 @@ var root = new Vue({
         deploy_time_end: '',
         deploy_time_start: '',
         deploy_visibility: 'hidden',
-        enable_deploy_button: true,
+        disable_deploy_button: true,
         loading_message: '',
         model_readonly: false,
         msg_counter: 0,
@@ -84,7 +84,7 @@ var root = new Vue({
             var valid_form = true;
             var message = []
             this.error_message = ""
-            this.enable_deploy_button = true;
+            this.disable_deploy_button = true;
 
             if(this.yaml_file == null) {
                 valid_form = false
@@ -242,7 +242,7 @@ var root = new Vue({
                 else {
                     console.log("Success")
                     console.log("DONE!");
-
+                    root.disable_deploy_button = false
                     root.success_message = "Nice! Your YAML looks valid according to the STARK Parser.<br>Click \"Deploy\" to launch your serverless system!"
 
                     root.deploy_visibility = 'visible';
