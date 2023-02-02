@@ -146,13 +146,13 @@ def lambda_handler(event, context):
                 }
             )
 
+        if len(warning_list) > 0:
             file_buff = StringIO()
             writer = csv.DictWriter(file_buff, fieldnames=['Table','Message'],quoting=csv.QUOTE_ALL)
             writer.writeheader()
             for rows in warning_list:
                 writer.writerow(rows)
-        
-        if len(warning_list) > 0:
+                
             warning_csv_file = "warning_logs.csv"
             response = s3.put_object(
                 Body=file_buff.getvalue(),
