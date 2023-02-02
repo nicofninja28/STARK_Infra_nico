@@ -250,7 +250,10 @@ elif isinstance(construct, dict):
             with open(filename, "wb") as f:
                 f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
 
+            print("Updating template.yml..")
             create_iac_template(current_cloud_resources)
+            print("Done")
+            print("Commit then push the changes to take effect.")
 
     elif resource_type == 'cdn':
         if action == 'deploy':
