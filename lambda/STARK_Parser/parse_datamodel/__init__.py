@@ -11,8 +11,10 @@ def parse(data):
     for entity in entities:
         parsed[entity] = {}
         parsed[entity]["pk"] = data_model.get(entity).get('pk')
+        if "sequence" in data_model.get(entity):
+            parsed[entity]["sequence"] = {}
         parsed[entity]["data"] = {}
-        parsed[entity]["sequence"] = {}
+        
 
         #for data
         attributes = ''
@@ -37,11 +39,11 @@ def parse(data):
         attributes = attributes[:-1]
 
         #for sequence
-        attributes = ''
-        for column_dict in data_model.get(entity).get("sequence"):
-            key     = column_dict
-            value   = data_model.get(entity).get("sequence")[column_dict]
-            parsed[entity]["sequence"][key] = value
+        if "sequence" in data_model.get(entity):
+            for column_dict in data_model.get(entity).get("sequence"):
+                key     = column_dict
+                value   = data_model.get(entity).get("sequence")[column_dict]
+                parsed[entity]["sequence"][key] = value
 
 
     return parsed

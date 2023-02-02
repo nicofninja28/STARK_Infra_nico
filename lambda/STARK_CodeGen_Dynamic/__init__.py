@@ -98,7 +98,7 @@ def create_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
         data = {
                 "Entity": entity, 
-                "Sequence": models[entity]["sequence"], 
+                # "Sequence": models[entity]["sequence"], 
                 "Columns": models[entity]["data"], 
                 "PK": models[entity]["pk"], 
                 "DynamoDB Name": ddb_table_name,
@@ -109,6 +109,10 @@ def create_handler(event, context):
                 "Processed Bucket Name": s3_analytics_processed_bucket_name,
                 "Project Name": project_varname
             }
+        if "sequence" in models[entity]:
+            data["Sequence"] = models[entity]["sequence"]
+            
+        print(data)    
         source_code            = cg_ddb.create(data)
         test_source_code       = cg_test.create(data)
         fixtures_source_code   = cg_fixtures.create(data)
