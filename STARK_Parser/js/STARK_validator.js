@@ -96,18 +96,18 @@ const STARK_Validator = {
                     valid_column = false
                 }
                 // sequences are optional
-                if(table_element.hasOwnProperty('sequence')) {
-                    //sequence must be object
-                    if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof !Array) {
-                        //start checking here
-                    }
-                    else {
+                // if(table_element.hasOwnProperty('sequence')) {
+                //     //sequence must be object
+                //     if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof !Array) {
+                //         //start checking here
+                //     }
+                //     else {
                         
-                        this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
-                        valid_column = false
-                    }
+                //         this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
+                //         valid_column = false
+                //     }
                     
-                }
+                // }
                 // must have data with value of array
                 if(table_element.hasOwnProperty('data')) {
                     table_attributes = table_element['data']
