@@ -26,6 +26,7 @@ lambda_parser      = importlib.import_module(f"{prepend_dir}parse_lambda")
 layer_parser       = importlib.import_module(f"{prepend_dir}parse_layers")
 s3_parser          = importlib.import_module(f"{prepend_dir}parse_s3")
 cloudfront_parser  = importlib.import_module(f"{prepend_dir}parse_cloudfront")
+analytics_parser   = importlib.import_module(f"{prepend_dir}parse_analytics")
 
 ## unused imports
 # import parse_api_gateway as api_gateway_parser
@@ -209,6 +210,9 @@ def lambda_handler(event, context):
 
         #CloudFront ##################
         cloud_resources["CloudFront"] = cloudfront_parser.parse(data)
+
+        #Analytics ##################
+        cloud_resources["Analytics"] = analytics_parser.parse(data)
 
         #SQS #######################
         #Disable for now, not yet implemented, just contains stub
