@@ -365,11 +365,10 @@ def create(data):
             if col_type["type"] == 'file-upload': 
                 with_upload = True 
                 ext_string += f"""
-                         "{col_varname}": "{str(col_type.get("allowed_ext",""))}","""
-                allowed_size = col_type.get("max_upload_size", "1 MB")
-                temp_split = allowed_size.split()
+                         "{col_varname}": {col_type.get("allowed_ext",[])},"""
+                allowed_size = col_type.get("max_upload_size", 1)
                 allowed_size_string += f"""
-                         "{col_varname}": {int(temp_split[0])},"""
+                         "{col_varname}": {float(allowed_size)},"""
                 upload_elems_string += f"""
                         "{col_varname}": {{"file": '', "progress_bar_val": 0}},"""
     if with_upload or with_upload_on_many:
@@ -1002,7 +1001,7 @@ def create(data):
                         uuid = STARK.create_UUID()
                         ext = file.name.split('.').pop()
 
-                        valid_file = STARK.get_file_ext_whitelist(root.ext_whitelist[file_upload_element], root.ext_whitelist_table).split(", ").includes(ext)
+                        valid_file = STARK.get_file_ext_whitelist(root.ext_whitelist[file_upload_element], root.ext_whitelist_table).includes(ext)
                         allowed_file_size = STARK.get_allowed_upload_size(root.allowed_size[file_upload_element], root.allowed_size_table)
                         if(!valid_file) {{
                             //check if file type is valid
@@ -1049,15 +1048,15 @@ def create(data):
                                 }}
                             }}).on('httpUploadProgress', function (progress) {{
                             root.STARK_upload_elements[file_upload_element].progress_bar_val = parseInt((progress.loaded * 100) / progress.total);
-                            root.metadata[file_upload_element].state = true
-                            root.metadata[file_upload_element].feedback = "" 
+                            root.validation_properties[file_upload_element].state = true
+                            root.validation_properties[file_upload_element].feedback = "" 
                         }});
                     }}
                     else {{
                         //do not show alert when file upload is opened then closed
                         if(upload_processed['message'] != 'initial') {{
-                            root.metadata[file_upload_element].state = false
-                            root.metadata[file_upload_element].feedback = upload_processed['message'] 
+                            root.validation_properties[file_upload_element].state = false
+                            root.validation_properties[file_upload_element].feedback = upload_processed['message'] 
                         }}
                     }}
 

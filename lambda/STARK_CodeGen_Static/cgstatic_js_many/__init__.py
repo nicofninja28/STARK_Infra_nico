@@ -94,11 +94,10 @@ def create(data):
                 with_upload = True 
                 upload_fields.append(col_varname)
                 ext_string += f"""
-                         "{col_varname}": "{str(col_type.get("allowed_ext",""))}","""
-                allowed_size = col_type.get("max_upload_size", "1 MB")
-                temp_split = allowed_size.split()
+                         "{col_varname}": "{col_type.get("allowed_ext",[])}","""
+                allowed_size = col_type.get("max_upload_size", 1)
                 allowed_size_string += f"""
-                         "{col_varname}": {int(temp_split[0])},"""
+                         "{col_varname}": {float(allowed_size)},"""
                 upload_elems_string += f"""
                         "{col_varname}": [],"""
                 uploaded_s3_keys_string += f"""
@@ -288,7 +287,7 @@ def create(data):
                 uuid = STARK.create_UUID()
                 ext = file.name.split('.').pop()
                 
-                valid_file = STARK.get_file_ext_whitelist(this.ext_whitelist[file_upload_element], this.ext_whitelist_table).split(", ").includes(ext)
+                valid_file = STARK.get_file_ext_whitelist(this.ext_whitelist[file_upload_element], this.ext_whitelist_table).includes(ext)
                 allowed_file_size = STARK.get_allowed_upload_size(this.allowed_size[file_upload_element], this.allowed_size_table)
                 if(!valid_file) {{
                     //check if file type is valid
