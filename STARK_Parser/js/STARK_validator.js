@@ -68,7 +68,7 @@ const STARK_Validator = {
         this.validation_results = {}
 
         for(let table in data_model) {
-            if(table == '__STARK__advanced__') {
+            if(table == '__STARK_advanced__') {
                 //do nothing.. for now.
             }
             else {
