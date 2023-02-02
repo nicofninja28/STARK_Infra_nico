@@ -85,15 +85,18 @@ class ValidateUpdateModule(argparse.Action):
             raise ValueError(f'cannot read JSON file "{json_file}". Please verify path and filename.')
 
         setattr(args, self.dest, json_file)
-
-class ValidateCDNActions(argparse.Action):
+     
+class ValidateResourcesActions(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
-        valid_actions = ('deploy', 'status', 'create-certificate')
-        action = values[0]
+        valid_actions = {
+                        'analytics': ('enable', 'disable'), 
+                        'cdn': ('deploy', 'status', 'create-certificate')
+                        }
+        resource, action = values
 
-        if action not in valid_actions:
-            raise ValueError(f'invalid construct type "{action}". Must be one of: {valid_actions}')
-        setattr(args, self.dest, (action))
+        if action not in valid_actions[resource]:
+            raise ValueError(f'invalid construct type "{action}" of resource "{resource}". Must be one of: {valid_actions[resource]}')
+        setattr(args, self.dest, {resource:action})
 
 ##############################################################################
 #START OF MAIN STARK CLI CODE
@@ -128,217 +131,268 @@ parser.add_argument('--update-modules',
                         [1] full path and filename of your operation payload ''')
 )
 
-parser.add_argument('--cdn',
+parser.add_argument('--resources',
                     required=False,
-                    nargs=1,
+                    nargs=2,
                     dest='construct',
-                    action=ValidateCDNActions,
+                    metavar=('{resource_name}', '{action}'),
+                    action=ValidateResourcesActions,
                     help=dedent('''\
-                    Perform Cloudfront actions:
-                        [1] deploy - Deploys CDN of your project
-                        [2] status - Checks current status of deployed CDN
-                        [3] create-certificate - Create certificate for custom domain name specified ''')
+                    Integrate resources such as:
+                        [1] analytics - Manage analytics actions:
+                            [1.1] enable  - Enables Analytics
+                            [1.2] disable - Disables Analytics
+                        [2] cdn - Perform Cloudfront actions:  
+                            [2.1] deploy             - Deploys CDN of your project
+                            [2.2] status             - Checks current status of deployed CDN
+                            [2.3] create-certificate - Create certificate for custom domain name specified ''')
 )
 
 args = parser.parse_args()
 
 construct = args.construct
 construct_type = construct
+
 if isinstance(construct, tuple):
     construct_type = construct[0]
     construct_file = construct[1]
 
-if construct_type == "module":
-    print(f"Will now create new {construct_type} construct, using {construct_file}...")
+    if construct_type == "module":
+        print(f"Will now create new {construct_type} construct, using {construct_file}...")
 
-    #New Module Construct: Sequence
-    #   1. STARK Parser - parse supplied YAML file (entity information)
+        #New Module Construct: Sequence
+        #   1. STARK Parser - parse supplied YAML file (entity information)
 
-    #   2. Get entity information only (no need for API G creation, S3 creation, DDB creation; these are for New Project)
-    #   2.1 Specifically: parse_dynamodb (data model in cloud_resources['DynamoDB']['Models'], a.k.a. DDB Model) components
-    #   2.2 That basically encapsulates everything we need, and is the only thing CGDynamic and CGStatic really need (aside from S3 buckets & Git repos)
-    #   2.3 Note that while CGDynamic gets the entity list from CodeGen Metadata, it could also have just easily derived that from the DDB Models, like how CGStatic does it.
+        #   2. Get entity information only (no need for API G creation, S3 creation, DDB creation; these are for New Project)
+        #   2.1 Specifically: parse_dynamodb (data model in cloud_resources['DynamoDB']['Models'], a.k.a. DDB Model) components
+        #   2.2 That basically encapsulates everything we need, and is the only thing CGDynamic and CGStatic really need (aside from S3 buckets & Git repos)
+        #   2.3 Note that while CGDynamic gets the entity list from CodeGen Metadata, it could also have just easily derived that from the DDB Models, like how CGStatic does it.
 
-    #   3. Create CGDynamic output based on DD Models from #2.1 (new lambda packages inside the `lambda` folder)
+        #   3. Create CGDynamic output based on DD Models from #2.1 (new lambda packages inside the `lambda` folder)
 
-    #   4. Create CGStatic output based on DDB Models from #2.1 (static HTML, CSS, and JS inside the `static` folder)
+        #   4. Create CGStatic output based on DDB Models from #2.1 (static HTML, CSS, and JS inside the `static` folder)
 
-    #   5. Add the generated cloud_resources DDB Model as new entries in the project's existing cloud_resources
-    #   5.1 Since that's a YAML file, read exsting file, load as python Dict.
-    #   5.2 Add new entries to the cloud_resources Dict under DDB Models.
-    #   5.3 Export back to YAML and write new cloud_resources (similar to how STARK_Parser does it)
+        #   5. Add the generated cloud_resources DDB Model as new entries in the project's existing cloud_resources
+        #   5.1 Since that's a YAML file, read exsting file, load as python Dict.
+        #   5.2 Add new entries to the cloud_resources Dict under DDB Models.
+        #   5.3 Export back to YAML and write new cloud_resources (similar to how STARK_Parser does it)
 
-    #1-2) STARK Parser
-    #Add STARK_Parser folder to the beginning of sys.path
-    print("Creating parser files..")
-    import libstark.STARK_Parser.parser_cli as stark_parser
-    cloud_resources, current_cloud_resources = stark_parser.parse(construct_file)
-    
-    #3) CGDynamic
-    #Replace STARK_Parser folder in sys.path with STARK_CodeGen_Dynamic
-    print("Creating backend files..")
-    import libstark.STARK_CodeGen_Dynamic.cgdynamic_cli as cgdynamic
-    cgdynamic.create(cloud_resources, project_basedir)
+        #1-2) STARK Parser
+        #Add STARK_Parser folder to the beginning of sys.path
+        print("Creating parser files..")
+        import libstark.STARK_Parser.parser_cli as stark_parser
+        cloud_resources, current_cloud_resources = stark_parser.parse(construct_file)
+        
+        #3) CGDynamic
+        #Replace STARK_Parser folder in sys.path with STARK_CodeGen_Dynamic
+        print("Creating backend files..")
+        import libstark.STARK_CodeGen_Dynamic.cgdynamic_cli as cgdynamic
+        cgdynamic.create(cloud_resources, project_basedir)
 
-    #4) CGStatic
-    #Replace CGDynamic folder in sys.path with CGStatic
-    print("Creating frontend files..")
-    import libstark.STARK_CodeGen_Static.cgstatic_cli as cgstatic
-    cgstatic.create(cloud_resources, current_cloud_resources, project_basedir)
+        #4) CGStatic
+        #Replace CGDynamic folder in sys.path with CGStatic
+        print("Creating frontend files..")
+        import libstark.STARK_CodeGen_Static.cgstatic_cli as cgstatic
+        cgstatic.create(cloud_resources, current_cloud_resources, project_basedir)
 
-    #5) Updating cloud resources doc
-    #FIXME: We are purposely only updating the Data Model and Lambda, because all other entries are just entity lists and
-    #   are currently unused and redundant
-    current_cloud_resources["Data Model"].update(cloud_resources["Data Model"])
-    current_cloud_resources["Lambda"].update(cloud_resources["Lambda"])
-    filename = project_basedir + "cloud_resources.yml"
-    with open(filename, "wb") as f:
-        f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
+        #5) Updating cloud resources doc
+        #FIXME: We are purposely only updating the Data Model and Lambda, because all other entries are just entity lists and
+        #   are currently unused and redundant
+        current_cloud_resources["Data Model"].update(cloud_resources["Data Model"])
+        current_cloud_resources["Lambda"].update(cloud_resources["Lambda"])
+        filename = project_basedir + "cloud_resources.yml"
+        with open(filename, "wb") as f:
+            f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
 
-    #Create a new template.yml file based on the newly written cloud_resources.yml
-    create_iac_template(current_cloud_resources)
-
-    print("DONE")
-
-elif construct_type == 'deploy':
-    print("Enabling CloudFront deployment..")
-    with open("../cloud_resources.yml", "r") as f:
-        current_cloud_resources = yaml.safe_load(f.read())
-        project_name            = current_cloud_resources["Project Name"]
-    import libstark.STARK_CodeGen_Dynamic.cgdynamic_cli as cgdynamic
-    cdn_domain_name = None
-    filename = project_basedir + "cloud_resources.yml"
-    current_cloud_resources["CloudFront"]['enabled'] = True
-    with open(filename, "wb") as f:
-        f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
-
-    is_continue_create_iac = True
-    custom_domain_name = current_cloud_resources["CloudFront"].get("custom_domain_name", "")
-    viewer_certificate_arn = current_cloud_resources["CloudFront"].get("viewer_certificate_arn", None)
-
-    if custom_domain_name != "":        
-        is_continue_create_iac = False
-        acm = boto3.client('acm', region_name="us-east-1")
-        response = acm.describe_certificate(CertificateArn=viewer_certificate_arn).get('Certificate')
-        status = response.get("Status")
-
-        if status != "ISSUED":
-            print("Certificate for Custom Domain Name:", custom_domain_name, 'is still pending for DNS validation. Validate to proceed')
-        else:
-            is_continue_create_iac = True      
-    
-    else:
-        stack_name = f"STARK-project-{project_name.replace(' ','')}"
-
-        ##fetch the physical distribution id of CloudFront
-        cfn = boto3.resource('cloudformation')
-        stack_resource = cfn.StackResource(stack_name, 'STARKCloudFront')
-        distribution_id = stack_resource.physical_resource_id
-        try:
-            client = boto3.client("cloudfront")
-            response = client.get_distribution(
-                Id=distribution_id
-            )
-            cdn_domain_name = response['Distribution']['DomainName'] 
-          
-        except Exception as error :
-                print(error)
-    
-    if is_continue_create_iac:
-        print("Updating template.yml..")
+        #Create a new template.yml file based on the newly written cloud_resources.yml
         create_iac_template(current_cloud_resources)
-        print("Done")
-        print("Commit then push the changes to take effect.")
-        if cdn_domain_name:
-            print("Cloudfront Distribution Name:", cdn_domain_name)
 
-elif construct_type == 'status':
-    print("Checking status..")
+        print("DONE")
+elif isinstance(construct, dict):
+    resource_type = list(construct.keys())[0]
+    action = list(construct.values())[0]
 
-    ## Get project name from cloud resources
-    cloud_resources_dir = '../cloud_resources.yml'
-    with open(cloud_resources_dir, "r") as f:
-        current_cloud_resources = yaml.safe_load(f.read())
-        project_name            = current_cloud_resources["Project Name"]
+    import libstark.STARK_CodeGen_Dynamic.cgdynamic_cli as cgdynamic
+    filename = project_basedir + "cloud_resources.yml"
 
-    ## compose stack name by trimming whitespaces in project name then append to project stack name template 
-    stack_name = f"STARK-project-{project_name.replace(' ','')}"
+    if resource_type == 'analytics':
+        with open("../cloud_resources.yml", "r") as f:
+            current_cloud_resources = yaml.safe_load(f.read())
 
-    ##fetch the physical distribution id of CloudFront
-    cfn = boto3.resource('cloudformation')
-    stack_resource = cfn.StackResource(stack_name, 'STARKCloudFront')
-    distribution_id = stack_resource.physical_resource_id
-    try:
-        client = boto3.client("cloudfront")
-        response = client.get_distribution(
-            Id=distribution_id
-        )
+        is_continue_create_iac = True
 
-        print("Distribution Domain Name:", response['Distribution']['DomainName']) 
-        print("Distribution ID:", response['Distribution']['Id']) 
-        print("Status:", response['Distribution']['Status'])
-        print("Enabled:", response['Distribution']['DistributionConfig'].get('Enabled'))  
-
-    except Exception as error :
-            print(error)
-
-elif construct_type == 'create-certificate':
-    with open("../cloud_resources.yml", "r") as f:
-        current_cloud_resources = yaml.safe_load(f.read())
-
-    custom_domain_name = current_cloud_resources.get("CloudFront").get("custom_domain_name")
-
-    try:
-        if custom_domain_name:
-            print("Custom Domain Name specified, checking for certificate..")
-            new_cert = False
-            acm = boto3.client('acm', region_name="us-east-1")
-            viewer_certificate_arn = current_cloud_resources['CloudFront'].get("viewer_certificate_arn", None)
-
-            if viewer_certificate_arn:
-                print("Certificate found, checking status..")
-                default_status = "Pending for Validation. "
+        if action == 'enable':
+            # If analytics in cloud resources is enabled = false meaning no analytics related resources
+            #    such as glue jobs, buckets, triggers, etc., change it to enabled = true and activated = true to 
+            #    create the necessary resources.
+            # Else, meaning analytics was enabled then disabled, just change the activated = true
+            if current_cloud_resources['Analytics']['enabled'] == False:
+                current_cloud_resources["Analytics"]['enabled'] = True
+                current_cloud_resources["Analytics"]['activated'] = True
+                print('Analytics enabled.') 
             else:
-                new_cert = True
-                print("No certificate yet, creating..")
-                default_status = ""
-                response = acm.request_certificate(
-                            DomainName= custom_domain_name,
-                            ValidationMethod= 'DNS'
-                )
-                # print(response)
-                viewer_certificate_arn = response['CertificateArn']
-                current_cloud_resources.get("CloudFront").update({
-                        'viewer_certificate_arn': viewer_certificate_arn
-                    })    
-
-                filename = project_basedir + "cloud_resources.yml"
-                with open(filename, "wb") as f:
-                    f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
-                print("Certificate created.")
-            
-            domain_validation_options = None
-            iteration = 1
-            while domain_validation_options == None:
-                if new_cert:
-                    print("\rFetching validation requirements", "." * iteration, end ="", sep='')
-                response = acm.describe_certificate(CertificateArn=viewer_certificate_arn)
-                domain_validation_options = response.get('Certificate').get('DomainValidationOptions')[0].get("ResourceRecord", None)
-                iteration += 1
-                
-            certificate = response.get('Certificate')    
-            status = certificate.get("Status")
-            if new_cert:
-                print("")
-
-            if status != "ISSUED":
-                print(f"{default_status}Create the following DNS record for", certificate.get('DomainName'), "to complete the validation:")
-                print("Name:", domain_validation_options.get('Name'))
-                print("Type:", domain_validation_options.get('Type'))
-                print("Value:", domain_validation_options.get('Value'))
-            else:
-                print("Certificate validated, you can deploy the CDN.")
+                if current_cloud_resources['Analytics']['activated'] == True:
+                    print('Analytics is already enabled.')
+                    is_continue_create_iac = False
+                else:
+                    print('Analytics enabled.') 
+                    current_cloud_resources["Analytics"]['activated'] = True
         else:
-            print("No Custom Domain Name specified in cloud_resources.yml")
-    except Exception as error:
-        print(error)
+            #Disable analytics by changing activated to false, this action will remove all triggers applied to ETL Jobs
+            if current_cloud_resources['Analytics']['enabled'] == False or (current_cloud_resources['Analytics']['enabled'] == True and current_cloud_resources['Analytics']['activated'] == False):
+                print('Analytics is already disabled.')
+                is_continue_create_iac = False
+            else:
+                print('Analytics disabled.')
+                current_cloud_resources["Analytics"]['activated'] = False
+
+        if is_continue_create_iac:
+            with open(filename, "wb") as f:
+                f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
+
+            print("Updating template.yml..")
+            create_iac_template(current_cloud_resources)
+            print("Done")
+            print("Commit then push the changes to take effect.")
+
+    elif resource_type == 'cdn':
+        if action == 'deploy':
+            print("Enabling CloudFront deployment..")
+            with open("../cloud_resources.yml", "r") as f:
+                current_cloud_resources = yaml.safe_load(f.read())
+                project_name            = current_cloud_resources["Project Name"]
+            
+            cdn_domain_name = None
+            current_cloud_resources["CloudFront"]['enabled'] = True
+            with open(filename, "wb") as f:
+                f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
+
+            is_continue_create_iac = True
+            custom_domain_name = current_cloud_resources["CloudFront"].get("custom_domain_name", "")
+            viewer_certificate_arn = current_cloud_resources["CloudFront"].get("viewer_certificate_arn", None)
+
+            if custom_domain_name != "":        
+                is_continue_create_iac = False
+                acm = boto3.client('acm', region_name="us-east-1")
+                response = acm.describe_certificate(CertificateArn=viewer_certificate_arn).get('Certificate')
+                status = response.get("Status")
+
+                if status != "ISSUED":
+                    print("Certificate for Custom Domain Name:", custom_domain_name, 'is still pending for DNS validation. Validate to proceed')
+                else:
+                    is_continue_create_iac = True      
+            
+            else:
+                stack_name = f"STARK-project-{project_name.replace(' ','')}"
+
+                ##fetch the physical distribution id of CloudFront
+                cfn = boto3.resource('cloudformation')
+                stack_resource = cfn.StackResource(stack_name, 'STARKCloudFront')
+                distribution_id = stack_resource.physical_resource_id
+                try:
+                    client = boto3.client("cloudfront")
+                    response = client.get_distribution(
+                        Id=distribution_id
+                    )
+                    cdn_domain_name = response['Distribution']['DomainName'] 
+                
+                except Exception as error :
+                        print(error)
+            
+            if is_continue_create_iac:
+                print("Updating template.yml..")
+                create_iac_template(current_cloud_resources)
+                print("Done")
+                print("Commit then push the changes to take effect.")
+                if cdn_domain_name:
+                    print("Cloudfront Distribution Name:", cdn_domain_name)
+
+        elif action == 'status':
+            print("Checking status..")
+
+            ## Get project name from cloud resources
+            cloud_resources_dir = '../cloud_resources.yml'
+            with open(cloud_resources_dir, "r") as f:
+                current_cloud_resources = yaml.safe_load(f.read())
+                project_name            = current_cloud_resources["Project Name"]
+
+            ## compose stack name by trimming whitespaces in project name then append to project stack name template 
+            stack_name = f"STARK-project-{project_name.replace(' ','')}"
+
+            ##fetch the physical distribution id of CloudFront
+            cfn = boto3.resource('cloudformation')
+            stack_resource = cfn.StackResource(stack_name, 'STARKCloudFront')
+            distribution_id = stack_resource.physical_resource_id
+            try:
+                client = boto3.client("cloudfront")
+                response = client.get_distribution(
+                    Id=distribution_id
+                )
+
+                print("Distribution Domain Name:", response['Distribution']['DomainName']) 
+                print("Distribution ID:", response['Distribution']['Id']) 
+                print("Status:", response['Distribution']['Status'])
+                print("Enabled:", response['Distribution']['DistributionConfig'].get('Enabled'))  
+
+            except Exception as error :
+                    print(error)
+
+        elif action == 'create-certificate':
+            with open("../cloud_resources.yml", "r") as f:
+                current_cloud_resources = yaml.safe_load(f.read())
+
+            custom_domain_name = current_cloud_resources.get("CloudFront").get("custom_domain_name")
+
+            try:
+                if custom_domain_name:
+                    print("Custom Domain Name specified, checking for certificate..")
+                    new_cert = False
+                    acm = boto3.client('acm', region_name="us-east-1")
+                    viewer_certificate_arn = current_cloud_resources['CloudFront'].get("viewer_certificate_arn", None)
+
+                    if viewer_certificate_arn:
+                        print("Certificate found, checking status..")
+                        default_status = "Pending for Validation. "
+                    else:
+                        new_cert = True
+                        print("No certificate yet, creating..")
+                        default_status = ""
+                        response = acm.request_certificate(
+                                    DomainName= custom_domain_name,
+                                    ValidationMethod= 'DNS'
+                        )
+                        # print(response)
+                        viewer_certificate_arn = response['CertificateArn']
+                        current_cloud_resources.get("CloudFront").update({
+                                'viewer_certificate_arn': viewer_certificate_arn
+                            })    
+
+                        with open(filename, "wb") as f:
+                            f.write(yaml.dump(current_cloud_resources, sort_keys=False, encoding='utf-8'))
+                        print("Certificate created.")
+                    
+                    domain_validation_options = None
+                    iteration = 1
+                    while domain_validation_options == None:
+                        if new_cert:
+                            print("\rFetching validation requirements", "." * iteration, end ="", sep='')
+                        response = acm.describe_certificate(CertificateArn=viewer_certificate_arn)
+                        domain_validation_options = response.get('Certificate').get('DomainValidationOptions')[0].get("ResourceRecord", None)
+                        iteration += 1
+                        
+                    certificate = response.get('Certificate')    
+                    status = certificate.get("Status")
+                    if new_cert:
+                        print("")
+
+                    if status != "ISSUED":
+                        print(f"{default_status}Create the following DNS record for", certificate.get('DomainName'), "to complete the validation:")
+                        print("Name:", domain_validation_options.get('Name'))
+                        print("Type:", domain_validation_options.get('Type'))
+                        print("Value:", domain_validation_options.get('Value'))
+                    else:
+                        print("Certificate validated, you can deploy the CDN.")
+                else:
+                    print("No Custom Domain Name specified in cloud_resources.yml")
+            except Exception as error:
+                print(error)
