@@ -91,6 +91,11 @@ def create(data, cli_mode=False):
     cdn_custom_domain_name  = cdn_distribution_config.get('custom_domain_name','')
     cdn_viewer_certificate  = cdn_distribution_config.get('viewer_certificate_arn','')
 
+    #Analytics config
+    analytics_config    = cloud_resources.get('Analytics', '')
+    analytics_enabled   = analytics_config.get('enabled', False)
+    analytics_cron      = analytics_config.get('cron','')
+
     #Lambda-related data
     entities = cloud_resources['Data Model']
 
@@ -237,7 +242,8 @@ def create(data, cli_mode=False):
                 WebsiteConfiguration:
                     ErrorDocument: {s3_error_document}
                     IndexDocument: {s3_index_document}"""
-    cf_template +=f"""
+    if analytics_enabled:
+        cf_template +=f"""
         STARKAnalyticsRawBucket:
             Type: AWS::S3::Bucket
             Properties:
@@ -316,7 +322,48 @@ def create(data, cli_mode=False):
                                         - !Join [ "",  [ "arn:aws:s3:::", "{s3_processed_bucket_name}", "/*"] ]
                                         - !Join [ "",  [ "arn:aws:s3:::", "{s3_processed_bucket_name}"] ]
                                         - !Join [ "",  [ "arn:aws:s3:::", !Ref UserCICDPipelineBucketNameParameter, "/{project_varname}/*"] ]
-                                        - "*"
+                                        - "*" 
+        STARKProjectSchedulerInvokeRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement: 
+                        - 
+                            Effect: Allow
+                            Principal:
+                                Service: 
+                                    - 'scheduler.amazonaws.com'
+                            Action: 'sts:AssumeRole'
+                Policies:
+                    - 
+                        PolicyName: PolicyForSTARKProjectSchedulerInvokeRole
+                        PolicyDocument:
+                            Version: '2012-10-17'
+                            Statement:
+                                - 
+                                    Sid: VisualEditor0
+                                    Effect: Allow
+                                    Action:
+                                        - 'lambda:InvokeFunction'
+                                    Resource:
+                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn ] ]
+                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn, "*" ] ]
+        STARKProjectAnalyticsScheduler:
+            Type: AWS::Scheduler::Schedule
+            Properties: 
+                Description: Triggers dumping of data of each business entity in CSV formatted files 
+                FlexibleTimeWindow: 
+                    MaximumWindowInMinutes: 2
+                    Mode: FLEXIBLE
+                ScheduleExpression: cron(0 0 * * ? *)
+                ScheduleExpressionTimezone: Hongkong
+                State: ENABLED
+                Target:
+                    Arn: !GetAtt STARKBackendApiForSTARKAnalytics.Arn
+                    RoleArn: !GetAtt STARKProjectSchedulerInvokeRole.Arn"""
+        
+    cf_template +=f"""
         STARKSystemBucketUser:
             Type: AWS::IAM::User
             Properties: 
@@ -421,45 +468,6 @@ def create(data, cli_mode=False):
                                     Action:
                                         - 'lambda:InvokeFunction'
                                     Resource: !GetAtt STARKDefaultAuthorizerFunc.Arn
-        STARKProjectSchedulerInvokeRole:
-            Type: AWS::IAM::Role
-            Properties:
-                AssumeRolePolicyDocument:
-                    Version: '2012-10-17'
-                    Statement: 
-                        - 
-                            Effect: Allow
-                            Principal:
-                                Service: 
-                                    - 'scheduler.amazonaws.com'
-                            Action: 'sts:AssumeRole'
-                Policies:
-                    - 
-                        PolicyName: PolicyForSTARKProjectSchedulerInvokeRole
-                        PolicyDocument:
-                            Version: '2012-10-17'
-                            Statement:
-                                - 
-                                    Sid: VisualEditor0
-                                    Effect: Allow
-                                    Action:
-                                        - 'lambda:InvokeFunction'
-                                    Resource:
-                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn ] ]
-                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn, "*" ] ]
-        STARKProjectAnalyticsScheduler:
-            Type: AWS::Scheduler::Schedule
-            Properties: 
-                Description: Triggers dumping of data of each business entity in CSV formatted files 
-                FlexibleTimeWindow: 
-                    MaximumWindowInMinutes: 2
-                    Mode: FLEXIBLE
-                ScheduleExpression: cron(0 0 * * ? *)
-                ScheduleExpressionTimezone: Hongkong
-                State: ENABLED
-                Target:
-                    Arn: !GetAtt STARKBackendApiForSTARKAnalytics.Arn
-                    RoleArn: !GetAtt STARKProjectSchedulerInvokeRole.Arn
         CFCustomResourceHelperLayer:
             Type: AWS::Lambda::LayerVersion
             Properties:
@@ -763,7 +771,9 @@ def create(data, cli_mode=False):
                 MemorySize: 128
                 Timeout: 30
                 Layers:
-                    - !Ref Fpdf2Layer
+                    - !Ref Fpdf2Layer"""
+        if analytics_enabled:
+            cf_template += f"""
         STARKAnalyticsGlueJobFor{entity_logical_name}:
                 Type: AWS::Glue::Job
                 Properties: 
@@ -782,30 +792,32 @@ def create(data, cli_mode=False):
                     Role: !GetAtt STARKAnalyticsGlueJobRole.Arn
                     Timeout: 2880
                     WorkerType: G.1X"""
-        etl_resource_names.append(f"STARKAnalyticsGlueJobFor{entity_logical_name}") 
-    cf_template += f"""
+            etl_resource_names.append(f"STARKAnalyticsGlueJobFor{entity_logical_name}") 
+    
+    if analytics_enabled:
+        cf_template += f"""
         STARKAnalyticsETLScheduledTrigger:
             Type: AWS::Glue::Trigger
             Properties:
                 Type: SCHEDULED
                 Description: DESCRIPTION_SCHEDULED
                 Schedule: cron(30 16 * * ? *)
-                StartOnCreation: False
+                StartOnCreation: True
                 Actions: """
-    for resource_name in etl_resource_names:
-        cf_template +=f"""
+        for resource_name in etl_resource_names:
+            cf_template +=f"""
                     - 
                         JobName: !Ref {resource_name}
                         Arguments:
                             "--job-bookmark-option": job-bookmark-enable"""
-    cf_template += f"""
+        cf_template += f"""
                 Name: STARK_{project_varname}_ETL_Scheduled_Trigger
             DependsOn:"""
-    for resource_name in etl_resource_names:
-        cf_template +=f"""
+        for resource_name in etl_resource_names:
+            cf_template +=f"""
                 - {resource_name}"""
                 
-    cf_template += f"""
+        cf_template += f"""
         STARKBackendApiForSTARKAnalytics:
             Type: AWS::Serverless::Function
             Properties:
@@ -847,7 +859,8 @@ def create(data, cli_mode=False):
                 MemorySize: 128
                 Timeout: 10
                 Layers:
-                    - !Ref Fpdf2Layer
+                    - !Ref Fpdf2Layer""" 
+    cf_template += f"""
         STARKBackendApiForSTARKUser:
             Type: AWS::Serverless::Function
             Properties:
