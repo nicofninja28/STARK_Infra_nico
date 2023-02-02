@@ -94,6 +94,7 @@ def create(data, cli_mode=False):
     #Analytics config
     analytics_config    = cloud_resources.get('Analytics', '')
     analytics_enabled   = analytics_config.get('enabled', False)
+    analytics_activated = analytics_config.get('activated', False)
     analytics_cron      = analytics_config.get('cron','')
 
     #Lambda-related data
@@ -348,7 +349,9 @@ def create(data, cli_mode=False):
                                         - 'lambda:InvokeFunction'
                                     Resource:
                                         - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn ] ]
-                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn, "*" ] ]
+                                        - !Join [ ":", [!GetAtt STARKBackendApiForSTARKAnalytics.Arn, "*" ] ]"""
+    if analytics_activated:    
+        cf_template +=f"""
         STARKProjectAnalyticsScheduler:
             Type: AWS::Scheduler::Schedule
             Properties: 
@@ -795,7 +798,8 @@ def create(data, cli_mode=False):
             etl_resource_names.append(f"STARKAnalyticsGlueJobFor{entity_logical_name}") 
     
     if analytics_enabled:
-        cf_template += f"""
+        if analytics_activated:    
+            cf_template += f"""
         STARKAnalyticsETLScheduledTrigger:
             Type: AWS::Glue::Trigger
             Properties:
@@ -804,17 +808,17 @@ def create(data, cli_mode=False):
                 Schedule: cron(30 16 * * ? *)
                 StartOnCreation: True
                 Actions: """
-        for resource_name in etl_resource_names:
-            cf_template +=f"""
+            for resource_name in etl_resource_names:
+                cf_template +=f"""
                     - 
                         JobName: !Ref {resource_name}
                         Arguments:
                             "--job-bookmark-option": job-bookmark-enable"""
-        cf_template += f"""
+            cf_template += f"""
                 Name: STARK_{project_varname}_ETL_Scheduled_Trigger
             DependsOn:"""
-        for resource_name in etl_resource_names:
-            cf_template +=f"""
+            for resource_name in etl_resource_names:
+                cf_template +=f"""
                 - {resource_name}"""
                 
         cf_template += f"""
