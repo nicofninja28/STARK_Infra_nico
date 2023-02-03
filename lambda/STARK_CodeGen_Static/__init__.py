@@ -65,7 +65,7 @@ def create_handler(event, context):
     #Cloud resources document
     response = s3.get_object(
         Bucket=codegen_bucket_name,
-        Key=f'STARK_cloud_resources/{project_varname}.yaml'
+        Key=f'codegen_dynamic/{project_varname}.yaml'
     )
 
     #FIXME: Remove raw for now since we need to update cloud_resources with API gateway URL - hopefully using sort_keys=False will remove the need for the raw version) 
@@ -237,7 +237,7 @@ def create_handler(event, context):
 
     response = s3.get_object(
         Bucket=codegen_bucket_name,
-        Key=f'STARK_cloud_resources/{project_varname}_pipeline.pickle'
+        Key=f'codegen_dynamic/{project_varname}_pipeline.pickle'
     )
     pipeline_definition = pickle.loads(response['Body'].read()) 
     print(pipeline_definition)
