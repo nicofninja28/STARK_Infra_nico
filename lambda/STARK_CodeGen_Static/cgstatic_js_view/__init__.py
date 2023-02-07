@@ -58,7 +58,6 @@ def create(data):
     source_code += f"""
                         'required': {required},"""
     source_code += f"""                
-                        'required': true,
                         'max_length': '',
                         'data_type': 'String'
                     }},"""
