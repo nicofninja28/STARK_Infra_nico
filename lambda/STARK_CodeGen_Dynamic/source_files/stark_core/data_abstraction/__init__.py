@@ -84,7 +84,7 @@ def get_report_data(report_payload, object_expression_value, string_filter, is_a
     }
     temp_string_filter = "attribute_not_exists(#isDeleted) "
     if string_filter != "":
-        ddb_arguments['FilterExpression'] = temp_string_filter +'AND ' +string_filter
+        temp_string_filter = temp_string_filter +'AND ' +string_filter
 
     ddb_arguments['TableName'] = stark_core.ddb_table
     ddb_arguments['IndexName'] = "STARK-ListView-Index"
