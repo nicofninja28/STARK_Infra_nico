@@ -515,6 +515,7 @@ def create(data):
         ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
         ddb_arguments['FilterExpression'] = string_filter
         ddb_arguments['ExpressionAttributeValues'] = object_expression_value
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
             
         while next_token != None:
             next_token = '' if next_token == 'initial' else next_token
