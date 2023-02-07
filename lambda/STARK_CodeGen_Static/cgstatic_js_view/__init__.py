@@ -55,9 +55,9 @@ def create(data):
     else:
         required = True
         
-    source_code = f"""
+    source_code += f"""
                         'required': {required},"""
-    source_code = f"""                
+    source_code += f"""                
                         'required': true,
                         'max_length': '',
                         'data_type': 'String'

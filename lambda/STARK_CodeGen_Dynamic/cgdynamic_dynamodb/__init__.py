@@ -133,9 +133,10 @@ def create(data):
     else:
         required = True
         
-    source_code = f"""
+    source_code += f"""
                     'required': {required},"""
-    source_code = f"""                
+                    
+    source_code += f"""                
                     'max_length': '',
                     'data_type': 'string',
                     'state': None,
