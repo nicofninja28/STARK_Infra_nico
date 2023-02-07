@@ -127,7 +127,8 @@ def create(data):
                 "{pk_varname}": {{
                     'value': '',
                     'key': 'pk',"""
-    if sequence:
+
+    if len(sequence) > 0:
         required = False
     else:
         required = True
@@ -1006,7 +1007,7 @@ def create(data):
 
     print('entity')
     print(entity)
-    if sequence:
+    if len(sequence) > 0:
         source_code+= f"""pk = data_abstraction.get_sequence(entity_name)
         sk = data.get('sk', '')    
         if sk == '': sk = default_sk"""

@@ -50,7 +50,7 @@ def create(data):
                 metadata: {{
                     '{pk_varname}': {{
                         'value': '',"""
-    if sequence:
+    if len(sequence) > 0:
         required = False
     else:
         required = True
