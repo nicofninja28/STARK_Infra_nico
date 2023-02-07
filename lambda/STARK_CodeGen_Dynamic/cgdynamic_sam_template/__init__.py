@@ -695,9 +695,6 @@ def create(data, cli_mode=False):
                     -
                         AttributeName: STARK-ListView-sk
                         AttributeType: S
-                    -
-                        AttributeName: STARK-Created-TS
-                        AttributeType: N
                 GlobalSecondaryIndexes:
                     -
                         IndexName: STARK-ListView-Index
@@ -707,9 +704,6 @@ def create(data, cli_mode=False):
                                 KeyType: HASH
                             -
                                 AttributeName: STARK-ListView-sk
-                                KeyType: RANGE
-                            -
-                                AttributeName: STARK-Created-TS
                                 KeyType: RANGE
                         Projection: 
                             ProjectionType: ALL"""
