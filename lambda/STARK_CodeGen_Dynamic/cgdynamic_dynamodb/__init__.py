@@ -1053,8 +1053,16 @@ def create(data):
 
     source_code += f"""
 
-        if data.get('STARK-ListView-sk','') == '':
-            item['STARK-ListView-sk'] = {{'S' : create_listview_index_value(data)}}
+        if data.get('STARK-ListView-sk','') == '':"""
+
+    if len(sequence) > 0:
+        source_code += f"""    
+            data['pk'] = pk"""
+    
+    source_code += f"""    
+        item['STARK-ListView-sk'] = {{'S' : create_listview_index_value(data)}}"""
+        
+    source_code += f"""
         else:
             item['STARK-ListView-sk'] = {{'S' : data['STARK-ListView-sk']}}
 

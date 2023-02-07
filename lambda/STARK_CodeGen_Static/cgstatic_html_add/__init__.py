@@ -30,10 +30,8 @@ def create(data):
     sequence    = data["Sequence"]
 
     if len(sequence) > 0:
-        disabled = 'disabled'
         pk_class = 'class="d-none"'
     else: 
-        disabled = ''
         pk_class = 'class="form-group"'
 
     #Convert human-friendly names to variable-friendly names
