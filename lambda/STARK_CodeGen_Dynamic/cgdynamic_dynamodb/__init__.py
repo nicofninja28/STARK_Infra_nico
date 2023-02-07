@@ -44,6 +44,15 @@ def create(data):
         sk = data.get('sk', '')    
         if sk == '': sk = default_sk"""
 
+    if len(sequence) > 0:
+        dict_to_var_code = f"""pk = data_abstraction.get_sequence(entity_name)
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    else:
+        dict_to_var_code = f"""pk = data.get('pk', '')
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+
     #Check for file upload in child if 1-M is available
     for rel in rel_model:
         rel_cols = rel_model[rel]["data"]
@@ -1004,18 +1013,8 @@ def create(data):
 
         if db_handler == None:
             db_handler = ddb
-        """
+        {dict_to_var_code}"""
 
-    print('entity')
-    print(entity)
-    if len(sequence) > 0:
-        source_code+= f"""pk = data_abstraction.get_sequence(entity_name)
-        sk = data.get('sk', '')    
-        if sk == '': sk = default_sk"""
-    else:
-        source_code+= f"""
-        {dict_to_var_code}
-        """
 
     if with_upload or with_upload_on_many:
         source_code += f"""

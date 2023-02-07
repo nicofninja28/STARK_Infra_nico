@@ -201,13 +201,15 @@ def get_sequence(pk, db_handler = None):
 def edit_sequence(pk, sk, Current_Counter, db_handler = None):
     if db_handler == None:
         db_handler = ddb
-
+        
+    updated_counter = int(Current_Counter) + 1
+    
     UpdateExpressionString = "SET #Current_Counter = :Current_Counter" 
     ExpressionAttributeNamesDict = {
         '#Current_Counter' : 'Current_Counter',
     }
     ExpressionAttributeValuesDict = {
-        ':Current_Counter' : {'S' : Current_Counter },
+        ':Current_Counter' : {'S' : str(updated_counter) },
     }
 
     ddb_arguments = {}
