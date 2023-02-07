@@ -227,6 +227,7 @@ def create(data):
         #Get request type
         request_type = event.get('queryStringParameters',{{}}).get('rt','')
         
+        global username
         username = event['requestContext']['authorizer']['lambda']['Username']
         if request_type == '':
             ########################
@@ -732,6 +733,9 @@ def create(data):
             db_handler = ddb
 
         
+        ExpressionAttributeNamesDict = {{
+            '#isDeleted' : 'STARK-Is-Deleted',
+        }}
         items = []
         ddb_arguments = {{}}
         ddb_arguments['TableName'] = ddb_table
@@ -740,7 +744,9 @@ def create(data):
         ddb_arguments['Limit'] = page_limit
         ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
         ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+        ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
         ddb_arguments['ExpressionAttributeValues'] = {{ ':sk' : {{'S' : sk }} }}
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
         if lv_token != None:
             ddb_arguments['ExclusiveStartKey'] = lv_token
@@ -808,12 +814,12 @@ def create(data):
         if db_handler == None:
             db_handler = ddb
 
-        UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted" 
+        UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted, #ttl = :ttl" 
         ExpressionAttributeNamesDict = {{
-            '#STARKCreatedTs': 'STARK-Created-TS',
             '#STARKDeletedBy': 'STARK-Deleted-By',
             '#STARKDeletedTs': 'STARK-Deleted-TS',
-            '#STARKIsDeleted': 'STARK-Is-Deleted'
+            '#STARKIsDeleted': 'STARK-Is-Deleted',
+            '#ttl': 'TTL'
         }}
         ExpressionAttributeValuesDict = utilities.append_record_metadata('delete', username)
 
@@ -1165,11 +1171,12 @@ def create(data):
 
     def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
     
-        string_filter = " #Attribute = :old_parent_value"
+        string_filter = " attribute_not_exists(#isDeleted) AND #Attribute = :old_parent_value"
         object_expression_value = {{':sk' : {{'S' : sk}},
                                     ':old_parent_value': {{'S' : old_pk_val}}}}
         ExpressionAttributeNamesDict = {{
             '#Attribute' : attribute,
+            '#isDeleted' : 'STARK-Is-Deleted'
         }}
 
         ddb_arguments = {{}}
