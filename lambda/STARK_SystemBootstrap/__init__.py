@@ -43,7 +43,7 @@ def create_handler(event, context):
     #Cloud resources document
     response = s3.get_object(
         Bucket=codegen_bucket_name,
-        Key=f'STARK_cloud_resources/{project_varname}.yaml'
+        Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml'
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
 
