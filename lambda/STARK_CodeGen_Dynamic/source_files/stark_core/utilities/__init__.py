@@ -361,7 +361,7 @@ def append_record_metadata(transaction_type, user ):
         metadata[':STARKUpdatedTS'] = {'N': str(timestamp)}
 
     elif transaction_type == 'delete':
-        ttl_value = stark_core.TTL_for_deleted_records_in_days * 24 * 60 * 60
+        ttl_value = timestamp + stark_core.TTL_for_deleted_records_in_days * 24 * 60 * 60
         metadata[':STARKDeletedBy'] = {'S': user}
         metadata[':STARKDeletedTS'] = {'N': str(timestamp)}
         metadata[':STARKIsDeleted'] = {'S': 'Y'}

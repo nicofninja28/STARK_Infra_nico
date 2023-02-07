@@ -466,6 +466,10 @@ def create(data):
         #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
         #   ENHANCED LISTVIEW LOGIC LATER WHEN WE ACTUALLY IMPLEMENT REPORTING
         
+        string_filter = 'attribute_not_exists(#isDeleted) '
+        ExpressionAttributeNamesDict = {{
+            '#isDeleted' : 'STARK-Is-Deleted',
+        }}
         temp_string_filter = ""
         object_expression_value = {{':sk' : {{'S' : sk}}}}
         report_param_dict = {{}}
@@ -478,7 +482,9 @@ def create(data):
                     temp_string_filter += processed_operator_and_parameter_dict['filter_string']
                     object_expression_value.update(processed_operator_and_parameter_dict['expression_values'])
                     report_param_dict.update(processed_operator_and_parameter_dict['report_params'])
-        string_filter = temp_string_filter[1:-3]
+                    
+        if temp_string_filter != "":
+            string_filter = string_filter + "AND "+temp_string_filter[1:-3]
 
 
         #FIXME: 1-M SEARCH CRITERIA: filter result of 1-M report operators here
@@ -507,10 +513,8 @@ def create(data):
         ddb_arguments['Select'] = "ALL_ATTRIBUTES"
         ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
         ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+        ddb_arguments['FilterExpression'] = string_filter
         ddb_arguments['ExpressionAttributeValues'] = object_expression_value
-
-        if temp_string_filter != "":
-            ddb_arguments['FilterExpression'] = string_filter
             
         while next_token != None:
             next_token = '' if next_token == 'initial' else next_token
