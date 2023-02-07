@@ -10,6 +10,8 @@ ddb_table   = "[[STARK_DDB_TABLE_NAME]]"
 test_region = 'eu-west-2'
 page_limit  = 100
 
+TTL_for_deleted_records_in_days = 120
+
 ##Bucket Related Config
 bucket_name = "[[STARK_WEB_BUCKET]]"
 bucket_url  = f"{bucket_name}.s3.{region_name}.amazonaws.com/"

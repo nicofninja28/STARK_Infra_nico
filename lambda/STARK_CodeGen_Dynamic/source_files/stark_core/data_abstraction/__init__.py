@@ -13,16 +13,21 @@ def get_fields(fields, pk_field, sk):
     ddb_arguments = {}
     next_token = 'initial'
     items = []
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
     while next_token != None:
         next_token = '' if next_token == 'initial' else next_token
         ddb_arguments['TableName'] = stark_core.ddb_table
         ddb_arguments['IndexName'] = "STARK-ListView-Index"
         ddb_arguments['Limit'] = stark_core.page_limit
         ddb_arguments['ReturnConsumedCapacity'] ='TOTAL'
+        ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
         ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
         ddb_arguments['ExpressionAttributeValues'] = {
             ':sk' : {'S' : sk}
         }
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
         if next_token != '':
             ddb_arguments['ExclusiveStartKey']=next_token
@@ -65,26 +70,7 @@ def get_many_by_pk(pk, sk, db_handler = None):
                                             
     response = db_handler.query(**ddb_arguments).get('Items')
     return response
-    
-def get_many_by_pk(pk, sk, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = stark_core.ddb_table
-    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
-    ddb_arguments['ExpressionAttributeNames'] = {
-                                                '#pk' : 'pk',
-                                                '#sk' : 'sk'
-                                            }
-    ddb_arguments['ExpressionAttributeValues'] = {
-                                                ':pk' : {'S' : pk },
-                                                ':sk' : {'S' : sk }
-                                            }
-    Document = db_handler.query(**ddb_arguments)
-    response = Document.get('Items')
-    return response
 
 def get_report_data(report_payload, object_expression_value, string_filter, is_aggregate_report, map_results_func):
     ##FIXME: pass map_results function for now, it will be refactored soon and will just process meta data of an entity so that
@@ -93,15 +79,21 @@ def get_report_data(report_payload, object_expression_value, string_filter, is_a
     items = []
     ddb_arguments = {}
     aggregated_results = {}
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
+    temp_string_filter = "attribute_not_exists(#isDeleted) "
+    if string_filter != "":
+        temp_string_filter = temp_string_filter +'AND ' +string_filter
+
     ddb_arguments['TableName'] = stark_core.ddb_table
     ddb_arguments['IndexName'] = "STARK-ListView-Index"
     ddb_arguments['Select'] = "ALL_ATTRIBUTES"
     ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
     ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    ddb_arguments['FilterExpression'] = temp_string_filter
     ddb_arguments['ExpressionAttributeValues'] = object_expression_value
-
-    if string_filter != "":
-        ddb_arguments['FilterExpression'] = string_filter
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
     while next_token != None:
         next_token = '' if next_token == 'initial' else next_token

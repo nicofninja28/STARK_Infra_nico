@@ -69,7 +69,7 @@ def lambda_handler(event, context):
         response = s3.put_object(
             Body=yaml.dump(cloud_resources, sort_keys=False, encoding='utf-8'),
             Bucket=codegen_bucket_name,
-            Key=f'STARK_cloud_resources/{project_varname}.yaml',
+            Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml',
             Metadata={
                 'STARK_Description': 'Cloud resources for this project, as determined by the STARK Parser'
             }
