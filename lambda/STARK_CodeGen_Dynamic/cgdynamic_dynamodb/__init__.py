@@ -228,7 +228,7 @@ def create(data):
         request_type = event.get('queryStringParameters',{{}}).get('rt','')
         
         global username
-        username = event['requestContext']['authorizer']['lambda']['Username']
+        username = event.get('requestContext',{{}}).get('authorizer',{{}}).get('lambda',{{}}).get('Username','')
         if request_type == '':
             ########################
             #Handle non-GET requests
