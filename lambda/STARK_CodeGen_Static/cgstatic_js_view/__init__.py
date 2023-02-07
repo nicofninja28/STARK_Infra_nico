@@ -21,6 +21,7 @@ def create(data):
     pk             = data['PK']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
+    sequence       = data["Sequence"]
 
     entity_varname = converter.convert_to_system_name(entity)
     entity_app     = entity_varname + '_app'
@@ -46,7 +47,15 @@ def create(data):
             data: {{
                 metadata: {{
                     '{pk_varname}': {{
-                        'value': '',
+                        'value': '',"""
+    if sequence:
+        required = False
+    else:
+        required = True
+        
+    source_code = f"""
+                        'required': {required},"""
+    source_code = f"""                
                         'required': true,
                         'max_length': '',
                         'data_type': 'String'

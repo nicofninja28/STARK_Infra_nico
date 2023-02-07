@@ -76,7 +76,7 @@ def create_handler(event, context):
     #Create sequence table
     for entity in entities:
         if "sequence" in models[entity]:
-            pk              = models[entity]['pk'] + ' Sequence'
+            pk              = entity
             current_counter = models[entity]['sequence']['current_counter']
             prefix          = models[entity]['sequence']['prefix']
             left_pad        = models[entity]['sequence']['left_pad']

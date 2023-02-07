@@ -39,6 +39,7 @@ def create(data):
     col_dict += ' }'
 
     #Create the dict value retrieval code for the add/edit function body
+    
     dict_to_var_code = f"""pk = data.get('pk', '')
         sk = data.get('sk', '')    
         if sk == '': sk = default_sk"""
@@ -121,17 +122,26 @@ def create(data):
     sort_fields       = ["{pk_varname}", ]
     relationships     = {relationships}
     entity_upload_dir = stark_core.upload_dir + "{entity_varname}/"
+    entity_name       = "{entity}"
     metadata          = {{
                 "{pk_varname}": {{
                     'value': '',
-                    'key': 'pk',
-                    'required': True,
+                    'key': 'pk',"""
+    if sequence:
+        required = False
+    else:
+        required = True
+        
+    source_code = f"""
+                    'required': {required},"""
+    source_code = f"""                
                     'max_length': '',
                     'data_type': 'string',
                     'state': None,
                     'feedback': '',
                     'relationship': ''
                 }},"""
+    
         
     
     for col, col_type in columns.items():
@@ -988,9 +998,22 @@ def create(data):
             
     source_code+= f"""
     def add(data, method='POST', db_handler=None):
+
+
         if db_handler == None:
             db_handler = ddb
-        {dict_to_var_code}"""
+        """
+
+    print('entity')
+    print(entity)
+    if sequence:
+        source_code+= f"""pk = data_abstraction.get_sequence(entity_name)
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    else:
+        source_code+= f"""
+        {dict_to_var_code}
+        """
 
     if with_upload or with_upload_on_many:
         source_code += f"""

@@ -157,3 +157,71 @@ def get_report_data(report_payload, object_expression_value, string_filter, is_a
                 items.append(item)
 
     return items, aggregated_results
+
+
+def get_sequence(pk, db_handler = None):
+    if db_handler == None:
+        db_handler = ddb
+
+    sk = 'STARK|sequence'
+
+    ddb_arguments = {}
+    ddb_arguments['TableName'] = stark_core.ddb_table
+    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
+    ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
+    ddb_arguments['ExpressionAttributeNames'] = {
+                                                '#pk' : 'pk',
+                                                '#sk' : 'sk'
+                                            }
+    ddb_arguments['ExpressionAttributeValues'] = {
+                                                ':pk' : {'S' : pk },
+                                                ':sk' : {'S' : sk }
+                                            }
+    response = db_handler.query(**ddb_arguments)
+    raw = response.get('Items')
+
+    response = {}
+    record = raw[0]
+
+    item = {}
+    item['Current_Counter'] = record.get('Current_Counter',{}).get('S','')
+    item['Left_Pad'] = record.get('Left_Pad',{}).get('S','')
+    item['Prefix'] = record.get('Prefix',{}).get('S','')
+    
+    response['item'] = item
+
+    sequence = item['Prefix'] + stark_core.separator + item['Current_Counter'].rjust(item['Left_Pad'], '0')
+
+    edit_sequence(pk, sk, item['Current_Counter'])
+
+    global resp_obj
+    resp_obj = response
+    return sequence
+
+def edit_sequence(pk, sk, Current_Counter, db_handler = None):
+    if db_handler == None:
+        db_handler = ddb
+
+    UpdateExpressionString = "SET #Current_Counter = :Current_Counter" 
+    ExpressionAttributeNamesDict = {
+        '#Current_Counter' : 'Current_Counter',
+    }
+    ExpressionAttributeValuesDict = {
+        ':Current_Counter' : {'S' : Current_Counter },
+    }
+
+    ddb_arguments = {}
+    ddb_arguments['TableName'] = stark_core.ddb_table
+    ddb_arguments['Key'] = {
+            'pk' : {'S' : pk},
+            'sk' : {'S' : sk}
+        }
+    ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+    ddb_arguments['UpdateExpression'] = UpdateExpressionString
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+    response = db_handler.update_item(**ddb_arguments)
+
+    global resp_obj
+    resp_obj = response
+    return "OK"
