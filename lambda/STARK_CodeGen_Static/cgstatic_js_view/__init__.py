@@ -51,9 +51,9 @@ def create(data):
                     '{pk_varname}': {{
                         'value': '',"""
     if len(sequence) > 0:
-        required = False
+        required = "false"
     else:
-        required = True
+        required = "true"
         
     source_code += f"""
                         'required': {required},"""
