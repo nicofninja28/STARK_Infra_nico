@@ -80,7 +80,7 @@ def create(data):
         else:
             col_varname = converter.convert_to_system_name(col)
             update_expression += f"""#{col_varname} = :{col_varname}, """
-    update_expression += " #STARKListViewsk = :STARKListViewsk"
+    update_expression += " #STARKListViewsk = :STARKListViewsk, #STARKUpdatedBy = :STARKUpdatedBy, #STARKUpdatedTs = :STARKUpdatedTS"
     if with_upload or with_upload_on_many:
         update_expression += ", #STARK_uploaded_s3_keys = :STARK_uploaded_s3_keys"
 
@@ -209,6 +209,7 @@ def create(data):
     source_code += f"""
     }}
     resp_obj = None
+    username = ""
 
     ############
     #PERMISSIONS
@@ -225,7 +226,8 @@ def create(data):
 
         #Get request type
         request_type = event.get('queryStringParameters',{{}}).get('rt','')
-
+        
+        username = event['requestContext']['authorizer']['lambda']['Username']
         if request_type == '':
             ########################
             #Handle non-GET requests
@@ -344,7 +346,7 @@ def create(data):
 
             if method == "DELETE":
                 if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                    response = delete(data)
+                    response = delete_v2(data)
                 else:
                     responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -802,6 +804,40 @@ def create(data):
         return response"""
 
     source_code+= f"""
+    def delete_v2(data, db_handler = None):
+        if db_handler == None:
+            db_handler = ddb
+
+        UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted" 
+        ExpressionAttributeNamesDict = {{
+            '#STARKCreatedTs': 'STARK-Created-TS',
+            '#STARKDeletedBy': 'STARK-Deleted-By',
+            '#STARKDeletedTs': 'STARK-Deleted-TS',
+            '#STARKIsDeleted': 'STARK-Is-Deleted'
+        }}
+        ExpressionAttributeValuesDict = utilities.append_record_metadata('delete', username)
+
+        pk = data.get('pk','')
+        sk = data.get('sk','')
+        if sk == '': sk = default_sk
+
+        ddb_arguments = {{}}
+        ddb_arguments['TableName'] = ddb_table
+        ddb_arguments['Key'] = {{
+                'pk' : {{'S' : pk}},
+                'sk' : {{'S' : sk}}
+            }}
+
+        ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+        ddb_arguments['UpdateExpression'] = UpdateExpressionString
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+        ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+
+        response = db_handler.update_item(**ddb_arguments)
+        global resp_obj
+        resp_obj = response
+        return "OK"
+
     def delete(data, db_handler = None):
         if db_handler == None:
             db_handler = ddb
@@ -899,9 +935,11 @@ def create(data):
         source_code += f"""
             '#STARK_uploaded_s3_keys': 'STARK_uploaded_s3_keys',"""
     source_code += f"""
-            '#STARKListViewsk' : 'STARK-ListView-sk'
+            '#STARKListViewsk' : 'STARK-ListView-sk',
+            '#STARKUpdatedBy': 'STARK-Updated-By',
+            '#STARKUpdatedTs': 'STARK-Updated-TS'
         }}
-        ExpressionAttributeValuesDict = {{"""
+        tempExpressionAttributeValuesDict = {{"""
 
 
     for col, col_type in columns.items():
@@ -919,7 +957,7 @@ def create(data):
     source_code += f"""
             ':STARKListViewsk' : {{'S' : data['STARK-ListView-sk']}}
         }}
-
+        ExpressionAttributeValuesDict = tempExpressionAttributeValuesDict | utilities.append_record_metadata('edit', username)
         ddb_arguments = {{}}
         ddb_arguments['TableName'] = ddb_table
         ddb_arguments['Key'] = {{
@@ -1009,7 +1047,7 @@ def create(data):
             STARK_uploaded_s3_keys[key] = upload_data
         """
     source_code += f"""
-        item={{}}
+        item = utilities.append_record_metadata('add', username)
         item['pk'] = {{'S' : pk}}
         item['sk'] = {{'S' : sk}}"""
 

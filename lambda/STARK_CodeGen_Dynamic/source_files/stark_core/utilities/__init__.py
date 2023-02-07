@@ -2,6 +2,7 @@ import math
 import uuid
 import boto3
 from datetime import datetime
+import time
 
 from io import StringIO
 from fpdf import FPDF
@@ -346,3 +347,22 @@ def convert_value_data_type(value, data_type):
             converted_value = str(value)
 
     return converted_value
+
+def append_record_metadata(transaction_type, user ):
+    metadata = {}
+    timestamp = int(time.time())
+    if transaction_type == 'add':
+        #append in item
+        metadata['STARK-Created-By'] = {'S': user}
+        metadata['STARK-Created-TS'] = {'N': str(timestamp)}
+        
+    elif transaction_type == 'edit':
+        metadata[':STARKUpdatedBy'] = {'S': user}
+        metadata[':STARKUpdatedTS'] = {'N': str(timestamp)}
+
+    elif transaction_type == 'delete':
+        metadata[':STARKDeletedBy'] = {'S': user}
+        metadata[':STARKDeletedTS'] = {'N': str(timestamp)}
+        metadata[':STARKIsDeleted'] = {'S': 'Y'}
+
+    return metadata  
