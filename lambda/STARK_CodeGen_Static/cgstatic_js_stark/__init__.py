@@ -14,9 +14,11 @@ def create(data):
     entities     = data['Entities']
     bucket_name  = data['Bucket Name']
     region_name  = os.environ['AWS_REGION']
+    project_name = data['Project Name']
 
     source_code = f"""\
         api_endpoint_1 = '{api_endpoint}'
+        project_name   = '{project_name}'
 
         const STARK={{
             'auth_url':`${{api_endpoint_1}}/stark_auth`,
@@ -183,7 +185,7 @@ def create(data):
 
             check_permission: function (data) {{
                 console.log("Checking if locally available or not")
-                console.log(data)
+                // console.log(data)
                 entity_varname =  data[0].split('|')[0].replaceAll(" ","_")
 
                 var permissions = STARK.get_local_storage_item('Permissions', entity_varname)
@@ -214,7 +216,7 @@ def create(data):
             map_permissions: function(permissions) {{
 
                 for (var permission of Object.keys(permissions)) {{
-                    console.log(permission + " -> " + permissions[permission])
+                    // console.log(permission + " -> " + permissions[permission])
 
                     for (var key of Object.keys(root.auth_list)) {{
                         /*Find a math in auth_list for our current STARK permission key*/
@@ -301,66 +303,84 @@ def create(data):
                 console.log(`${{item}}: ${{key}} expiry:`, new Date(expiry_time))
                 
                 //check item first if there is already a stored data to avoid overwriting
-                var temp = JSON.parse(localStorage.getItem(item))
-                var data_to_store = {{}}
+                var temp = JSON.parse(localStorage.getItem(project_name))
+                console.log(temp)
+                var temp_item = null
+                if(temp && temp.hasOwnProperty(item)) {{
+                    temp_item = temp[item]
+                }}
+
+                var temp_data_to_store = {{}}
 
                 if(item == "Listviews") {{
                     if(temp) {{
-                        if(temp.hasOwnProperty(key)) {{
-                            let old_data = temp[key]["data"]
+                        if(temp_item && temp.hasOwnProperty(key)) {{
+                            let old_data = temp_item[key]["data"]
                             let new_data = data 
                             data = {{...old_data, ...new_data}}
                         }}
                     }}
                 }}
-                data_to_store[`${{key}}`] = {{'data': data}}
-                data_to_store[`${{key}}`]['expiry_time'] = expiry_time
-                localStorage.setItem(item, JSON.stringify({{ ...temp, ...data_to_store}}))
+                temp_data_to_store[`${{key}}`] = {{'data': data}}
+                temp_data_to_store[`${{key}}`]['expiry_time'] = expiry_time
+                var data_to_store = {{
+                    [item] : {{...temp_item, ...temp_data_to_store}}
+                }}
+                localStorage.setItem(project_name, JSON.stringify({{ ...temp, ...data_to_store}}))
 
             }},
 
             get_local_storage_item: function(item, key) {{
-                // returns false or the requested stored data
-                fetched_data = JSON.parse(localStorage.getItem(item))
+                //get local storage data of the project
+                fetched_data = JSON.parse(localStorage.getItem(project_name))
                 if(fetched_data) {{
-                    arr_keys = Object.keys(fetched_data)
-                    if(arr_keys.filter(elem => elem == key).length > 0) {{
-                        var expiry_time = fetched_data[key]['expiry_time']
-                        if(Date.now() < expiry_time) {{
-                            return fetched_data[key]['data']
-                        }}
-                        // localStorage.removeItem only deletes the 'item' of the storage,
-                        // it can't select nested objects stored in the 'item'. 
-                        // but since we fetched the entire item we can create a workaround
-                        // 1. Assign the data from storage in fetched_data
-                        // 2. Trigger removeItem for the selected item to remove everything
-                        // 3. Remove the key that expires from the fetched_data
-                        // 4. Trigger setItem again using the fetched_data
-            
-                        localStorage.removeItem(item)
-                        delete fetched_data[key]
-                        localStorage.setItem(item,JSON.stringify(fetched_data))
-                        console.log(`${{item}} ${{key}} expired.. fetch again.`)
-                    }}
-                    
-                }}
-                else {{
-                    console.log(`${{item}} ${{key}} not yet set.`)
-
-                }}
+                    //checks if 'item' is already in local storage of the project
+                    arr_storage_type = Object.keys(fetched_data)
+                    if(arr_storage_type.filter(elem => elem == item).length > 0) {{
+                        item_data = fetched_data[item]
+                        //checks if 'key' is already in the 'item' in local storage
+                        if(item_data && item_data.hasOwnProperty(key)) {{
+                            console.log(`${{item}} for ${{key}} found.`)
+                            arr_keys = Object.keys(item_data)
+                            //check if the 'key' in the' item is expired, if yes, delete the 'key', if no, return the data
+                            if(arr_keys.filter(elem => elem == key).length > 0) {{
+                                var expiry_time = item_data[key]['expiry_time']
+                                if(Date.now() < expiry_time) {{
+                                    return item_data[key]['data']
+                                }}
+                                delete item_data[key]
+                                localStorage.setItem(project_name,JSON.stringify(fetched_data))
+                                console.log(`${{item}} ${{key}} expired.. fetch again.`)
+                            }}
                 
+                        }}
+                        else {{
+                            console.log(`${{item}} ${{key}} not yet set.`)
+                
+                        }}
+                    }}
+                    else {{
+                        console.log(`${{item}} not yet set.`)
+                    }}
+                }}
+
                 return false
             }},
 
-            local_storage_delete_key: function(item, key) {{
-                fetched_data = JSON.parse(localStorage.getItem(item))
+            local_storage_delete_key: function(item, key)  {{
+                fetched_data = JSON.parse(localStorage.getItem(project_name))
                 if(fetched_data) {{
-                    arr_keys = Object.keys(fetched_data)
-                    if(arr_keys.filter(elem => elem == key).length > 0) {{
-                        localStorage.removeItem(item)
-                        delete fetched_data[key]
-                        localStorage.setItem(item,JSON.stringify(fetched_data))
-                        console.log(`${{item}} ${{key}} deleted.`)
+                    arr_storage_type = Object.keys(fetched_data)
+                    if(arr_storage_type.filter(elem => elem == item).length > 0) {{
+                        item_data = fetched_data[item]
+                        if(item_data && item_data.hasOwnProperty(key)) {{
+                            arr_keys = Object.keys(item_data)
+                            if(arr_keys.filter(elem => elem == key).length > 0) {{
+                                delete item_data[key]
+                                localStorage.setItem(project_name,JSON.stringify(fetched_data))
+                                console.log(`${{item}} ${{key}} deleted.`)
+                            }}
+                        }}
                     }}
                 }}
             }}
