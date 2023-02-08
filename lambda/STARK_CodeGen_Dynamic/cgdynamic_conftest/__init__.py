@@ -12,9 +12,6 @@ def create(data):
     print('data conftest')
     print(data)
     entities       = data["Entities"]
-    sequence       = data['Models'][entity]['sequence']
-    print('sequence conftest')
-    print(sequence)
     #Convert human-friendly names to variable-friendly names
 
     source_code = f"""\
@@ -104,7 +101,7 @@ def create(data):
             return {entity_varname.lower()}.get_data()
             """
 
-        if len(sequence) > 0:
+        if len(data['Models'][entity]['sequence']) > 0:
             print('here')
             source_code += f"""
         @pytest.fixture
