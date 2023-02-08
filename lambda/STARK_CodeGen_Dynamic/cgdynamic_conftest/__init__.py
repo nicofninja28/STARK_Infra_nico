@@ -9,10 +9,12 @@ import textwrap
 import convert_friendly_to_system as converter
 
 def create(data):
-  
+    print('data conftest')
+    print(data)
     entities       = data["Entities"]
     sequence       = data['Sequence']
-    
+    print('sequence conftest')
+    print(sequence)
     #Convert human-friendly names to variable-friendly names
 
     source_code = f"""\
@@ -103,6 +105,7 @@ def create(data):
             """
 
         if len(sequence) > 0:
+            print('here')
             source_code += f"""
         @pytest.fixture
         def set_{entity_varname.lower()}_payload_sequence():
