@@ -90,7 +90,9 @@ def create(data):
         ddb = boto3.client('dynamodb', region_name=core.test_region)
         {cascade_function_string}
         {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200"""
+        assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200
+    
+    """
 
     if len(sequence) > 0:
         source_code += f"""    
