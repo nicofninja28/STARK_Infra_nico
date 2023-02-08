@@ -12,7 +12,7 @@ def create(data):
     print('data conftest')
     print(data)
     entities       = data["Entities"]
-    sequence       = data['Sequence']
+    sequence       = data['Models'][entity]['sequence']
     print('sequence conftest')
     print(sequence)
     #Convert human-friendly names to variable-friendly names

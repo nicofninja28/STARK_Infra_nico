@@ -148,16 +148,13 @@ def create_handler(event, context):
 
     ###########################################################
     #Create necessary files for test_cases directories
-    seq = {}
-    if len(models[entity]["sequence"]) > 0:
-        seq = models[entity]["sequence"]
+    
 
     data = {
         "Entities": entities,
         "Models": models,
         "DynamoDB Name": ddb_table_name,
-        "Bucket Name": website_bucket,
-        "Sequence": seq,
+        "Bucket Name": website_bucket
     }
     conftest_code = cg_conftest.create(data)
 
