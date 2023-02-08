@@ -18,6 +18,7 @@ def create(data):
     bucket_name    = data['Bucket Name']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
+    sequence       = data['sequence']
     
     #Convert human-friendly names to variable-friendly names
     entity_varname  = converter.convert_to_system_name(entity)
@@ -72,6 +73,7 @@ def create(data):
     from stark_core import security
     from stark_core import validation
     from stark_core import utilities
+    from stark_core import data_abstraction
 
     def test_map_results(get_{entity_to_lower}_data):
 
@@ -88,8 +90,25 @@ def create(data):
         ddb = boto3.client('dynamodb', region_name=core.test_region)
         {cascade_function_string}
         {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200
-        
+        assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200"""
+
+    if len(sequence) > 0:
+        source_code += f"""    
+    @mock_dynamodb
+    def test_get_by_pk_sequence(use_moto,set_{entity_to_lower}_payload_sequence, monkeypatch):
+        use_moto()
+        ddb = boto3.client('dynamodb', region_name=core.test_region)
+
+        def mock_get_sequence(pk, db_handler = None):
+            return set_{entity_to_lower}_payload_sequence['pk']
+        monkeypatch.setattr(data_abstraction, "get_sequence", mock_get_sequence)
+
+        {entity_to_lower}.add(set_{entity_to_lower}_payload_sequence, 'POST', ddb)
+        response  = {entity_to_lower}.get_by_pk(set_{entity_to_lower}_payload_sequence['pk'], set_{entity_to_lower}_payload_sequence['sk'], ddb)
+
+        assert set_{entity_to_lower}_payload_sequence['pk'] == response['item']['{pk_varname}']"""
+    else:
+        source_code += f"""    
     @mock_dynamodb
     def test_get_by_pk(use_moto,set_{entity_to_lower}_payload, monkeypatch):
         use_moto()
@@ -98,42 +117,71 @@ def create(data):
         {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
         response  = {entity_to_lower}.get_by_pk(set_{entity_to_lower}_payload['pk'], set_{entity_to_lower}_payload['sk'], ddb)
 
-        assert set_{entity_to_lower}_payload['pk'] == response['item']['{pk_varname}']
+        assert set_{entity_to_lower}_payload['pk'] == response['item']['{pk_varname}']"""
 
+    if len(sequence) > 0:
+        concat_seq = "_sequence"
+    else:
+        concat_seq = ""
+
+    source_code += f"""
     @mock_dynamodb
-    def test_get_all(use_moto,set_{entity_to_lower}_payload, monkeypatch):
+    def test_get_all(use_moto,set_{entity_to_lower}_payload{concat_seq}, monkeypatch):
         use_moto()
-        ddb = boto3.client('dynamodb', region_name=core.test_region)
+        ddb = boto3.client('dynamodb', region_name=core.test_region)"""
 
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        set_{entity_to_lower}_payload['pk'] = 'Test3'
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        set_{entity_to_lower}_payload['pk'] = 'Test4'
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        set_{entity_to_lower}_payload['pk'] = 'Test1'
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
+    if len(sequence) > 0:
+        source_code += f"""
+        def mock_get_sequence(pk, db_handler = None):
+            return set_{entity_to_lower}_payload_sequence['pk']
+        monkeypatch.setattr(data_abstraction, "get_sequence", mock_get_sequence)
+        """
+
+    source_code += f"""        
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
+        set_{entity_to_lower}_payload{concat_seq}['pk'] = 'Test3'
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
+        set_{entity_to_lower}_payload{concat_seq}['pk'] = 'Test4'
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
+        set_{entity_to_lower}_payload{concat_seq}['pk'] = 'Test1'
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
         response  = {entity_to_lower}.get_all('{default_sk}', None, ddb)
         # print(response)
         assert len(response[0]) == 4
 
     @mock_dynamodb
-    def test_edit(use_moto,set_{entity_to_lower}_payload, monkeypatch):
+    def test_edit(use_moto,set_{entity_to_lower}_payload{concat_seq}, monkeypatch):
         use_moto()
         ddb = boto3.client('dynamodb', region_name=core.test_region)
-        {cascade_function_string}
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        set_{entity_to_lower}_payload['{col_to_edit_varname}'] = {test_data_for_edit}
-        {entity_to_lower}.edit(set_{entity_to_lower}_payload, ddb)
+        {cascade_function_string}"""
 
-        assert set_{entity_to_lower}_payload['{col_to_edit_varname}'] == {entity_to_lower}.resp_obj['Attributes']['{col_to_edit_varname}']['{col_type}']
+    if len(sequence) > 0:
+        source_code += f"""
+        def mock_get_sequence(pk, db_handler = None):
+            return set_{entity_to_lower}_payload_sequence['pk']
+        monkeypatch.setattr(data_abstraction, "get_sequence", mock_get_sequence)
+        """
+    source_code += f"""
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
+        set_{entity_to_lower}_payload{concat_seq}['{col_to_edit_varname}'] = {test_data_for_edit}
+        {entity_to_lower}.edit(set_{entity_to_lower}_payload{concat_seq}, ddb)
+
+        assert set_{entity_to_lower}_payload{concat_seq}['{col_to_edit_varname}'] == {entity_to_lower}.resp_obj['Attributes']['{col_to_edit_varname}']['{col_type}']
 
     @mock_dynamodb
-    def test_delete(use_moto,set_{entity_to_lower}_payload, monkeypatch):
+    def test_delete(use_moto,set_{entity_to_lower}_payload{concat_seq}, monkeypatch):
         use_moto()
-        ddb = boto3.client('dynamodb', region_name=core.test_region)
+        ddb = boto3.client('dynamodb', region_name=core.test_region)"""
 
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
-        {entity_to_lower}.delete(set_{entity_to_lower}_payload, ddb)
+    if len(sequence) > 0:
+        source_code += f"""
+        def mock_get_sequence(pk, db_handler = None):
+            return set_{entity_to_lower}_payload_sequence['pk']
+        monkeypatch.setattr(data_abstraction, "get_sequence", mock_get_sequence)
+        """
+    source_code += f"""
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
+        {entity_to_lower}.delete(set_{entity_to_lower}_payload{concat_seq}, ddb)
         response  = {entity_to_lower}.get_all('{default_sk}', None, ddb)
         assert len(response[0]) == 0
     

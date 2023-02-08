@@ -11,6 +11,7 @@ import convert_friendly_to_system as converter
 def create(data):
   
     entities       = data["Entities"]
+    sequence       = data['sequence']
     
     #Convert human-friendly names to variable-friendly names
 
@@ -94,16 +95,26 @@ def create(data):
         #     os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
         """
     for entity in entities:
+        
+            
         entity_varname  = converter.convert_to_system_name(entity)
         source_code += f"""
         @pytest.fixture
         def get_{entity_varname.lower()}_data():
-            return {entity_varname.lower()}.get_data()
+            return {entity_varname.lower()}.get_data()"""
 
+        if len(sequence) > 0:
+            source_code += f"""
+        @pytest.fixture
+        def set_{entity_varname.lower()}_payload_sequence():
+            return {entity_varname.lower()}.set_payload()"""
+        else:
+             source_code += f"""
         @pytest.fixture
         def set_{entity_varname.lower()}_payload():
-            return {entity_varname.lower()}.set_payload()
-            
+            return {entity_varname.lower()}.set_payload()"""
+
+        source_code += f""" 
         @pytest.fixture
         def get_{entity_varname.lower()}_raw_payload():
             return {entity_varname.lower()}.get_raw_payload()

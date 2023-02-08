@@ -18,6 +18,7 @@ def create(data):
     bucket_name    = data['Bucket Name']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
+    sequence       = data['sequence']
     
     #Convert human-friendly names to variable-friendly names
     entity_varname  = converter.convert_to_system_name(entity)
@@ -72,31 +73,59 @@ def create(data):
         data['pk'] = {{'S':'Test1'}}
         data['sk'] = {{'S':'{entity_varname}|info'}}{data_string}
         
-        return data
+        return data"""
+    if len(sequence) > 0:
+        source_code += f"""
+    def set_payload_sequence():
+        payload = {{}}
+        payload['pk'] = 'C-000001'
+        payload['orig_pk'] = 'C-000001'
+        payload['sk'] = '{entity_varname}|info'{payload_string}"""
 
+        for rel_ent in rel_model:
+            rel_cols = rel_model[rel_ent]["data"]
+            rel_pk = rel_model[rel_ent]["pk"]
+            var_pk = rel_ent.replace(' ', '_') + '_' + rel_pk.replace(' ', '_')
+            source_code += f"""
+        payload['{var_pk}'] = ''"""
+            for rel_col, rel_col_type in rel_cols.items():
+                var_data = rel_ent.replace(' ', '_') + '_' + rel_col.replace(' ', '_')
+                source_code += f"""
+        payload['{var_data}'] = ''"""
+
+        source_code += f"""
+        payload['STARK-ListView-sk'] = 'C-000001'
+        payload['STARK_uploaded_s3_keys'] = {{}}
+        payload['orig_STARK_uploaded_s3_keys'] = {{}}
+        return payload
+    """
+    else:
+        source_code += f"""
     def set_payload():
         payload = {{}}
         payload['pk'] = 'Test2'
         payload['orig_pk'] = 'Test2'
         payload['sk'] = '{entity_varname}|info'{payload_string}"""
 
-    for rel_ent in rel_model:
-        rel_cols = rel_model[rel_ent]["data"]
-        rel_pk = rel_model[rel_ent]["pk"]
-        var_pk = rel_ent.replace(' ', '_') + '_' + rel_pk.replace(' ', '_')
-        source_code += f"""
-        payload['{var_pk}'] = ''"""
-        for rel_col, rel_col_type in rel_cols.items():
-            var_data = rel_ent.replace(' ', '_') + '_' + rel_col.replace(' ', '_')
+        for rel_ent in rel_model:
+            rel_cols = rel_model[rel_ent]["data"]
+            rel_pk = rel_model[rel_ent]["pk"]
+            var_pk = rel_ent.replace(' ', '_') + '_' + rel_pk.replace(' ', '_')
             source_code += f"""
+        payload['{var_pk}'] = ''"""
+            for rel_col, rel_col_type in rel_cols.items():
+                var_data = rel_ent.replace(' ', '_') + '_' + rel_col.replace(' ', '_')
+                source_code += f"""
         payload['{var_data}'] = ''"""
 
-    source_code += f"""
+        source_code += f"""
         payload['STARK-ListView-sk'] = 'Test2'
         payload['STARK_uploaded_s3_keys'] = {{}}
         payload['orig_STARK_uploaded_s3_keys'] = {{}}
         return payload
+    """
 
+    source_code += f"""
     def get_raw_payload():
         raw_payload = {{
             "{entity_varname}": {{
