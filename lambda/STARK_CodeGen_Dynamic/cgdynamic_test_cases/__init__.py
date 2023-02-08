@@ -88,9 +88,10 @@ def create(data):
         concat_seq = "_sequence"
     else:
         concat_seq = ""
+        
     source_code += f"""
     @mock_dynamodb
-    def test_add(use_moto,set_{entity_to_lower}_payload{sequence}, monkeypatch):
+    def test_add(use_moto,set_{entity_to_lower}_payload{concat_seq}, monkeypatch):
         use_moto()
         ddb = boto3.client('dynamodb', region_name=core.test_region)
         {cascade_function_string}
@@ -105,7 +106,7 @@ def create(data):
         """
 
     source_code += f"""
-        {entity_to_lower}.add(set_{entity_to_lower}_payload{sequence}, 'POST', ddb)
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{concat_seq}, 'POST', ddb)
         assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200
     
     """
