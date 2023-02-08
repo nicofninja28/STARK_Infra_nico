@@ -108,8 +108,8 @@ def create(data):
         def set_{entity_varname.lower()}_payload_sequence():
             return {entity_varname.lower()}.set_payload_sequence()
             """
-        else:
-            source_code += f"""
+            
+        source_code += f"""
         @pytest.fixture
         def set_{entity_varname.lower()}_payload():
             return {entity_varname.lower()}.set_payload()
