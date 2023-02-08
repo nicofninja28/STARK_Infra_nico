@@ -18,7 +18,7 @@ def create(data):
     bucket_name    = data['Bucket Name']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
-    sequence       = data['sequence']
+    sequence       = data['Sequence']
     
     #Convert human-friendly names to variable-friendly names
     entity_varname  = converter.convert_to_system_name(entity)

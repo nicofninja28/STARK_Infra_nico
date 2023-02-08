@@ -11,7 +11,7 @@ import convert_friendly_to_system as converter
 def create(data):
   
     entities       = data["Entities"]
-    sequence       = data['sequence']
+    sequence       = data['Sequence']
     
     #Convert human-friendly names to variable-friendly names
 
