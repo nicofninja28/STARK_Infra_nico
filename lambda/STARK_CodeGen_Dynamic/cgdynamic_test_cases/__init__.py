@@ -82,14 +82,30 @@ def create(data):
         
     def test_create_listview_index_value(set_{entity_to_lower}_payload):
 
-        assert set_{entity_to_lower}_payload['pk'] == {entity_to_lower}.create_listview_index_value(set_{entity_to_lower}_payload)
-
+        assert set_{entity_to_lower}_payload['pk'] == {entity_to_lower}.create_listview_index_value(set_{entity_to_lower}_payload)"""
+    
+    if len(sequence) > 0:
+        concat_seq = "_sequence"
+    else:
+        concat_seq = ""
+    source_code += f"""
     @mock_dynamodb
-    def test_add(use_moto,set_{entity_to_lower}_payload, monkeypatch):
+    def test_add(use_moto,set_{entity_to_lower}_payload{sequence}, monkeypatch):
         use_moto()
         ddb = boto3.client('dynamodb', region_name=core.test_region)
         {cascade_function_string}
-        {entity_to_lower}.add(set_{entity_to_lower}_payload, 'POST', ddb)
+    """
+
+
+    if len(sequence) > 0:
+        source_code += f"""
+        def mock_get_sequence(pk, db_handler = None):
+            return set_{entity_to_lower}_payload_sequence['pk']
+        monkeypatch.setattr(data_abstraction, "get_sequence", mock_get_sequence)
+        """
+
+    source_code += f"""
+        {entity_to_lower}.add(set_{entity_to_lower}_payload{sequence}, 'POST', ddb)
         assert  {entity_to_lower}.resp_obj['ResponseMetadata']['HTTPStatusCode'] == 200
     
     """
