@@ -14,6 +14,7 @@ const STARK_Validator = {
         'INVALID_PK': "Invalid 'pk' attribute in '${1}'. Expecting string as data type, '${2}' provided.",
         'INVALID_DATA_ATTRIBUTES': "Invalid 'data' attribute in '${1}'. Expecting array as data type, '${2}' provided.",
         'INVALID_SEQUENCE_ATTRIBUTES': "Invalid sequence attribute for '${1}'. Expecting object as data type, '${2}' provided.",
+        'INVALID_SEQUENCE': "Invalid sequence property. Missing property '${1}'.",
         'INVALID_COLUMN_ATTRIBUTES': "Invalid column attribute for '${1}'. Expecting object as data type, '${2}' provided.",
         'INVALID_COLUMN_FORMAT': "Invalid column format found in '${1}': Column position '${2}' must be a single key-value pair",
         'INVALID_CONTROL_TYPE': "Invalid control type for '${1}' column",
@@ -30,7 +31,7 @@ const STARK_Validator = {
         'ONE_RELATION_TYPE_ONLY': "Two relationship defined in ${1}. Only one relationship allowed per column.",
         'TABLE_NOT_FOUND': "Cannot find table ${1} defined in ${2} of ${3}.",
         'DUPLICATE_TABLE': "Table ${1} already exists.",
-        'NO_SEQUENCE': "No sequence defined. Please remove sequence if not needed."
+        'NO_SEQUENCE': "No sequence properties defined. Please remove sequence if not needed."
     },
     warning_message_template: {
         'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column.",
@@ -110,12 +111,15 @@ const STARK_Validator = {
                     }
                     else {
                         //start checking here
+                        // check if table has sequence/not null
                         if (table_element['sequence'] != null) {
-                            console.log('here')
+                            
                             arr_properties = ['current_counter', 'prefix', 'left_pad']
+
                             Object.keys(table_element['sequence']).forEach(element => {
                                 property_value = table_element['sequence'][element]
                                 if(this.is_valid_property_of_control_type(element, arr_properties)) {
+                                    //data type checker
                                     if(element == 'current_counter' ||  element == 'left_pad') {
                                         if(typeof(property_value) === 'number' && Number.isInteger(property_value)) {
                                             //do nothing..
@@ -136,12 +140,20 @@ const STARK_Validator = {
                                     }
                                 }
                                 else {
+                                    //if property is not a valid property in arr_properties
                                     this.validation_results[table]['warning_messages'].push(this.fetch_warning_message('NOT_A_PROPERTY_OF_SEQUENCE', [element]))
                                 }
                             });
+
+                            //sequence with missing property based from arr_properties
+                            missing_seq_attributes = arr_properties.filter(x => !Object.keys(table_element['sequence']).includes(x));
+                            if(missing_seq_attributes.length > 0) {
+                                this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE', [missing_seq_attributes]))
+                                valid_column = false
+                            }
+                            
                         } else {
-                            console.log('a')
-                            // NO_SEQUENCE
+                            //with sequence but no property at all
                             this.validation_results[table]['error_messages'].push(this.fetch_error_message('NO_SEQUENCE', []))
                             valid_column = false
                         }

@@ -1,5 +1,9 @@
 Customer:
     pk: Customer ID
+    sequence:
+      current_counter: 1
+      prefix: C
+      left_pad: 6
     data:
         - Customer Name: string
         - Gender: [ Male, Female, LGBTQ+ ]
@@ -13,6 +17,10 @@ Customer:
         - Remarks: multi-line-string
 Item:
     pk: Product Code
+    sequence:
+      current_counter: 1
+      prefix: P
+      left_pad: 6
     data:
         - Title: string
         - In Stock:
@@ -46,6 +54,10 @@ Customer Type:
         - Description: multi-line-string
 Document:
     pk: Document ID
+    sequence:
+      current_counter: 1
+      prefix: D
+      left_pad: 6
     data:
         - Title: string
         - Revision: int
@@ -57,6 +69,11 @@ Document:
             max_upload_size: 10
 Transaction:
     pk: Transaction Number
+    sequence:
+      current_counter: 1
+      prefix: T
+      left_pad: 6
+    
     data:
         - Date: date
         - Remarks: multi-line-string
@@ -69,10 +86,12 @@ Transaction:
             type: relationship
             has_many: Transaction Details
             has_many_ux: repeater
-            value: Customer ID
-            display: Customer ID
 Transaction Details:
     pk: Details ID
+    sequence:
+      current_counter: 1
+      prefix: TD
+      left_pad: 6
     data:
         - Item:
             type: relationship
