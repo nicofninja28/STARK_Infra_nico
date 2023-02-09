@@ -184,7 +184,7 @@ def get_sequence(pk, db_handler = None):
     record = raw[0]
 
     item = {}
-    item['Current_Counter'] = record.get('Current_Counter',{}).get('S','')
+    item['Current_Counter'] = record.get('Current_Counter',{}).get('N','')
     item['Left_Pad'] = record.get('Left_Pad',{}).get('S','')
     item['Prefix'] = record.get('Prefix',{}).get('S','')
     
@@ -209,7 +209,7 @@ def edit_sequence(pk, sk, Current_Counter, db_handler = None):
         '#Current_Counter' : 'Current_Counter',
     }
     ExpressionAttributeValuesDict = {
-        ':Current_Counter' : {'S' : str(updated_counter) },
+        ':Current_Counter' : {'N' : str(updated_counter) },
     }
 
     ddb_arguments = {}
