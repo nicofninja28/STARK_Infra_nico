@@ -96,17 +96,34 @@ const STARK_Validator = {
                     valid_column = false
                 }
                 // sequences are optional
+                console.log(table_element.hasOwnProperty('sequence'))
                 // if(table_element.hasOwnProperty('sequence')) {
+                //     let valid_column = true
                 //     //sequence must be object
-                //     if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof !Array) {
-                //         //start checking here
-                //     }
-                //     else {
+                //     if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof Array) {
                         
                 //         this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
                 //         valid_column = false
                 //     }
-                    
+                //     else {
+                //         //start checking here
+                //         if(typeof table_element['sequence']['current_counter'] != Number) {
+                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, column_name]))
+                //             valid_column = false
+                //         }
+
+                //         if(typeof table_element['sequence']['left_pad'] != Number) {
+                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, column_name]))
+                //             valid_column = false
+                //         }
+
+                //         if(typeof table_element['sequence']['prefix'] != String) {
+                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('STRING_ONLY', [element, column_name]))
+                //             valid_column = false
+                //         }
+                //         console.log(valid_column)
+
+                //     }
                 // }
                 // must have data with value of array
                 if(table_element.hasOwnProperty('data')) {
@@ -177,6 +194,7 @@ const STARK_Validator = {
                                                                         // do nothing..
                                                                     }
                                                                     else {
+                                                                        
                                                                         this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, column_name]))
                                                                         valid_column = false
                                                                     }
