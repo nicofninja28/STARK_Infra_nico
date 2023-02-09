@@ -29,10 +29,12 @@ const STARK_Validator = {
         'NO_RELATIONSHIP_TYPE': "No relationship type defined for '${1}'. Columns that have 'type': 'relationship' must have either 'has_one' or 'has_many' as key and table name as value specified",
         'ONE_RELATION_TYPE_ONLY': "Two relationship defined in ${1}. Only one relationship allowed per column.",
         'TABLE_NOT_FOUND': "Cannot find table ${1} defined in ${2} of ${3}.",
-        'DUPLICATE_TABLE': "Table ${1} already exists."
+        'DUPLICATE_TABLE': "Table ${1} already exists.",
+        'NO_SEQUENCE': "No sequence defined. Please remove sequence if not needed."
     },
     warning_message_template: {
-        'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column."
+        'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column.",
+        'NOT_A_PROPERTY_OF_SEQUENCE': "'${1}' is not a property of Sequence."
     },
     //functions
     fetch_error_message: function(message_code, message_params = []) {
@@ -97,34 +99,57 @@ const STARK_Validator = {
                 }
                 // sequences are optional
                 console.log(table_element.hasOwnProperty('sequence'))
-                // if(table_element.hasOwnProperty('sequence')) {
-                //     let valid_column = true
-                //     //sequence must be object
-                //     if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof Array) {
+                if(table_element.hasOwnProperty('sequence')) {
+                    let valid_column = true
+                    console.log(table_element['sequence'])
+                    //sequence must be object
+                    if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof Array) {
+                        console.log('here1')
+                        this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
+                        valid_column = false
+                    }
+                    else {
+                        //start checking here
+                        if (table_element['sequence'] != null) {
+                            console.log('here')
+                            arr_properties = ['current_counter', 'prefix', 'left_pad']
+                            Object.keys(table_element['sequence']).forEach(element => {
+                                property_value = table_element['sequence'][element]
+                                if(this.is_valid_property_of_control_type(element, arr_properties)) {
+                                    if(element == 'current_counter' ||  element == 'left_pad') {
+                                        if(typeof(property_value) === 'number' && Number.isInteger(property_value)) {
+                                            //do nothing..
+                                        }
+                                        else {
+                                            this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, 'Sequence']))
+                                            valid_column = false
+                                        }
+                                    }
+                                    if(element == 'prefix') {
+                                        if(typeof(property_value) === 'string') {
+                                            //do nothing..
+                                        }
+                                        else {
+                                            this.validation_results[table]['error_messages'].push(this.fetch_error_message('STRING_ONLY', [element, 'Sequence']))
+                                            valid_column = false
+                                        }
+                                    }
+                                }
+                                else {
+                                    this.validation_results[table]['warning_messages'].push(this.fetch_warning_message('NOT_A_PROPERTY_OF_SEQUENCE', [element]))
+                                }
+                            });
+                        } else {
+                            console.log('a')
+                            // NO_SEQUENCE
+                            this.validation_results[table]['error_messages'].push(this.fetch_error_message('NO_SEQUENCE', []))
+                            valid_column = false
+                        }
                         
-                //         this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
-                //         valid_column = false
-                //     }
-                //     else {
-                //         //start checking here
-                //         if(typeof table_element['sequence']['current_counter'] != Number) {
-                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, column_name]))
-                //             valid_column = false
-                //         }
 
-                //         if(typeof table_element['sequence']['left_pad'] != Number) {
-                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, column_name]))
-                //             valid_column = false
-                //         }
-
-                //         if(typeof table_element['sequence']['prefix'] != String) {
-                //             this.validation_results[table]['error_messages'].push(this.fetch_error_message('STRING_ONLY', [element, column_name]))
-                //             valid_column = false
-                //         }
-                //         console.log(valid_column)
-
-                //     }
-                // }
+                    }
+                    console.log(valid_column)
+                }
                 // must have data with value of array
                 if(table_element.hasOwnProperty('data')) {
                     table_attributes = table_element['data']
@@ -176,6 +201,7 @@ const STARK_Validator = {
                                                 
                                                 Object.keys(column_properties).forEach(element => {
                                                     property_value = column_properties[element]
+                                                    console.log(property_value)
                                                     if(this.is_valid_property_of_control_type(element, arr_properties)) {
                                                         if(element == 'wrap') {
                                                             if(['wrap', 'no-wrap'].indexOf(property_value) !== -1) {
