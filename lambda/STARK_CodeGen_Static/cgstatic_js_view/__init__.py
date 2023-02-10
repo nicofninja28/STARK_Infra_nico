@@ -1109,8 +1109,8 @@ def create(data):
                 print(new_arr_field)   
                 # foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
                 # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
-                separator = ' + " - " + '
-                array_of_strings = ['arrayItem[' + item + ']' + separator for item in new_arr_field]
+                separator = " + ' - ' + " 
+                array_of_strings = ["arrayItem['" + item + "']" + separator for item in new_arr_field]
                 foreign_display = ''
                 for array_item in array_of_strings:
                     foreign_display += array_item
