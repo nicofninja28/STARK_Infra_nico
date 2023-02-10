@@ -1105,7 +1105,7 @@ def create(data):
                 new_arr_field = []
                 for display_value in foreign_field:
                     print(display_value.replace(' ', "_"))
-                    new_arr_field.append(str(display_value.replace(' ', "_")))
+                    new_arr_field.append(str(converter.convert_to_system_name(display_value)))
                 print(new_arr_field)   
                 # foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
                 # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
