@@ -44,14 +44,7 @@ def create(data):
         sk = data.get('sk', '')    
         if sk == '': sk = default_sk"""
 
-    if len(sequence) > 0:
-        dict_to_var_code = f"""pk = data_abstraction.get_sequence(entity_name)
-        sk = data.get('sk', '')    
-        if sk == '': sk = default_sk"""
-    else:
-        dict_to_var_code = f"""pk = data.get('pk', '')
-        sk = data.get('sk', '')    
-        if sk == '': sk = default_sk"""
+    
 
     #Check for file upload in child if 1-M is available
     for rel in rel_model:
@@ -1009,11 +1002,46 @@ def create(data):
             
     source_code+= f"""
     def add(data, method='POST', db_handler=None):
+    """
 
+    if len(sequence) > 0:
+        dict_to_var_code_add = f"""pk = data_abstraction.get_sequence(entity_name)
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    else:
+        dict_to_var_code_add = f"""pk = data.get('pk', '')
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    
+    #Check for file upload in child if 1-M is available
+    for rel in rel_model:
+        rel_cols = rel_model[rel]["data"]
+        for rel_col, rel_col_type in rel_cols.items():
+            if isinstance(rel_col_type, dict):
+                if rel_col_type["type"] == 'file-upload': 
+                    with_upload_on_many = True
 
+    for col, col_type in columns.items():
+        col_varname = converter.convert_to_system_name(col)
+        
+        #check for file upload
+        if isinstance(col_type, dict) and col_type['type'] == 'file-upload':
+            with_upload = True
+        
+        col_type_id = set_type(col_type)
+
+        if col_type_id in ['S', 'N']: 
+            dict_to_var_code_add += f"""
+        {col_varname} = str(data.get('{col_varname}', ''))"""
+
+        else:
+            dict_to_var_code_add += f"""
+        {col_varname} = data.get('{col_varname}', '')"""
+
+    source_code+= f"""    
         if db_handler == None:
             db_handler = ddb
-        {dict_to_var_code}"""
+        {dict_to_var_code_add}"""
 
 
     if with_upload or with_upload_on_many:
