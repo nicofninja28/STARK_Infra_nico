@@ -12,8 +12,7 @@ Customer:
         - Customer Type: 
             type: relationship
             has_one: Customer Type
-            value: Customer Type
-            display: Customer Type
+            display_value: ['Customer Type']
         - Remarks: multi-line-string
 Item:
     pk: Product Code
@@ -80,8 +79,7 @@ Transaction:
         - Customer: 
             type: relationship
             has_one: Customer
-            value: Customer ID
-            display: Customer ID
+            display_value: ['Customer ID', 'Customer Name']
         - Transaction Details: 
             type: relationship
             has_many: Transaction Details
@@ -96,8 +94,7 @@ Transaction Details:
         - Item:
             type: relationship
             has_one: Item
-            value: Product Code
-            display: Product Code
+            display_value: ['Product Code', 'Title']
         - Amount:
             type: int-spinner
             min: 1
