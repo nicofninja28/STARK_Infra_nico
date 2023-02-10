@@ -16,11 +16,14 @@ cg_coltype = importlib.import_module(f"{prepend_dir}cgstatic_controls_coltype")
 import convert_friendly_to_system as converter
 
 def create(data):
+    print('data')
+    print(data)
     entity         = data["Entity"]
     cols           = data["Columns"]
     pk             = data['PK']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
+    sequence       = data["Sequence"]
 
     entity_varname = converter.convert_to_system_name(entity)
     entity_app     = entity_varname + '_app'
@@ -46,8 +49,15 @@ def create(data):
             data: {{
                 metadata: {{
                     '{pk_varname}': {{
-                        'value': '',
-                        'required': true,
+                        'value': '',"""
+    if len(sequence) > 0:
+        required = "false"
+    else:
+        required = "true"
+        
+    source_code += f"""
+                        'required': {required},"""
+    source_code += f"""                
                         'max_length': '',
                         'data_type': 'String'
                     }},"""

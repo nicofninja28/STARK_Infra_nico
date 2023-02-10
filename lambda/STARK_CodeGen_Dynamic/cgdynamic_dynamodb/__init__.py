@@ -9,15 +9,18 @@ import textwrap
 import convert_friendly_to_system as converter
 
 def create(data):
-  
+    print('data')
+    print(data)
     pk             = data["PK"]
     entity         = data["Entity"]
+    sequence       = data["Sequence"]
     columns        = data["Columns"]
     ddb_table_name = data["DynamoDB Name"]
     bucket_name    = data['Bucket Name']
     relationships  = data["Relationships"]
     rel_model      = data["Rel Model"]
-    
+    print('sequence')
+    print(sequence)
     #Convert human-friendly names to variable-friendly names
     entity_varname = converter.convert_to_system_name(entity)
     pk_varname     = converter.convert_to_system_name(pk)
@@ -36,9 +39,12 @@ def create(data):
     col_dict += ' }'
 
     #Create the dict value retrieval code for the add/edit function body
+    
     dict_to_var_code = f"""pk = data.get('pk', '')
         sk = data.get('sk', '')    
         if sk == '': sk = default_sk"""
+
+    
 
     #Check for file upload in child if 1-M is available
     for rel in rel_model:
@@ -118,17 +124,28 @@ def create(data):
     sort_fields       = ["{pk_varname}", ]
     relationships     = {relationships}
     entity_upload_dir = stark_core.upload_dir + "{entity_varname}/"
+    entity_name       = "{entity}"
     metadata          = {{
                 "{pk_varname}": {{
                     'value': '',
-                    'key': 'pk',
-                    'required': True,
+                    'key': 'pk',"""
+
+    if len(sequence) > 0:
+        required = False
+    else:
+        required = True
+        
+    source_code += f"""
+                    'required': {required},"""
+                    
+    source_code += f"""                
                     'max_length': '',
                     'data_type': 'string',
                     'state': None,
                     'feedback': '',
                     'relationship': ''
                 }},"""
+    
         
     
     for col, col_type in columns.items():
@@ -1034,9 +1051,47 @@ def create(data):
             
     source_code+= f"""
     def add(data, method='POST', db_handler=None):
+    """
+
+    if len(sequence) > 0:
+        dict_to_var_code_add = f"""pk = data_abstraction.get_sequence(entity_name)
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    else:
+        dict_to_var_code_add = f"""pk = data.get('pk', '')
+        sk = data.get('sk', '')    
+        if sk == '': sk = default_sk"""
+    
+    #Check for file upload in child if 1-M is available
+    for rel in rel_model:
+        rel_cols = rel_model[rel]["data"]
+        for rel_col, rel_col_type in rel_cols.items():
+            if isinstance(rel_col_type, dict):
+                if rel_col_type["type"] == 'file-upload': 
+                    with_upload_on_many = True
+
+    for col, col_type in columns.items():
+        col_varname = converter.convert_to_system_name(col)
+        
+        #check for file upload
+        if isinstance(col_type, dict) and col_type['type'] == 'file-upload':
+            with_upload = True
+        
+        col_type_id = set_type(col_type)
+
+        if col_type_id in ['S', 'N']: 
+            dict_to_var_code_add += f"""
+        {col_varname} = str(data.get('{col_varname}', ''))"""
+
+        else:
+            dict_to_var_code_add += f"""
+        {col_varname} = data.get('{col_varname}', '')"""
+
+    source_code+= f"""    
         if db_handler == None:
             db_handler = ddb
-        {dict_to_var_code}"""
+        {dict_to_var_code_add}"""
+
 
     if with_upload or with_upload_on_many:
         source_code += f"""
@@ -1075,8 +1130,16 @@ def create(data):
 
     source_code += f"""
 
-        if data.get('STARK-ListView-sk','') == '':
-            item['STARK-ListView-sk'] = {{'S' : create_listview_index_value(data)}}
+        if data.get('STARK-ListView-sk','') == '':"""
+
+    if len(sequence) > 0:
+        source_code += f"""    
+            data['pk'] = pk"""
+    
+    source_code += f"""    
+            item['STARK-ListView-sk'] = {{'S' : create_listview_index_value(data)}}"""
+        
+    source_code += f"""
         else:
             item['STARK-ListView-sk'] = {{'S' : data['STARK-ListView-sk']}}
 
