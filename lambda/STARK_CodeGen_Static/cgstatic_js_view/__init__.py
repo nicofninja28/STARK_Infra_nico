@@ -1100,8 +1100,21 @@ def create(data):
             has_many_ux = col_type.get('has_many_ux', '')
             if  has_one != '' or (has_many != '' and has_many_ux != 'repeater'):
                 foreign_entity  = converter.convert_to_system_name(has_one if has_one != '' else has_many)
-                foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
-                foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
+                foreign_field   = col_type.get('display_value', foreign_entity)
+                
+                new_arr_field = []
+                for display_value in foreign_field:
+                    print(display_value.replace(' ', "_"))
+                    new_arr_field.append(str(display_value.replace(' ', "_")))
+                print(new_arr_field)   
+                # foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
+                # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
+                separator = ' + " - " + '
+                array_of_strings = ['arrayItem[' + item + ']' + separator for item in new_arr_field]
+                foreign_display = ''
+                for array_item in array_of_strings:
+                    foreign_display += array_item
+                foreign_display = foreign_display[:-len(separator)]
 
                 source_code += f"""
                 list_{foreign_entity}: function () {{
@@ -1110,12 +1123,16 @@ def create(data):
                         root.lists.{foreign_entity} = []
 
                         //FIXME: for now, generic list() is used. Can be optimized to use a list function that only retrieves specific columns
-                        fields = ['{foreign_field}', '{foreign_display}']
+                        fields = {new_arr_field}
+                        
                         {foreign_entity}_app.get_fields(fields).then( function(data) {{
-                            data.forEach(function(arrayItem) {{
-                                value = arrayItem['{foreign_field}']
-                                text  = arrayItem['{foreign_display}']"""
-                 
+                            data.forEach(function(arrayItem) {{"""
+                # for arr_field in new_arr_field:
+                #     foreign_display =   arrayItem['{foreign_display}']    
+                source_code += f"""
+                                value = {foreign_display}
+                                text  = {foreign_display}"""
+                
                 source_code += f"""            
                                 root.lists.{foreign_entity}.push({{ value: value, text: text }})"""
 

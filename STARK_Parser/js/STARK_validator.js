@@ -398,7 +398,31 @@ const STARK_Validator = {
                                                                 Object.keys(column_properties).forEach(element => {
                                                                     let property_value = column_properties[element]
                                                                     if(table_list.indexOf())
-                                                                    arr_sub_properties = ['value', 'display']
+                                                                    // arr_sub_properties = ['value', 'display']
+                                                                    arr_sub_properties = ['display_value']
+
+                                                                    if(element == 'display_value' ) {
+                                                                        if((typeof(property_value) === 'object' && property_value instanceof Array)) {
+                                                                            // FIXME: No need to nitpick for now, just make sure its an array of string. The real validator for file-upload, 
+                                                                            // is in the view and STARK js files of generated project.
+                                                                            for (let index = 0; index < property_value.length; index++) {
+                                                                                let ext_value = property_value[index];
+                                                                                if(typeof(ext_value) === 'string') {
+                
+                                                                                }
+                                                                                else {
+                                                                                    this.validation_results[table]['error_messages'].push(this.fetch_error_message('ARRAY_STRING_ONLY', [element, column_name]))
+                                                                                    valid_column = false
+                                                                                }
+                                                                                
+                                                                            }
+                                                                        }
+                                                                        else {
+                                                                            this.validation_results[table]['error_messages'].push(this.fetch_error_message('ARRAY_STRING_ONLY', [element, column_name]))
+                                                                            valid_column = false
+                                                                        }
+                                                                    }
+
                                                                     if(this.is_valid_property_of_control_type(element, arr_sub_properties, true)){
             
                                                                     }
