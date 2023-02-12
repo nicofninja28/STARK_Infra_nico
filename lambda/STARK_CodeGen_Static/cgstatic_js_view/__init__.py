@@ -987,7 +987,7 @@ def create(data):
                     
                 }},"""
     if with_upload:
-        source_code += f""",
+        source_code += f"""
                 show_preview(filename) {{
                     if(typeof filename == 'string') {{
                         ext = filename.split('.').pop()
