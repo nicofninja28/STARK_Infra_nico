@@ -16,7 +16,6 @@ import yaml
 
 #Private modules
 import convert_friendly_to_system as converter
-import stark_scrypt as scrypt
 import suggest_graphic as set_graphic
 import get_relationship as get_rel
 
