@@ -184,3 +184,15 @@ select:-webkit-autofill:focus {
   background-color: transparent;
   /* background-color: #ffffff; */
 }
+
+.tooltip .tooltip-inner{
+  max-width: 650px !important;
+}
+
+.img-preview {
+  max-width: 600px !important
+}
+
+.show_preview_icon {
+  width:94%
+}

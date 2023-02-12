@@ -380,7 +380,7 @@ def create(data):
                 allowed_size_string += f"""
                          "{col_varname}": {float(allowed_size)},"""
                 upload_elems_string += f"""
-                        "{col_varname}": {{"file": '', "progress_bar_val": 0}},"""
+                        "{col_varname}": {{"file": '', "progress_bar_val": 0, "tmp_location": ""}},"""
     if with_upload or with_upload_on_many:
         source_code += f"""
                 s3_access: "","""
@@ -647,6 +647,7 @@ def create(data):
                             root.{entity_varname}.orig_STARK_uploaded_s3_keys = structuredClone(Object.fromEntries(Object.entries(data["item"]['STARK_uploaded_s3_keys'])))
                             root.STARK_upload_elements['{col_varname}'].file = root.{entity_varname}.{col_varname} != "" ? root.{entity_varname}.{col_varname} : ""
                             root.STARK_upload_elements['{col_varname}'].progress_bar_val = root.{entity_varname}.{col_varname} != "" ? 100 : 0
+                            root.STARK_upload_elements['{col_varname}'].tmp_location = `https://${{root.object_url_prefix}}${{root.{entity_varname}.STARK_uploaded_s3_keys.{col_varname}}}`
                             
                             """
 
@@ -997,6 +998,19 @@ def create(data):
                 }},"""
     if with_upload:
         source_code += f"""
+                show_preview(filename) {{
+                    if(typeof filename == 'string') {{
+                        ext = filename.split('.').pop()
+                        console.log(ext)
+                        arr_previewable = ['jpg', 'jpeg', 'png', 'bmp', 'svg', 'gif']
+                        if(arr_previewable.findIndex(elem => elem == ext) >= 0) {{
+                            return true
+                        }}
+                        else {{
+                            return false
+                        }}
+                    }}
+                }},
                 process_upload_file(file_upload_element) {{
                     var upload_processed = {{
                             'message': 'initial'
@@ -1053,6 +1067,7 @@ def create(data):
                             ACL: 'public-read'
                             }}, function(err, data) {{
                                 console.log(data)
+                                root.STARK_upload_elements[file_upload_element]['tmp_location'] = data.Location
                                 if(err) {{
                                     console.log(err)
                                 }}
