@@ -72,6 +72,28 @@ def create_handler(event, context):
 
     all_permissions = system_permissions + ', ' + business_permissions
     
+    #################################
+    #Create sequence table
+    for entity in entities:
+        if "sequence" in models[entity]:
+            pk              = entity
+            current_counter = models[entity]['sequence']['current_counter']
+            prefix          = models[entity]['sequence']['prefix']
+            left_pad        = models[entity]['sequence']['left_pad']
+
+            business_module                      = {}
+            business_module['pk']                = {'S' : pk}
+            business_module['sk']                = {'S' : "STARK|sequence"}
+            business_module['Current_Counter']   = {'N' : str(current_counter)}
+            business_module['Prefix']            = {'S' : prefix}
+            business_module['Left_Pad']          = {'S' : str(left_pad)}
+            business_module['STARK-ListView-sk'] = {'S' : pk}
+
+            response = ddb.put_item(
+                TableName=ddb_table_name,
+                Item=business_module,
+            )
+            print(response)
 
     #################################
     #Create default user and password

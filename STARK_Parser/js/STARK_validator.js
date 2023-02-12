@@ -14,6 +14,7 @@ const STARK_Validator = {
         'INVALID_PK': "Invalid 'pk' attribute in '${1}'. Expecting string as data type, '${2}' provided.",
         'INVALID_DATA_ATTRIBUTES': "Invalid 'data' attribute in '${1}'. Expecting array as data type, '${2}' provided.",
         'INVALID_SEQUENCE_ATTRIBUTES': "Invalid sequence attribute for '${1}'. Expecting object as data type, '${2}' provided.",
+        'INVALID_SEQUENCE': "Invalid sequence property. Missing property '${1}'.",
         'INVALID_COLUMN_ATTRIBUTES': "Invalid column attribute for '${1}'. Expecting object as data type, '${2}' provided.",
         'INVALID_COLUMN_FORMAT': "Invalid column format found in '${1}': Column position '${2}' must be a single key-value pair",
         'INVALID_CONTROL_TYPE': "Invalid control type for '${1}' column",
@@ -29,10 +30,12 @@ const STARK_Validator = {
         'NO_RELATIONSHIP_TYPE': "No relationship type defined for '${1}'. Columns that have 'type': 'relationship' must have either 'has_one' or 'has_many' as key and table name as value specified",
         'ONE_RELATION_TYPE_ONLY': "Two relationship defined in ${1}. Only one relationship allowed per column.",
         'TABLE_NOT_FOUND': "Cannot find table ${1} defined in ${2} of ${3}.",
-        'DUPLICATE_TABLE': "Table ${1} already exists."
+        'DUPLICATE_TABLE': "Table ${1} already exists.",
+        'NO_SEQUENCE': "No sequence properties defined. Please remove sequence if not needed."
     },
     warning_message_template: {
-        'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column."
+        'NOT_A_PROPERTY_OF_CONTROL_TYPE': "'${1}' is not a property of '${2}' therefore it will not affect the '${3}' column.",
+        'NOT_A_PROPERTY_OF_SEQUENCE': "'${1}' is not a property of Sequence."
     },
     //functions
     fetch_error_message: function(message_code, message_params = []) {
@@ -100,17 +103,68 @@ const STARK_Validator = {
                         valid_column = false
                     }
                     // sequences are optional
+                    console.log(table_element.hasOwnProperty('sequence'))
                     if(table_element.hasOwnProperty('sequence')) {
+                        let valid_column = true
+                        console.log(table_element['sequence'])
                         //sequence must be object
-                        if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof !Array) {
-                            //start checking here
-                        }
-                        else {
-                            
+                        if(typeof table_element['sequence'] === 'object' && table_element['sequence'] instanceof Array) {
+                            console.log('here1')
                             this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE_ATTRIBUTES',[table, typeof table_element['sequence']]))
                             valid_column = false
                         }
-                        
+                        else {
+                            //start checking here
+                            // check if table has sequence/not null
+                            if (table_element['sequence'] != null) {
+                                
+                                arr_properties = ['current_counter', 'prefix', 'left_pad']
+
+                                Object.keys(table_element['sequence']).forEach(element => {
+                                    property_value = table_element['sequence'][element]
+                                    if(this.is_valid_property_of_control_type(element, arr_properties)) {
+                                        //data type checker
+                                        if(element == 'current_counter' ||  element == 'left_pad') {
+                                            if(typeof(property_value) === 'number' && Number.isInteger(property_value)) {
+                                                //do nothing..
+                                            }
+                                            else {
+                                                this.validation_results[table]['error_messages'].push(this.fetch_error_message('INTEGER_ONLY', [element, 'Sequence']))
+                                                valid_column = false
+                                            }
+                                        }
+                                        if(element == 'prefix') {
+                                            if(typeof(property_value) === 'string') {
+                                                //do nothing..
+                                            }
+                                            else {
+                                                this.validation_results[table]['error_messages'].push(this.fetch_error_message('STRING_ONLY', [element, 'Sequence']))
+                                                valid_column = false
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        //if property is not a valid property in arr_properties
+                                        this.validation_results[table]['warning_messages'].push(this.fetch_warning_message('NOT_A_PROPERTY_OF_SEQUENCE', [element]))
+                                    }
+                                });
+
+                                //sequence with missing property based from arr_properties
+                                missing_seq_attributes = arr_properties.filter(x => !Object.keys(table_element['sequence']).includes(x));
+                                if(missing_seq_attributes.length > 0) {
+                                    this.validation_results[table]['error_messages'].push(this.fetch_error_message('INVALID_SEQUENCE', [missing_seq_attributes]))
+                                    valid_column = false
+                                }
+                                
+                            } else {
+                                //with sequence but no property at all
+                                this.validation_results[table]['error_messages'].push(this.fetch_error_message('NO_SEQUENCE', []))
+                                valid_column = false
+                            }
+                            
+
+                        }
+                        console.log(valid_column)
                     }
                     // must have data with value of array
                     if(table_element.hasOwnProperty('data')) {
@@ -344,7 +398,31 @@ const STARK_Validator = {
                                                                 Object.keys(column_properties).forEach(element => {
                                                                     let property_value = column_properties[element]
                                                                     if(table_list.indexOf())
-                                                                    arr_sub_properties = ['value', 'display']
+                                                                    // arr_sub_properties = ['value', 'display']
+                                                                    arr_sub_properties = ['display_value']
+
+                                                                    if(element == 'display_value' ) {
+                                                                        if((typeof(property_value) === 'object' && property_value instanceof Array)) {
+                                                                            // FIXME: No need to nitpick for now, just make sure its an array of string. The real validator for file-upload, 
+                                                                            // is in the view and STARK js files of generated project.
+                                                                            for (let index = 0; index < property_value.length; index++) {
+                                                                                let ext_value = property_value[index];
+                                                                                if(typeof(ext_value) === 'string') {
+                
+                                                                                }
+                                                                                else {
+                                                                                    this.validation_results[table]['error_messages'].push(this.fetch_error_message('ARRAY_STRING_ONLY', [element, column_name]))
+                                                                                    valid_column = false
+                                                                                }
+                                                                                
+                                                                            }
+                                                                        }
+                                                                        else {
+                                                                            this.validation_results[table]['error_messages'].push(this.fetch_error_message('ARRAY_STRING_ONLY', [element, column_name]))
+                                                                            valid_column = false
+                                                                        }
+                                                                    }
+
                                                                     if(this.is_valid_property_of_control_type(element, arr_sub_properties, true)){
             
                                                                     }

@@ -141,7 +141,7 @@ var root = new Vue({
                 this.validation_properties.default_pass.state = true
             }
             if((this.default_pass.length) && (this.confirm_default_pass.length))  {
-                console.log('c')
+                // console.log('c')
                 if(this.default_pass != this.confirm_default_pass)
                 {
                     message.push('Default Password')
@@ -153,7 +153,7 @@ var root = new Vue({
                 } 
                 else {
                     
-                    console.log('e')
+                    // console.log('e')
                     this.validation_properties.default_pass.state = true
                     this.validation_properties.confirm_default_pass.state = true
                 }

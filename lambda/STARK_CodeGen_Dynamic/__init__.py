@@ -96,8 +96,14 @@ def create_handler(event, context):
                 for key in items:
                     for value in key:
                         key[value] = converter.convert_to_system_name(key[value]) 
+                        
+        seq = {}
+        if len(models[entity]["sequence"]) > 0:
+            seq = models[entity]["sequence"]
+
         data = {
                 "Entity": entity, 
+                "Sequence": seq, 
                 "Columns": models[entity]["data"], 
                 "PK": models[entity]["pk"], 
                 "DynamoDB Name": ddb_table_name,
@@ -108,6 +114,9 @@ def create_handler(event, context):
                 "Processed Bucket Name": s3_analytics_processed_bucket_name,
                 "Project Name": project_varname
             }
+        
+            
+        print(data)    
         source_code            = cg_ddb.create(data)
         test_source_code       = cg_test.create(data)
         fixtures_source_code   = cg_fixtures.create(data)
@@ -139,11 +148,13 @@ def create_handler(event, context):
 
     ###########################################################
     #Create necessary files for test_cases directories
+    
+
     data = {
         "Entities": entities,
         "Models": models,
         "DynamoDB Name": ddb_table_name,
-        "Bucket Name": website_bucket,
+        "Bucket Name": website_bucket
     }
     conftest_code = cg_conftest.create(data)
 
