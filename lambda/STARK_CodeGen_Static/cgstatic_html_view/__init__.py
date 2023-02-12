@@ -155,8 +155,14 @@ def create(data):
                             <div class="form-group row">
                                 <label for="{col_varname}" class="col-sm-2 col-form-label">{col}</label>
                                     <a :href="'https://'+ object_url_prefix + {entity_varname}.STARK_uploaded_s3_keys.{col_varname}">
-                                        <span class="form-control-link" readonly id="{col_varname}" placeholder="" >{{{{{entity_varname}.{col_varname}}}}}</span>   
+                                        <span class="form-control-plaintext form-control-link" readonly id="{col_varname}" placeholder="" >{{{{{entity_varname}.{col_varname}}}}}</span>   
                                     </a>
+                                    <template v-if="show_preview({entity_varname}.STARK_uploaded_s3_keys.{col_varname})">
+                                    <img src="images/search.svg" id="{col_varname}_Preview" class ="ml-2" alt="">
+                                        <b-tooltip target="{col_varname}_Preview" title="Preview" triggers="hover" placement="topright">
+                                            <img :src="'https://'+ object_url_prefix + {entity_varname}.STARK_uploaded_s3_keys.{col_varname}" alt="" class="img-preview">
+                                        </b-tooltip>
+                                    </template>
                                 </div>"""  
             else:
                 source_code += f"""
