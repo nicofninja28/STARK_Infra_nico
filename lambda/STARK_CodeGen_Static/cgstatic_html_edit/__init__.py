@@ -26,6 +26,12 @@ def create(data):
     cols        = data["Columns"]
     pk          = data["PK"]
     rel_model   = data["Rel Model"]
+    sequence    = data["Sequence"]
+
+    if len(sequence) > 0:
+        disabled = 'disabled'
+    else: 
+        disabled = ''
 
     #Convert human-friendly names to variable-friendly names
     entity_varname = converter.convert_to_system_name(entity)
@@ -46,7 +52,7 @@ def create(data):
                             <input type="hidden" id="orig_{pk_varname}" v-model="{entity_varname}.{pk_varname}">
                             <div class="form-group">
                                 <label for="{pk_varname}">{pk}</label>
-                                <b-form-input type="text" class="form-control" id="{pk_varname}" placeholder="" v-model="{entity_varname}.{pk_varname}" :state="validation_properties.{pk_varname}.state"></b-form-input>
+                                <b-form-input type="text" class="form-control" id="{pk_varname}" placeholder="" v-model="{entity_varname}.{pk_varname}" :state="validation_properties.{pk_varname}.state" {disabled}></b-form-input>
                                 <b-form-invalid-feedback>{{{{validation_properties.{pk_varname}.feedback}}}}</b-form-invalid-feedback>
                             </div>"""
 
@@ -92,9 +98,9 @@ def create(data):
                                                             </div>"""
 
                 source_code += f"""
-                                                        <b-form-group class="form-group col-sm" label="{rel_pk}" label-for="{rel_pk_varname}" :invalid-feedback="many_entity.{child_entity_varname}.validation_properties[index].{rel_pk_varname}.feedback">
-                                                            <b-form-input type="text" class="form-control" id="{rel_pk_varname}" placeholder="" v-model="field.{rel_pk_varname}" :state="many_entity.{child_entity_varname}.validation_properties[index].{rel_pk_varname}.state"></b-form-input>
-                                                        </b-form-group>"""
+                                                            <b-form-group class="form-group col-sm" label="{rel_pk}" label-for="{rel_pk_varname}" :invalid-feedback="many_entity.{child_entity_varname}.validation_properties[index].{rel_pk_varname}.feedback">
+                                                                <b-form-input type="text" class="form-control" id="{rel_pk_varname}" placeholder="" v-model="field.{rel_pk_varname}" :state="many_entity.{child_entity_varname}.validation_properties[index].{rel_pk_varname}.state"></b-form-input>
+                                                            </b-form-group>"""
 
                 for rel_col_key, rel_col_type in rel_model.get(child_entity).get('data').items():
                     rel_col_varname = converter.convert_to_system_name(rel_col_key)
@@ -133,14 +139,14 @@ def create(data):
                 """
             else:
                 source_code += f"""
-                        <b-form-group class="form-group" label="{col}" label-for="{col_varname}" :state="validation_properties.{col_varname}.state" :invalid-feedback="validation_properties.{col_varname}.feedback">
-                            {html_control_code}
-                        </b-form-group>"""
+                            <b-form-group class="form-group" label="{col}" label-for="{col_varname}" :state="validation_properties.{col_varname}.state" :invalid-feedback="validation_properties.{col_varname}.feedback">
+                                {html_control_code}
+                            </b-form-group>"""
         else:
             source_code += f"""
-                        <b-form-group class="form-group" label="{col}" label-for="{col_varname}" :state="validation_properties.{col_varname}.state" :invalid-feedback="validation_properties.{col_varname}.feedback">
-                            {html_control_code}
-                        </b-form-group>"""
+                            <b-form-group class="form-group" label="{col}" label-for="{col_varname}" :state="validation_properties.{col_varname}.state" :invalid-feedback="validation_properties.{col_varname}.feedback">
+                                {html_control_code}
+                            </b-form-group>"""
 
     source_code += f"""
                             <button type="button" class="btn btn-secondary" onClick="window.location.href='{entity_varname}.html'">Back</button>
