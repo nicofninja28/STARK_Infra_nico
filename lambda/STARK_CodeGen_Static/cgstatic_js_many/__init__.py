@@ -120,17 +120,16 @@ def create(data):
         if isinstance(col_type, dict) and col_type["type"] == "relationship":
             has_one = col_type.get('has_one', '')
             if  has_one != '':
-                foreign_entity  = converter.convert_to_system_name(has_one)
-                foreign_field   = col_type.get('display_value', foreign_entity)
-                # foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
-                # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
+                foreign_entity  = converter.convert_to_system_name(has_one if has_one != '' else has_many)
+                foreign_field_display = col_type.get('display', foreign_entity)
+                foreign_field_value   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
+
                 new_arr_field = []
-                for display_value in foreign_field:
-                    print(display_value.replace(' ', "_"))
+                for display_value in foreign_field_display:
                     new_arr_field.append(str(converter.convert_to_system_name(display_value)))
-                print(new_arr_field)   
-                # foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
-                # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
+                    
+                arr_fields = new_arr_field + [foreign_field_value] if foreign_field_value not in new_arr_field else new_arr_field
+
                 separator = " + ' - ' + " 
                 array_of_strings = ["arrayItem['" + item + "']" + separator for item in new_arr_field]
                 foreign_display = ''
@@ -144,11 +143,11 @@ def create(data):
                 loading_modal.show();
                 root.lists.{foreign_entity} = []
 
-                fields = {new_arr_field}
+                fields = {arr_fields}
                 {foreign_entity}_app.get_fields(fields).then( function(data) {{
                     data.forEach(function(arrayItem) {{
                         value = {foreign_display}
-                        text  = {foreign_display}"""
+                        text  = {foreign_field_value}"""
                     
                 source_code += f"""            
                     root.lists.{foreign_entity}.push({{ value: value, text: text }})"""

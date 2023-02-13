@@ -72,7 +72,6 @@ Transaction:
       current_counter: 1
       prefix: T
       left_pad: 6
-    
     data:
         - Date: date
         - Remarks: multi-line-string
