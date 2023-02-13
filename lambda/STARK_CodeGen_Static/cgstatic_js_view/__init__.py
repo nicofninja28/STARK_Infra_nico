@@ -660,7 +660,7 @@ def create(data):
             
             foreign_entity  = converter.convert_to_system_name(has_one if has_one != '' else has_many)
             foreign_field   = converter.convert_to_system_name(col_type.get('value', foreign_entity))
-            foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
+            # foreign_display = converter.convert_to_system_name(col_type.get('display', foreign_field))
 
             if  has_one != '':
                 #simple 1-1 relationship
