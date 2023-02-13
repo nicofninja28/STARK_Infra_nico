@@ -146,8 +146,8 @@ def create(data):
                 fields = {arr_fields}
                 {foreign_entity}_app.get_fields(fields).then( function(data) {{
                     data.forEach(function(arrayItem) {{
-                        value = {foreign_display}
-                        text  = {foreign_field_value}"""
+                        text = {foreign_display}
+                        value  = arrayItem['{foreign_field_value}']"""
                     
                 source_code += f"""            
                     root.lists.{foreign_entity}.push({{ value: value, text: text }})"""

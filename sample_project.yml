@@ -2,7 +2,7 @@ Customer:
     pk: Customer ID
     sequence:
       current_counter: 1
-      prefix: C
+      prefix: C-
       left_pad: 6
     data:
         - Customer Name: string
