@@ -12,13 +12,14 @@ Customer:
         - Customer Type: 
             type: relationship
             has_one: Customer Type
-            display_value: ['Customer Type']
+            display: ['Customer Type']
+            value: Customer Type
         - Remarks: multi-line-string
 Item:
     pk: Product Code
     sequence:
       current_counter: 1
-      prefix: P
+      prefix: P-
       left_pad: 6
     data:
         - Title: string
@@ -55,7 +56,7 @@ Document:
     pk: Document ID
     sequence:
       current_counter: 1
-      prefix: D
+      prefix: D-
       left_pad: 6
     data:
         - Title: string
@@ -70,7 +71,7 @@ Transaction:
     pk: Transaction Number
     sequence:
       current_counter: 1
-      prefix: T
+      prefix: T-
       left_pad: 6
     data:
         - Date: date
@@ -78,7 +79,8 @@ Transaction:
         - Customer: 
             type: relationship
             has_one: Customer
-            display_value: ['Customer ID', 'Customer Name']
+            display: ['Customer ID', 'Customer Name']
+            value: Customer ID
         - Transaction Details: 
             type: relationship
             has_many: Transaction Details
@@ -87,13 +89,14 @@ Transaction Details:
     pk: Details ID
     sequence:
       current_counter: 1
-      prefix: TD
+      prefix: TD-
       left_pad: 6
     data:
         - Item:
             type: relationship
             has_one: Item
-            display_value: ['Product Code', 'Title']
+            display: ['Product Code', 'Title']
+            value: Product Code
         - Amount:
             type: int-spinner
             min: 1

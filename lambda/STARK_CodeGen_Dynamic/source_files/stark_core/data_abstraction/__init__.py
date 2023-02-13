@@ -182,7 +182,7 @@ def get_sequence(pk, db_handler = None):
     
     response['item'] = item
 
-    sequence = item['Prefix'] + stark_core.separator + item['Current_Counter'].rjust(int(item['Left_Pad']), '0')
+    sequence = item['Prefix'] + item['Current_Counter'].rjust(int(item['Left_Pad']), '0')
 
     edit_sequence(pk, sk, item['Current_Counter'])
 
