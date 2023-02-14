@@ -16,8 +16,8 @@ import yaml
 
 #Private modules
 import convert_friendly_to_system as converter
-import stark_scrypt as scrypt
 import suggest_graphic as set_graphic
+import get_relationship as get_rel
 
 ddb = boto3.client('dynamodb')
 s3  = boto3.client('s3')
@@ -186,6 +186,11 @@ def create_handler(event, context):
                 target = entity_varname + '_' + module_type + '.html'
                 title = module_type + ' ' + entity
                 is_menu_item = False
+            
+            relationships = get_rel.get_relationship(models, entity, entity)
+            for relationship in relationships.get('belongs_to', []):
+                if relationship.get('rel_type') == 'has_many':
+                    is_menu_item = False
                 
             icon = 'images/' + set_graphic.suggest_graphic(entity)
 

@@ -361,8 +361,8 @@ Resources:
                 - !Ref CFCustomResourceHelperLayer
                 - !Ref PyYamlLayer
                 - !Ref STARKFriendlyToSystemNamesLayer
-                - !Ref STARKScryptLayer
                 - !Ref STARKSuggestGraphicLayer
+                - !Ref STARKGetRelationshipLayer
             Architectures:
                 - arm64
             MemorySize: 1760
