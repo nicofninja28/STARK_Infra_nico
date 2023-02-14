@@ -398,10 +398,10 @@ const STARK_Validator = {
                                                                 Object.keys(column_properties).forEach(element => {
                                                                     let property_value = column_properties[element]
                                                                     if(table_list.indexOf())
-                                                                    // arr_sub_properties = ['value', 'display']
-                                                                    arr_sub_properties = ['display_value']
+                                                                    arr_sub_properties = ['value', 'display']
+                                                                    // arr_sub_properties = ['display_value']
 
-                                                                    if(element == 'display_value' ) {
+                                                                    if(element == 'display' ) {
                                                                         if((typeof(property_value) === 'object' && property_value instanceof Array)) {
                                                                             // FIXME: No need to nitpick for now, just make sure its an array of string. The real validator for file-upload, 
                                                                             // is in the view and STARK js files of generated project.
