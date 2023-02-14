@@ -98,8 +98,8 @@ def create_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
                         
         seq = {}
-        if len(models[entity]["sequence"]) > 0:
-            seq = models[entity]["sequence"]
+        if len(models[entity].get("sequence",{})) > 0:
+            seq = models[entity].get("sequence")
 
         data = {
                 "Entity": entity, 

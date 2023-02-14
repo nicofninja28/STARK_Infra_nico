@@ -109,8 +109,11 @@ def create_handler(event, context):
             cgstatic_many_data = { "Entity": rel, "PK": pk, "Columns": cols, "Project Name": project_name, "Relationships": relationships }
             add_to_commit(source_code=cg_js_many.create(cgstatic_many_data), key=f"js/many_{many_entity_varname}.js", files_to_commit=files_to_commit, file_path='static')
 
+        seq = {}
         if "sequence" in models[entity]:
-            cgstatic_data["Sequence"] = models[entity]["sequence"]
+            seq = models[entity]["sequence"]
+        cgstatic_data["Sequence"] = seq
+        
         print('cgstatic_data')
         print(cgstatic_data)
         add_to_commit(source_code=cg_add.create(cgstatic_data), key=f"{entity_varname}_add.html", files_to_commit=files_to_commit, file_path='static')
