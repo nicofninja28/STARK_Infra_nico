@@ -32,6 +32,8 @@ def create(data):
         s3_upload_index_param = ", index"
         rel_list = f'many_{entity_varname}'
         date_picker = f':id="{col_varname}[index]"'
+        preview_class = ""
+        preview_tooltip = ""
     else:
         state_control = f':state="validation_properties.{col_varname}.state"'  
         field_entity_varname = entity_varname
@@ -41,6 +43,14 @@ def create(data):
         s3_upload_index_param = ""
         rel_list = f'root' 
         date_picker = f'id="{col_varname}"'
+        preview_class = f':class="{{show_preview_icon:show_preview({field_entity_varname}.STARK_uploaded_s3_keys.{file_upload_col_varname})}}"'
+        preview_tooltip = f'''
+                        <template v-if="show_preview({field_entity_varname}.STARK_uploaded_s3_keys.{file_upload_col_varname})">        
+                            <b-button style="width:5%"><img src="images/search.svg" id="{file_upload_col_varname}_Preview"></b-button>
+                            <b-tooltip target="{file_upload_col_varname}_Preview" title="Preview" triggers="hover" placement="left">
+                                <img :src="STARK_upload_elements.{file_upload_col_varname}.tmp_location" alt="" class="img-preview">
+                            </b-tooltip>
+                        </template>'''
 
 
     if col_type == "date":
@@ -205,8 +215,9 @@ def create(data):
                             </b-form-group>
             """
         elif col_type["type"] == "file-upload":
-            html_code=f"""<b-form-file v-model="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" :placeholder="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" drop-placeholder="Drop file here..." @input="{js_object}{dot_compound}s3upload('{col_varname}'{s3_upload_index_param})" v-b-hover="init_s3_access" onfocus="root.init_s3_access()" {state_control}></b-form-file>      
-                                <b-progress :value="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.progress_bar_val" :max="100" class="mt-2"></b-progress>"""
+            html_code=f"""<b-form-file {preview_class} v-model="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" :placeholder="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" drop-placeholder="Drop file here..." @input="{js_object}{dot_compound}s3upload('{col_varname}'{s3_upload_index_param})" v-b-hover="init_s3_access" onfocus="root.init_s3_access()" {state_control}></b-form-file>
+                            {preview_tooltip}
+                        <b-progress :value="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.progress_bar_val" :max="100" class="mt-2"></b-progress>"""
         elif col_type["type"] == "relationship":
             has_one = col_type.get('has_one', '')
             has_many = col_type.get('has_many', '')
