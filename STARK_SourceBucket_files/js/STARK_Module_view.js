@@ -285,6 +285,7 @@ var root = new Vue({
             STARK_Module_app.delete(data).then( function(data) {
                 console.log("VIEW: DELETE DONE!");
                 STARK.local_storage_delete_key('Listviews', 'STARK_Module'); 
+                STARK.local_storage_delete_key('Permissions');
                 console.log(data);
                 loading_modal.hide()
                 window.location.href = "STARK_Module.html";
@@ -320,6 +321,7 @@ var root = new Vue({
                     }
                     console.log("VIEW: UPDATING DONE!");
                     STARK.local_storage_delete_key('Listviews', 'STARK_Module'); 
+                    STARK.local_storage_delete_key('Permissions');
                     window.location.href = "STARK_Module.html";
                 })
                 .catch(function(error) {

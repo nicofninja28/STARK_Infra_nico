@@ -367,19 +367,30 @@ def create(data):
                 return false
             }},
 
-            local_storage_delete_key: function(item, key)  {{
+            local_storage_delete_key: function(item, key="")  {{
                 fetched_data = JSON.parse(localStorage.getItem(project_name))
-                if(fetched_data) {{
-                    arr_storage_type = Object.keys(fetched_data)
+                if(key != "")
+                {{
+                    if(fetched_data) {{
+                        arr_storage_type = Object.keys(fetched_data)
+                        if(arr_storage_type.filter(elem => elem == item).length > 0) {{
+                            item_data = fetched_data[item]
+                            if(item_data && item_data.hasOwnProperty(key)) {{
+                                arr_keys = Object.keys(item_data)
+                                if(arr_keys.filter(elem => elem == key).length > 0) {{
+                                    delete item_data[key]
+                                    localStorage.setItem(project_name,JSON.stringify(fetched_data))
+                                    console.log(`${{item}} ${{key}} deleted.`)
+                                }}
+                            }}
+                        }}
+                    }}
+                }} else {{
                     if(arr_storage_type.filter(elem => elem == item).length > 0) {{
                         item_data = fetched_data[item]
-                        if(item_data && item_data.hasOwnProperty(key)) {{
-                            arr_keys = Object.keys(item_data)
-                            if(arr_keys.filter(elem => elem == key).length > 0) {{
-                                delete item_data[key]
-                                localStorage.setItem(project_name,JSON.stringify(fetched_data))
-                                console.log(`${{item}} ${{key}} deleted.`)
-                            }}
+                        if(item_data) {{
+                            delete fetched_data[item]
+                            localStorage.setItem(project_name,JSON.stringify(fetched_data))
                         }}
                     }}
                 }}
