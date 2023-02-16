@@ -147,6 +147,15 @@ def lambda_handler(event, context):
                 }
             )
 
+            response = s3.put_object(
+                Body=scrypt.create_hash(data['data_model']['__STARK_default_password__']),
+                Bucket=codegen_bucket_name,
+                Key=f'codegen_dynamic/{project_varname}/default_password.txt',
+                Metadata={
+                    'STARK_Description': 'Default pass'
+                }
+            )
+
         if len(warning_list) > 0:
             file_buff = StringIO()
             writer = csv.DictWriter(file_buff, fieldnames=['Table','Message'],quoting=csv.QUOTE_ALL)
@@ -186,8 +195,8 @@ def lambda_handler(event, context):
             'project_varname': project_varname
         }
 
-        #Default Password
-        cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
+        # #Default Password
+        # cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
 
         #Data Model ###
         cloud_resources["Data Model"] = model_parser.parse(data)
@@ -237,7 +246,7 @@ def lambda_handler(event, context):
         #       Payload=json.dumps(yaml.dump(cloud_resources))
 
         if ENV_TYPE == "PROD":
-            print(data['data_model']['__STARK_default_password__'])
+            # print(data['data_model']['__STARK_default_password__'])
             response = lambda_client.invoke(
                 FunctionName = CFWriter_FuncName,
                 InvocationType = 'RequestResponse',

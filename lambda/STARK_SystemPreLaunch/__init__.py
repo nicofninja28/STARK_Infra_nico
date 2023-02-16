@@ -103,7 +103,8 @@ def create_handler(event, context):
     #           (i.e., where he triggered the Stark CLI for the system generation request)
     # password = "welcome-2-STARK!"
     # hashed   = scrypt.create_hash(password)
-    hashed = cloud_resources["Default Password"]
+    # hashed = cloud_resources["Default Password"]
+    hashed = ''
 
     item                  = {}
     item['pk']            = {'S' : user}
