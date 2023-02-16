@@ -174,7 +174,6 @@ def lambda_handler(event, context):
                 'STARK_Description': 'Log filename for the generation'
             }
         )
-    if len(error_list) < 1:
 
         response = s3.put_object(
             Body=scrypt.create_hash(data['data_model']['__STARK_default_password__']),
@@ -184,6 +183,9 @@ def lambda_handler(event, context):
                 'STARK_Description': 'Default pass'
             }
         )
+    if len(error_list) < 1:
+
+        
     #####################################################
     ###START OF INFRA LIST CREATION #####################
 
