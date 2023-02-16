@@ -39,17 +39,16 @@ def create_handler(event, context):
     codegen_bucket_name = os.environ['CODEGEN_BUCKET_NAME']
     response = s3.get_object(
         Bucket=codegen_bucket_name,
-        Key=f'codegen_dynamic/{project_varname}/default_password.txt'
+        Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml'
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
 
     #Default password
     response = s3.get_object(
         Bucket=codegen_bucket_name,
-        Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml'
+        Key=f'codegen_dynamic/{project_varname}/default_password.txt'
     )
-    content = response['Body'].read().decode('utf-8')
-    print(content)
+    cloud_resources = response['Body'].read().decode('utf-8')
 
     models   = cloud_resources["Data Model"]
     entities = []
