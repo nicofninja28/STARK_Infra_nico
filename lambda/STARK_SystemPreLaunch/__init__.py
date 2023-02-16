@@ -48,7 +48,8 @@ def create_handler(event, context):
         Bucket=codegen_bucket_name,
         Key=f'codegen_dynamic/{project_varname}/default_password.txt'
     )
-    cloud_resources = response['Body'].read().decode('utf-8')
+    content = response['Body'].read().decode('utf-8')
+    print(content)
 
     models   = cloud_resources["Data Model"]
     entities = []
