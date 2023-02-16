@@ -48,8 +48,8 @@ def create_handler(event, context):
         Bucket=codegen_bucket_name,
         Key=f'codegen_dynamic/{project_varname}/default_password.txt'
     )
-    content = response['Body'].read().decode('utf-8')
-    print(content)
+    def_password = response['Body'].read().decode('utf-8')
+    print(def_password)
 
     models   = cloud_resources["Data Model"]
     entities = []
@@ -111,7 +111,7 @@ def create_handler(event, context):
     # password = "welcome-2-STARK!"
     # hashed   = scrypt.create_hash(password)
     # hashed = cloud_resources["Default Password"]
-    hashed = ''
+    hashed = def_password
 
     item                  = {}
     item['pk']            = {'S' : user}
