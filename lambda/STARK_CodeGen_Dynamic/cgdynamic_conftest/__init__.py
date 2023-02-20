@@ -101,7 +101,7 @@ def create(data):
             return {entity_varname.lower()}.get_data()
             """
 
-        if len(data['Models'][entity]['sequence']) > 0:
+        if len(data['Models'][entity].get("sequence", {})) > 0:
             print('here')
             source_code += f"""
         @pytest.fixture
