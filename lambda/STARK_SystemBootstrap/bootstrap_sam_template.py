@@ -106,13 +106,17 @@ def create(data):
         STARKSystemBucket:
             Type: AWS::S3::Bucket
             Properties:
-                AccessControl: {s3_access_control}
                 BucketName: {s3_bucket_name}
                 VersioningConfiguration:
                     Status: {s3_versioning}
                 WebsiteConfiguration:
                     ErrorDocument: {s3_error_document}
                     IndexDocument: {s3_index_document}
+                PublicAccessBlockConfiguration:
+                    BlockPublicAcls: false
+                OwnershipControls:
+                    Rules:
+                        - ObjectOwnership: ObjectWriter
         STARKBucketCleaner:
             Type: AWS::CloudFormation::CustomResource
             Properties:
