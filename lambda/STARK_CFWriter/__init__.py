@@ -364,14 +364,7 @@ def lambda_handler(event, context):
             }
         )
 
-        response = s3.put_object(
-            Body=cloud_resources["Default Password"],
-            Bucket=codegen_bucket_name,
-            Key=f'codegen_dynamic/{project_varname}/default_password.txt',
-            Metadata={
-                'STARK_Description': 'Default pass'
-            }
-        )
+        
     else:
         print(textwrap.dedent(cf_template))
 
