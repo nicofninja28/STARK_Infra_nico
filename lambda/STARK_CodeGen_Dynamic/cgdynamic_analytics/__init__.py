@@ -7,9 +7,8 @@ import textwrap
 import convert_friendly_to_system as converter
 
 def create(data):
-    cloud_resources       = data['cloud_resources']
-    s3_athena_bucket_name = cloud_resources["S3 webserve"]["Analytics Buckets"]["athena"].lower()
-    project_varname       = data["Project Name"]
+    s3_athena_bucket_name = data['S3 Bucket Athena']
+    project_varname       = data['Project_Name']
     entities              = data["Entities"]
     entities_varname = []
     for entity in entities:
