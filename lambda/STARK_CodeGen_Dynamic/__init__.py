@@ -214,7 +214,8 @@ def create_handler(event, context):
     #########################################
     #Create Lambdas of built-in STARK modules 
     #    (Analytics)
-    analytics_source_code = cg_analytics.create({"Entities": entities})
+    analytics_data = { "Entities": entities, "S3 Bucket Athena" : s3_analytics_athena_bucket_name, "Project_Name" : project_name }
+    analytics_source_code = cg_analytics.create(analytics_data)
     files_to_commit.append({
         'filePath': f"lambda/STARK_Analytics/__init__.py",
         'fileContent': analytics_source_code.encode()
