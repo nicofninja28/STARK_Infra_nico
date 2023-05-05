@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/bootstrap-vue.css" />
+    <link rel="stylesheet" href="css/STARK.css" />
+
+    <script src="js/vue.js" defer></script>
+    <script src="js/bootstrap-vue.min.js" defer></script>
+    <script src="js/echarts.min.js" defer></script>
+    <script src="js/html2canvas.min.js" defer></script>
+    <script src="js/jspdf.min.js" defer></script>
+    <script src="js/STARK.js" defer></script>
+    <script src="js/STARK_spinner.js" defer></script>
+    <script src="js/STARK_loading_modal.js" defer></script>
+    <script src="js/STARK_nav_bar.js" defer></script>
+
+    <script src="js/STARK_Analytics_app.js" defer></script>
+    <script src="js/STARK_Analytics_view.js" defer></script>
+    <script src="js/generic_root_get.js" defer></script>
+
+    <title>[[STARK_PROJECT_NAME]] - Analytics GUI</title>
+</head>
+<body>
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <template v-for="(group, index) in modules" id="nav-groups-template">
+            <h4>
+                <a v-b-toggle class="text-decoration-none" :href="'#nav-group-collapse-'+index" @click.prevent>
+                    <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span>
+                    <span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
+                    <span class="align-bottom">{{ group.group_name }}</span>
+                </a>
+            </h4>
+            <b-collapse :id="'nav-group-collapse-'+index" visible class="mt-0 mb-2 pl-2">
+                <div class="dropdown-container">
+                    <template v-for="module in group.modules" id="nav-modules-template">
+                        <div class="dropdown-btn" :onclick="'window.location.href=\''  + module.href + '\''">
+                            <a href="#"><img class="filter-fill-svg" :src="module.image" alt="Card image cap" height="25rem"> {{module.title}} </a>
+                        </div>
+                    </template>
+                </div>
+            </b-collapse>
+        </template>
+    </div>
+
+    <div class="container-fluid" id="vue-root">
+
+        <div class="row bg-primary mb-3 p-3 text-white" style="background-image: url('images/banner_generic_blue.png')">
+            <div class="col-12 col-md-10">
+            <h2>
+                <span id="main-burger-menu" style="cursor:pointer;" onclick="openNav()">&#9776;</span>
+                [[STARK_PROJECT_NAME]]
+            </h2>
+            </div>
+            <div class="col-12 col-md-2 text-right">
+                <b-button 
+                    v-b-tooltip.hover title="Settings"
+                    class="mt-3" 
+                    variant="light" 
+                    size="sm">
+                    <img src="images/settings.png" height="20px">
+                </b-button>
+                <b-button 
+                    v-b-tooltip.hover title="Log out"
+                    class="mt-3" 
+                    variant="light" 
+                    size="sm"
+                    onClick="STARK.logout()">
+                    <img src="images/logout.png" height="20px">
+                </b-button>
+            </div>
+        </div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="home.html">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analytics GUI</li>
+            </ol>
+        </nav>
+
+        <!-- 1: Tables -->
+        <div v-if="page_1_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 1: Tables</h3>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                        <strong>Error!</strong> Select atleast one table
+                                    </div>
+                            </table>
+                        </div>
+
+                        <table class="table table-dark table-striped report" >
+                            
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="checkbox-med" name="check_checkbox" v-model="all_selected_tables" onchange="root.toggle_all(!root.all_selected_tables, 'all_selected_tables')">
+                                    </th>
+                                    <th style="padding: 10px; min-width: 250px"> Tables </th>
+                                </tr>
+                            <template v-for="(table, index) in system_tables" id="system-tables">
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="checkbox-med" name="check_checkbox" :value="system_tables[index]" :id="system_tables[index]" v-model="checked_tables">
+                                    </td>
+                                    <td>{{ system_tables[index] }}</td>
+                                </tr>
+                            </template>
+                            
+    
+                            
+                        </table>
+                        <button type="button" class="btn btn-secondary" onClick="window.location.href='Home.html'">Back</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(2, 'Next')">Next</button> -->
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('1')){ root.change_page(2, 'Next') }">Next</button>
+                        
+                    </form>
+                </div>   
+            </div>
+        </div>
+
+        <!-- 2: Table fields -->
+        <div v-if="page_2_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 2: Table Columns</h3>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                        <strong>Error!</strong> Select atleast one field
+                                    </div>
+                            </table>
+                        </div>
+                         <table class="table table-dark table-striped report" >
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="checkbox-med" name="check_checkbox_fields" v-model="all_selected_fields" onchange="root.toggle_all(!root.all_selected_fields, 'all_selected_fields')" >
+                                    </th>
+                                    <th style="padding: 10px; min-width: 250px"> Table </th>
+                                    <th style="padding: 10px; min-width: 250px"> Field </th>
+                                </tr>
+                            <template v-for="(table, index) in system_fields">
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="checkbox-med" name="check_checkbox_fields" :value="system_fields[index]" :id="system_fields[index]" v-model="checked_fields">
+                                        <!-- <input type="checkbox" class="checkbox-med" name="check_checkbox" :value="system_fields[index]" :id="system_fields[index]" v-model="checked_fields"> -->
+                                    </td>
+                                    <!-- <td>{{ system_fields[index] }}</td> -->
+                                    <td>{{ system_fields[index].split(' | ')[0] }}</td>
+                                    <td>{{ system_fields[index].split(' | ')[1] }}</td>
+                                </tr>
+                            </template>
+                        </table>
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(1, 'Back')">Back</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(3, 'Next')">Next</button> -->
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('2')){ root.change_page(3, 'Next') } ">Next</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3: Relationship -->
+        <div v-if="page_3_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 3: Relationship</h3>
+                        <template>
+                            <a v-b-toggle class="text-decoration-none" @click.prevent>
+                                <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span><span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
+                                <span class="align-bottom">Relationship</span>
+                            </a>
+                            <b-collapse visible class="mt-0 mb-2 pl-2">
+                                 <div class="row">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <form class="repeater" enctype="multipart/form-data">
+                                                    <div class="row" v-for="(field, index) in rel_many">
+                                                        <div class="form-group">
+                                                            <b-form-group class="form-group" label="#">
+                                                                {{ index + 1 }}
+                                                            </b-form-group>
+                                                        </div>
+                                                        <!-- <b-form-group class="form-group col-sm" label="Table 1" label-for="Table 1" :invalid-feedback="rel_validation_properties[index].Table_1.feedback">
+                                                            <b-form-select id="Table_1" v-model="field.Table_1" :options="lists.Relationship" onmouseover="" onfocus="" :state="rel_validation_properties[index].Table_1.state"> -->
+                                                            <b-form-group class="form-group col-sm" label="Table 1" label-for="Table 1">
+                                                                <b-form-select id="Table_1" v-model="field.Table_1" :options="lists.Relationship" onmouseover="" onfocus="">
+                                                                    <template v-slot:first>
+                                                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                            </template>
+                                                        </b-form-select>
+                                                        </b-form-group>
+                                                        <!-- (INNER) JOIN: Returns records that have matching values in both tables
+                                                        LEFT (OUTER) JOIN: Returns all records from the left table, and the matched records from the right table
+                                                        RIGHT (OUTER) JOIN: Returns all records from the right table, and the matched records from the left table
+                                                        FULL (OUTER) JOIN: Returns all records when there is a match in either left or right table -->
+                                                        <!-- <b-form-group class="form-group col-sm" label="Join Type" label-for="Join Type"  :invalid-feedback="rel_validation_properties[index].Join_Type.feedback">
+                                                            <b-form-select id="Join_Type" v-model="field.Join_Type" :options="lists.Join_Type" :state="rel_validation_properties[index].Join_Type.state"> -->
+                                                        <b-form-group class="form-group col-sm" label="Join Type" label-for="Join Type">
+                                                            <b-form-select id="Join_Type" v-model="field.Join_Type" :options="lists.Join_Type">    
+                                                                <template v-slot:first>
+                                                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                            </template>
+                                                        </b-form-select>
+                                                        </b-form-group>
+                                                        <!-- <b-form-group class="form-group col-sm" label="Table 2" label-for="Table 2" :invalid-feedback="rel_validation_properties[index].Table_2.feedback">
+                                                            <b-form-select id="Table_2" v-model="field.Table_2" :options="lists.Relationship" onmouseover="" onfocus="" :state="rel_validation_properties[index].Table_2.state"> -->
+                                                        <b-form-group class="form-group col-sm" label="Table 2" label-for="Table 2">
+                                                            <b-form-select id="Table_2" v-model="field.Table_2" :options="lists.Relationship" onmouseover="" onfocus="">
+                                                            <template v-slot:first>
+                                                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                            </template>
+                                                        </b-form-select>
+                                                        </b-form-group>
+                                                        
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </b-collapse>
+                            <hr><br>
+                        </template>
+
+
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(2, 'Back')">Back</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(4, 'Next')">Next</button> -->
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('3')){ root.change_page(4, 'Next') } ">Next</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4: Sum, Count, Group By -->
+        <div v-if="page_4_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 4: Sum, Count, Group By</h3>
+                        <b-form-group label="Sum" label-for="tags-with-dropdown">
+                            <b-form-tags id="tags-with-dropdown" v-model="multi_select_values.Sum" no-outer-focus class="mb-2">
+                                <template v-slot="{ tags, disabled, addTag, removeTag }">
+                                    <b-dropdown size="sm" variant="outline-secondary" block menu-class="w-50" right no-flip ref="Sum" onmouseover="" onfocus="">
+                                        <template #button-content>
+                                            <b-icon icon="tag-fill"></b-icon> Choose field/s
+                                        </template>
+                                        <b-dropdown-form @submit.stop.prevent="() => {}">
+                                            <b-form-group label="Search tags" label-for="tag-search-input" label-cols-md="auto" class="mb-2" label-size="sm" :description="Sum_search_desc" :disabled="disabled" >
+                                                <b-form-input v-model="search.Sum" id="tag-search-input" type="search" size="sm" autocomplete="off"></b-form-input>
+                                            </b-form-group>
+                                        </b-dropdown-form>
+                                        <b-dropdown-divider></b-dropdown-divider>
+                                        <b-dropdown-form style="max-height: 350px; overflow-y: scroll;">
+                                            <b-dropdown-item-button v-for="option in Sum" :key="option" @click="onOptionClick({ option, addTag }, 'Sum')" > {{ option.text }} </b-dropdown-item-button>
+                                        </b-dropdown-form>
+                                        <b-dropdown-text v-if="Sum.length === 0"> There are no field available to select </b-dropdown-text>
+                                    </b-dropdown>
+                                    <ul v-if="tags.length > 0" class="list-inline d-inline-block">
+                                        <li v-for="tag in tags" :key="tag" class="list-inline-item mt-2">
+                                            <b-form-tag @remove="removeTag(tag)" :title="tag" :disabled="disabled" variant="info">{{ tag_display_text('Sum', tag) }}</b-form-tag>
+                                        </li>
+                                    </ul>
+                                </template>
+                            </b-form-tags>
+                        </b-form-group>
+
+                        <b-form-group label="Count" label-for="tags-with-dropdown">
+                            <b-form-tags id="tags-with-dropdown" v-model="multi_select_values.Count" no-outer-focus class="mb-2">
+                                <template v-slot="{ tags, disabled, addTag, removeTag }">
+                                <b-dropdown size="sm" variant="outline-secondary" block menu-class="w-50" right no-flip ref="Count" onmouseover="" onfocus="">
+                                    <template #button-content>
+                                        <b-icon icon="tag-fill"></b-icon> Choose field/s
+                                    </template>
+                                    <b-dropdown-form @submit.stop.prevent="() => {}">
+                                        <b-form-group label="Search tags" label-for="tag-search-input" label-cols-md="auto" class="mb-2" label-size="sm" :description="Count_search_desc" :disabled="disabled" >
+                                            <b-form-input v-model="search.Count" id="tag-search-input" type="search" size="sm" autocomplete="off" ></b-form-input>
+                                        </b-form-group>
+                                    </b-dropdown-form>
+                                    <b-dropdown-divider></b-dropdown-divider>
+                                    <b-dropdown-form style="max-height: 350px; overflow-y: scroll;">
+                                        <b-dropdown-item-button v-for="option in Count" :key="option" @click="onOptionClick({ option, addTag }, 'Count')" > {{ option.text }} </b-dropdown-item-button>
+                                    </b-dropdown-form>
+                                    <b-dropdown-text v-if="Count.length === 0"> There are no field available to select </b-dropdown-text>
+                                </b-dropdown>
+                                <ul v-if="tags.length > 0" class="list-inline d-inline-block">
+                                    <li v-for="tag in tags" :key="tag" class="list-inline-item mt-2">
+                                        <b-form-tag @remove="removeTag(tag)" :title="tag" :disabled="disabled" variant="info" >{{ tag_display_text('Count', tag) }}</b-form-tag>
+                                    </li>
+                                </ul>
+                                </template>
+                            </b-form-tags>
+                        </b-form-group>
+
+                        <b-form-group class="form-group" label="Group By" label-for="Group_By" :state="validation_properties.Group_By.state" :invalid-feedback="validation_properties.Group_By.feedback">
+                            <b-form-select id="Group_By" v-model="Analytics.Group_By" :options="lists.Group_By" :state="validation_properties.Group_By.state" onmouseover="" onfocus="">
+                            <template v-slot:first>
+                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                            </template>
+                        </b-form-select>
+                        </b-form-group>
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(3, 'Back')">Back</button>
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('4')){ root.change_page(root.for_next_page, 'Next') } else { root.change_page(5, 'Next') }">Next</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(5, 'Next')">Next</button> -->
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5: Filters -->
+        <div v-if="page_5_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 5: Filters</h3>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-dark alert-dismissible fade show" v-if="showFilterAlert">
+                                        Click Add button to add Filters.
+                                    </div>
+                            </table>
+                        </div>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                        <strong>Error!</strong> Pls, fill up Filter fields
+                                    </div>
+                            </table>
+                        </div>
+                        <template>
+                            <a v-b-toggle class="text-decoration-none" @click.prevent>
+                                <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span><span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
+                                <span class="align-bottom">Filters</span>
+                            </a>
+                            <b-collapse visible class="mt-0 mb-2 pl-2">
+                                    <div class="row">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <form class="repeater" enctype="multipart/form-data">
+                                                    <div class="row" v-for="(field, index) in filter_many">
+                                                        <div class="form-group">
+                                                            <b-form-group class="form-group" label="#">
+                                                                {{ index + 1 }}
+                                                            </b-form-group>
+                                                        </div>
+                                                        <!-- <b-form-group class="form-group col-sm" label="Field" label-for="Field" :invalid-feedback="filter_validation_properties[index].Field.feedback">
+                                                            <b-form-select id="Field" v-model="field.Field" :options="lists.Relationship" onmouseover="" onfocus="" :state="filter_validation_properties[index].Field.state">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <b-form-group class="form-group col-sm" label="Operand" label-for="Operand"  :invalid-feedback="filter_validation_properties[index].Operand.feedback">
+                                                            <b-form-select id="Operand" v-model="field.Operand" :options="lists.Report_Operator" :state="filter_validation_properties[index].Operand.state">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <b-form-group class="form-group col-sm" label="Value" label-for="Value" :invalid-feedback="filter_validation_properties[index].Value.feedback">
+                                                            <b-form-input type="text" class="form-control" id="Value" placeholder="" v-model="field.Value" :state="filter_validation_properties[index].Value.state"></b-form-input>
+                                                        </b-form-group> -->
+                                                        <b-form-group class="form-group col-sm" label="Field" label-for="Field">
+                                                            <b-form-select id="Field" v-model="field.Field" :options="lists.Relationship" onmouseover="" onfocus="">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <b-form-group class="form-group col-sm" label="Operand" label-for="Operand">
+                                                            <b-form-select id="Operand" v-model="field.Operand" :options="lists.Report_Operator">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <b-form-group class="form-group col-sm" label="Value" label-for="Value">
+                                                            <b-form-input type="text" class="form-control" id="Value" placeholder="" v-model="field.Value"></b-form-input>
+                                                        </b-form-group>
+                                                        <div class="form-group col-sm-0.5">
+                                                            <b-form-group class="form-group" label="Remove">
+                                                                <input type="button" class="btn bg-danger" alt="Delete" width="40" height="40" @click="root.remove_row('Filter', index)" value="X">
+                                                            </b-form-group>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <input type="button" class="btn btn-success mt-3 mt-lg-0" @click="root.add_row('Filter')" value="Add"/>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </b-collapse>
+                            <hr><br>
+                        </template>
+
+
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(4, 'Back')">Back</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(6, 'Next')">Next</button> -->
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('5')){ root.change_page(6, 'Next') }">Next</button>
+                        
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6: Sort -->
+        <div v-if="page_6_show" class="container hidden" :style="{visibility: visibility}">
+        <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
+            <div class="row">
+                <div class="col overflow-auto">
+                    <form class="border p-3">
+                        <h3>Page 6: Sort</h3>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-dark alert-dismissible fade show" v-if="showSortAlert">
+                                        Click Add button for Sort input.
+                                    </div>
+                            </table>
+                        </div>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                        <strong>Error!</strong> Pls, fill up Sort fields
+                                    </div>
+                            </table>
+                        </div>
+                        <template>
+                            <a v-b-toggle class="text-decoration-none" @click.prevent>
+                                <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span><span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
+                                <span class="align-bottom">Sorting</span>
+                            </a>
+                            <b-collapse visible class="mt-0 mb-2 pl-2">
+                                    <div class="row">
+                                    <div class="col-12">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <form class="repeater" enctype="multipart/form-data">
+                                                    <div class="row" v-for="(field, index) in sort_many">
+                                                        <div class="form-group">
+                                                            <b-form-group class="form-group" label="#">
+                                                                {{ index + 1 }}
+                                                            </b-form-group>
+                                                        </div>
+                                                        <b-form-group class="form-group col-sm" label="Field" label-for="Field">
+                                                            <b-form-select id="Field" v-model="field.Field" :options="lists.Relationship" onmouseover="" onfocus="">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <b-form-group class="form-group col-sm" label="Sort Type" label-for="Sort_Type">
+                                                            <b-form-select id="Sort_Type" v-model="field.Sort_Type" :options="lists.Sort_Type">
+                                                                <template v-slot:first>
+                                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                                </template>
+                                                            </b-form-select>
+                                                        </b-form-group>
+                                                        <div class="form-group col-sm-0.5">
+                                                            <b-form-group class="form-group" label="Remove">
+                                                                <input type="button" class="btn bg-danger" alt="Delete" width="40" height="40" @click="root.remove_row('Sort', index)" value="X">
+                                                            </b-form-group>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <input type="button" class="btn btn-success mt-3 mt-lg-0" @click="root.add_row('Sort')" value="Add"/>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </b-collapse>
+                            <hr><br>
+                        </template>
+
+
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(5, 'Back')">Back</button>
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.submit()">Next</button> -->
+                        <!-- <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('6')){ root.submit() }">Next</button> -->
+                        <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('6')){ root.change_page(7, 'Next') }">Next</button>
+                        
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7: Save Template -->
+        <div v-if="page_7_show" class="container hidden" :style="{visibility: visibility}">
+            <div class="row">
+                <div class="col">
+                    <div class="my-auto">
+                        <h3>Page 7: Save Report</h3>
+                        <form class="border p-3">
+
+                        <b-form-group class="form-group" label="Save Report?" label-for="Save_Report">
+                            <b-form-radio-group id="Save_Report" v-model="Analytics.Save_Report" :options="lists.Save_Report" onchange="root.onSaveReport()"></b-form-radio-group>
+                        </b-form-group>
+                        
+                        <b-form-group v-if="show_report_name_input" class="form-group" label="Report Name" label-for="Report_Name">
+                            <b-form-text id="text" class="form-control" v-model="Analytics.Report_Name" placeholder=""></b-form-textarea>
+                        </b-form-group>
+                        
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(6, 'Back')">Back</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" :disabled="Analytics.Save_Report == 'No'">Save</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" onClick="root.submit()">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8: Result -->
+        <div v-if="show_result" class="container hidden" :style="{visibility: visibility}">
+            
+            <div class="row">
+                <div class="col overflow-auto">
+                    <h3>Page 8: Result</h3>
+                    
+                    <div class="col-6 text-left d-inline-block">
+                        <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(7, 'Back')">Back</button>
+                        <button type="button" class="btn btn-success mb-2" onClick="root.download_report('csv')" :disabled="report_result.length < 1"> Export as CSV</button>
+                        <button type="button" class="btn btn-danger mb-2" onClick="root.download_report('pdf')" :disabled="report_result.length < 1"> Export as PDF</button>
+                    </div>
+                    <table class="table  table-hover table-striped table-dark">
+                        <thead class="thead-dark">
+                            <tr>
+                                <template v-for="column in report_header" id="report_header">
+                                    <th scope="col">{{column}}</th>
+                                </template>         
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="Document in report_result" id="report_result">
+                                <tr>
+                                    <template v-for="column in temp_report_header">
+                                        <td>{{ Document[column] }}</td>
+                                    </template>             
+                                </tr>
+                            </template>
+                        <!-- <template v-if="listview_table.length < 1">
+                            No records found
+                        </template> -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    <div>
+        <b-modal id="loading-modal"
+            no-close-on-backdrop
+            no-close-on-esc
+            hide-header
+            hide-footer
+            centered
+            size="sm">
+            <div class="text-center p-3">
+                <div class="spinner-border" style="width: 5rem; height: 5rem" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <div class="mt-3">
+                    Loading...
+                </div>
+            </div>
+        </b-modal>
+    </div>
+
+</body>
+</html>

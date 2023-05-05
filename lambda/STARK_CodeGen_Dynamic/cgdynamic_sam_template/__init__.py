@@ -412,6 +412,7 @@ def create(data, cli_mode=False):
                             Action: 'sts:AssumeRole'
                 ManagedPolicyArns:
                     - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+                    - 'arn:aws:iam::aws:policy/AmazonAthenaFullAccess'
                 Policies:
                     - 
                         PolicyName: PolicyForSTARKProjectDefaultLambdaServiceRole
@@ -861,7 +862,7 @@ def create(data, cli_mode=False):
                 Architectures:
                     - arm64
                 MemorySize: 128
-                Timeout: 10
+                Timeout: 60
                 Layers:
                     - !Ref Fpdf2Layer""" 
     cf_template += f"""

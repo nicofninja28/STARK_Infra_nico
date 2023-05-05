@@ -51,7 +51,9 @@ def create(data):
             'local_storage_item_ttl': {{ //in minutes
                                         'default': 1,
                                         'Permissions': 360,
-                                        'Listviews': 10
+                                        'Listviews': 10,
+                                        'Analytics_Input': 10,
+                                        'Analytics_Data': 10
                                     }}, 
 
             request: function(method, fetchURL, payload='') {{
