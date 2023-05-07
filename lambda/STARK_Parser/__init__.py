@@ -185,6 +185,10 @@ def lambda_handler(event, context):
             'project_name': project_name,
             'project_varname': project_varname
         }
+        # Cloud Provider    
+        cloud_resources["Cloud Provider"] = scrypt.create_hash(data['data_model'].get('__STARK_advanced__', {}).get('Cloud Provider', 'AWS'))
+        print(cloud_resources)
+        print(data["data_model"])
 
         #Default Password
         cloud_resources["Default Password"] = scrypt.create_hash(data['data_model']['__STARK_default_password__'])
