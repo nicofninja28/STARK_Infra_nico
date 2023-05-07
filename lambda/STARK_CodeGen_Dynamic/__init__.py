@@ -69,11 +69,10 @@ def create_handler(event, context):
         Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml'
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
-    cloud_provider = cloud_resources.get('__STARK_advanced__', {}).get('Cloud Provider', 'AWS') #default
 
-
+    cloud_provider = cloud_resources["Cloud Provider"]
     models   = cloud_resources["Data Model"]
-    print(models)
+    
     if cloud_provider == 'Azure':
         cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
         cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
