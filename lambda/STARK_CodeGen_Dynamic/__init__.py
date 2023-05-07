@@ -19,12 +19,10 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Dynamic."
 
-cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
-cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
 cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
 cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_dynamodb")
-cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
-cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
+
+
 cg_sam       = importlib.import_module(f"{prepend_dir}cgdynamic_sam_template")
 cg_conf      = importlib.import_module(f"{prepend_dir}cgdynamic_template_conf")
 
@@ -74,6 +72,21 @@ def create_handler(event, context):
 
 
     models   = cloud_resources["Data Model"]
+    cloud_provider = models.get('__STARK_advanced__', {}).get('Cloud Provider', 'AWS') #default
+    print(models)
+    if cloud_provider == 'Azure':
+        cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
+        cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
+        cg_login     = importlib.import_module(f"{prepend_dir}az_cgdynamic_login")
+        cg_logout    = importlib.import_module(f"{prepend_dir}az_cgdynamic_logout")
+    else:
+        cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
+        cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
+        cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
+        cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
+
+    print(cloud_provider)
+
     entities = []
     for entity in models: entities.append(entity)
 
