@@ -72,13 +72,8 @@ def create_handler(event, context):
 
 
     models   = cloud_resources["Data Model"]
-    cloud_provider = 'AWS' #default
-    for key in models:
-        if key == "__STARK_advanced__":
-            for advance_config in models[key]:
-                if advance_config == 'Cloud Provider':
-                    cloud_provider = advance_config
-    
+    cloud_provider = models.get('__STARK_advanced__', {}).get('Cloud Provider', 'AWS') #default
+    print(models)
     if cloud_provider == 'Azure':
         cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
         cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
@@ -91,7 +86,7 @@ def create_handler(event, context):
         cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
 
     print(cloud_provider)
-    
+
     entities = []
     for entity in models: entities.append(entity)
 
