@@ -87,41 +87,44 @@ def create(data):
                 metadata = eval(event.get('queryStringParameters').get('Metadata',''))
 
                 temp_response = get_query_result(query)
-                report_list = []
-
-                for d in temp_response:
-                    customer_modified = {{}}
-                    for key, value in d.items():
-                        if("Sum_of" not in key and "Count_of" not in key):
-                            words = key.split('_')
-                            words = [word.capitalize() for word in words]
-                            new_key = ' '.join(words)
-                            customer_modified[new_key] = value
-                        else:
-                            words = key.split('_of_')
-                            words = [word.capitalize() for word in words]
-                            new_key = ' of '.join(words)
-                            customer_modified[new_key] = value
-                    report_list.append(customer_modified)
-                
-                key_dict = OrderedDict()
-                for customer_dict in report_list:
-                    for key in customer_dict.keys():
-                        if key not in key_dict:
-                            key_dict[key] = None
-                
-                report_header = list(key_dict.keys())
-                pk_field = ''
-                report_param_dict = {{}}
-                csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
-                utilities.save_object_to_bucket(file_buff_value, csv_file)
-                pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
-                utilities.save_object_to_bucket(pdf_output, pdf_file)
-                
-                csv_bucket_key = bucket_tmp + csv_file
-                pdf_bucket_key = bucket_tmp + pdf_file
-                
-                response = report_list, csv_bucket_key, pdf_bucket_key
+                if(temp_response):
+                    report_list = []
+                    for d in temp_response:
+                        customer_modified = {{}}
+                        for key, value in d.items():
+                            if("Sum_of" not in key and "Count_of" not in key):
+                                words = key.split('_')
+                                words = [word.capitalize() for word in words]
+                                new_key = ' '.join(words)
+                                customer_modified[new_key] = value
+                            else:
+                                words = key.split('_of_')
+                                words = [word.capitalize() for word in words]
+                                new_key = ' of '.join(words)
+                                customer_modified[new_key] = value
+                        report_list.append(customer_modified)
+                    
+                    key_dict = OrderedDict()
+                    for customer_dict in report_list:
+                        for key in customer_dict.keys():
+                            if key not in key_dict:
+                                key_dict[key] = None
+                    
+                    report_header = list(key_dict.keys())
+                    print(report_header)
+                    pk_field = ''
+                    report_param_dict = {{}}
+                    csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
+                    utilities.save_object_to_bucket(file_buff_value, csv_file)
+                    pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
+                    utilities.save_object_to_bucket(pdf_output, pdf_file)
+                    
+                    csv_bucket_key = bucket_tmp + csv_file
+                    pdf_bucket_key = bucket_tmp + pdf_file
+                    response = report_list, csv_bucket_key, pdf_bucket_key
+                else:
+                    response = []
+            
 
             return {{
                 "isBase64Encoded": False,

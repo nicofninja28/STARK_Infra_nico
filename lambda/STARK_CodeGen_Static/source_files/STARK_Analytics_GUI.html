@@ -546,16 +546,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template v-for="Document in report_result" id="report_result">
+                            <template v-if="report_result.length > 0" v-for="Document in report_result" id="report_result">
                                 <tr>
                                     <template v-for="column in temp_report_header">
                                         <td>{{ Document[column] }}</td>
                                     </template>             
                                 </tr>
                             </template>
-                        <!-- <template v-if="listview_table.length < 1">
-                            No records found
-                        </template> -->
+                            <template v-if="report_result.length < 1">
+                                <tr>
+                                    No records found            
+                                </tr>
+                            </template>
                     </tbody>
                 </table>
             </div>

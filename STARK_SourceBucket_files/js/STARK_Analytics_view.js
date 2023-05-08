@@ -297,12 +297,11 @@ var root = new Vue({
             root.compose_query(data)
             query = root.Analytics.Query
             metadata = root.metadata
-            // console.log(metadata)
             if(query != '') {
                 loading_modal.show();
                 console.log("VIEW: Getting!")
                 Analytics_app.get_result(query, metadata).then( function(data) {
-                    // console.log(data)
+                    console.log(data.length)
                     loading_modal.hide();
 
                     if(data.length > 0)
@@ -314,6 +313,9 @@ var root = new Vue({
                         root.temp_pdf_link = data[2];
                         console.log("VIEW: Retreived module data.")
                         loading_modal.hide()
+                    } else {
+                        root.report_result = []
+                        root.temp_report_header = []
                     }
                     root.page_1_show = false
                     root.page_2_show = false
@@ -339,7 +341,6 @@ var root = new Vue({
             if(table_data) {
                 root.system_tables = table_data['tables']
                 root.checked_tables = root.system_tables
-                // loading_modal.hide()
             }
             else {
                 loading_modal.show()
@@ -371,11 +372,7 @@ var root = new Vue({
         },
 
         get_table_fields: function(table_list=[]) {
-            
-            // console.log(root.checked_tables)
-
             final_table_list = root.convert_to_system_name(table_list)
-            
             
             var field_data = STARK.get_local_storage_item('Analytics_Data', 'Fields')
             var selected_table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
@@ -386,15 +383,12 @@ var root = new Vue({
                     root.same_table_selected = true
                     root.system_fields = field_data['fields']
                     root.checked_fields = root.system_fields
-                    console.log('same')
                 } else {
-                    console.log('fetch again')
                     loading_modal.show()
                     root.same_table_selected = false
                     fetch_from_db = true
                     
                 }
-                // loading_modal.hide()
             }
             else {
                 fetch_from_db = true
@@ -418,7 +412,6 @@ var root = new Vue({
                         return result;
                     }, {});
                     root.metadata =  JSON.stringify(temp_metadata)
-                    // console.log(typeof(root.metadata))
                     root.table_field = data
                     
                     temp_system_fields = []
@@ -453,10 +446,7 @@ var root = new Vue({
             window.location.href = link
         },
 
-        
-
         rel_row: function (count) {
-            
             
             for (let index = 0; index < count; index++) {
                 var new_row = {}
@@ -472,9 +462,6 @@ var root = new Vue({
                 root.rel_many.push(new_row)
                 root.rel_validation_properties.push(new_validation_property)
             }
-
-            // console.log(root.rel_many)
-            
         },
 
         add_row:function (action_many, row="") {
@@ -620,23 +607,16 @@ var root = new Vue({
                 arr_many            = root.sort_many
                 arr_metadata        = root.sort_metadata
             }
-            // console.log(arr_many)
+            
             is_valid_form = true
-            // arr_validation_prop = []
             for (let index = 0; index < arr_many.length; index++) {
                 response = STARK.validate_form(arr_metadata, arr_many[index])
-                // console.log(response)
                 arr_validation_prop[index] = response['validation_properties']
-                // console.log(arr_validation_prop[index])
                 if (response['is_valid_form'] == false)
                 {
                     is_valid_form = false
                 }
             }
-
-
-
-            // console.log(arr_validation_prop)
 
             if(many_tab == 'Filter') {
                 
@@ -649,7 +629,8 @@ var root = new Vue({
                     } 
                     has_val.push(filter_has_val)
                 }
-                if(!has_val.includes(true)) {
+                if(!has_val.includes(true) || root.filter_many.length == 0) {
+                    console.log('here')
                     is_valid_form = true
                     root.filter_has_value = false
                 } else {
@@ -682,7 +663,6 @@ var root = new Vue({
         },
 
         validate_tab: function(page){
-            // console.log(page)
             if (page == '1') {
                 if(root.checked_tables.length < 1) {
                     root.showError = true
@@ -707,7 +687,6 @@ var root = new Vue({
                 } else {
                     root.valid_page = true
                 }
-                // console.log(root.rel_validation_properties)
             }
             else if(page == '4') {
                 
@@ -727,7 +706,6 @@ var root = new Vue({
             } 
             else if(page == '5') {
                 if(root.filter_many.length != 0) {
-                    // console.log(root.many_validation('Filter'))
                     if(root.many_validation('Filter') == false) {
                         root.showError = true
                         root.valid_page = false
@@ -755,7 +733,6 @@ var root = new Vue({
                 }
                 
             }
-            // console.log(root.valid_page)
             return root.valid_page
         },
 
@@ -785,10 +762,6 @@ var root = new Vue({
             data_to_store['filters'] = root.filter_many
             STARK.set_local_storage_item('Analytics_Input', 'Filters', data_to_store)
 
-            
-            
-
-            // console.log(root.checked_fields)
             console.log(page_number)
             console.log(action)
             if(page_number == '1') { //Tables
@@ -801,7 +774,6 @@ var root = new Vue({
                 if(selected_field_data) {
                     root.checked_fields = selected_field_data['checked_fields']
                 } 
-                
 
                 var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
                 if(relationship_data) {
@@ -816,7 +788,6 @@ var root = new Vue({
                 root.page_4_show = false
                 root.list_status.Relationship = 'empty'
                 root.get_table_fields(root.checked_tables)
-                // console.log(root.checked_fields)
                 var selected_field_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
 
                 if(selected_field_data) {
@@ -842,18 +813,13 @@ var root = new Vue({
                         root.list_status.Count = 'empty'
                         root.list_status.Group_By = 'empty'
                     } else {
-                        // console.log(root.checked_fields)
                         root.page_3_show = false
                         root.page_4_show = true
                         root.list_field_options('Sum', root.checked_tables)
                         root.list_field_options('Count', root.checked_tables)
                         root.list_field_options('Group_By', root.checked_tables)
-                        // console.log('here')
-                        // data['sum'] = root.multi_select_values.Sum
-                        // data['count'] = root.multi_select_values.Count
                     }
 
-                    
                 } else {
                     root.page_4_show = false
                     if(root.checked_tables.length > 1) {
@@ -869,11 +835,8 @@ var root = new Vue({
                 root.show_result = false
                 
                 root.list_field_options('Relationship', root.checked_tables)
-                // root.get_table_fields(root.checked_tables)
-                
                 if(action == 'Next')
                 {
-                    
                     //FIX ME: Will empty relationships from page 2 even when tables are not change
                     if(root.same_table_selected) {
                         var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
@@ -897,8 +860,6 @@ var root = new Vue({
                     root.list_status.Group_By = 'empty'
                     root.list_status.Relationship = 'empty'
                 }
-
-                
             }
             else if(page_number == '4') {  //Sum, count, group by
                 if(action == 'Back') {
@@ -913,7 +874,6 @@ var root = new Vue({
                 root.show_result = false
                 root.validate_tab('4')
                 root.for_next_page = '4'
-                // root.get_table_fields(root.checked_tables)
                 root.list_field_options('Sum', root.checked_tables)
                 root.list_field_options('Count', root.checked_tables)
                 root.list_field_options('Group_By', root.checked_tables)
@@ -928,9 +888,6 @@ var root = new Vue({
                 root.page_5_show = true
 
                 root.show_result = false
-                // root.get_table_fields(root.checked_tables)
-                // root.validate_tab('5')
-                // root.filter_many = []
                 
                 if(action == 'Back') {
                     root.list_status.Relationship = 'empty'
@@ -946,10 +903,7 @@ var root = new Vue({
                 root.page_6_show = true
                 root.page_7_show = false
                 root.show_result = false
-                // root.get_table_fields(root.checked_tables)
                 
-            
-                // root.sort_many = []
                 if(action == 'Back') {
                     root.list_status.Relationship = 'empty'
                 }
@@ -965,14 +919,10 @@ var root = new Vue({
                 root.page_7_show = true
 
                 root.show_result = false
-                // root.get_table_fields(root.checked_tables)
                 
-            
-                // root.sort_many = []
                 if(action == 'Back') {
                     root.list_status.Relationship = 'empty'
                 }
-                
             }
         },
 
@@ -1003,8 +953,6 @@ var root = new Vue({
                 temp_list = []
                 root.checked_fields = checked ? root.system_fields.slice() : temp_list
             }
-
-            // console.log(root.checked_fields)
         },
 
         onSaveReport: function() {
@@ -1016,41 +964,16 @@ var root = new Vue({
         },
 
         compose_query: function(data) {
-            // console.log(data)
             temp_table_fields = root.convert_to_system_name(data['fields'])
 
             str_table = ''
-            // console.log(data['tables'].length)
             if(data['tables'].length > 1) {
                 str_table = ''
-                // tables = root.convert_to_system_name(data['tables']).join(", ")
-                // if(data['tables'].length > 1) {
-                //     where_tbls = []
-                //     str_table1 = []
-                //     for (let index = 0; index < data['relationships'].length; index++) {
-                        
-                //         const rel_element = data['relationships'][index];
-                //         // console.log(rel_element)
-                //         table1 = rel_element['Table_1'].split(".")[0]
-                //         table2 = rel_element['Table_2'].split(".")[0]
-                //         if(index < 1) {
-                //             str_table1 = rel_element['Table_1'] + " = " + rel_element['Table_2']
-                //         } else {
-                //             str_table1 = 'AND ' + rel_element['Table_1'] + " = " + rel_element['Table_2']
-                //         }
-                        
-                //         where_tbls.push(str_table1)
-                //     }
-                //     // console.log(where_tbls.join(" "))
-                //     // str_table = where_tbls.join(" ")
-                //     str_table = tables + ' WHERE ' + where_tbls.join(" ")
-                // }
                 str_tbls = ''
                 where_tbls = []
                 for (let index = 0; index < data['relationships'].length; index++) {
                     
                     const rel_element = data['relationships'][index];
-                    // console.log(rel_element)
                     table1       = rel_element['Table_1'].split(".")[0]
                     table1_field = rel_element['Table_1'].split(".")[1]
                     table2       = rel_element['Table_2'].split(".")[0]
@@ -1065,7 +988,6 @@ var root = new Vue({
                     where_tbls.push(str_tbls)
                 }
                 str_table = where_tbls.join(" ")
-                // console.log(where_tbls.join(" "))
             } else {
                 table = root.convert_to_system_name(data['tables'][0])
                 console.log(table)
@@ -1079,21 +1001,19 @@ var root = new Vue({
                 let replacedWord = firstWord.replace(/[aeiou]/gi, '');
                 return str.replace(firstWord, replacedWord);
               });
-            // sql_sum      = data_sum.map(item => `SUM(${item}) AS Sum_${item.split('.')[1]}`).join(', ');
 
             sql_sum = data_sum.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
                 console.log(words)
                 return `SUM(${item}) AS Sum_of_${words[1]}`;
               }).join(', ');
-            console.log(sql_sum)
+
             data_count   = data['count'].map(str => {
                 let firstWord = str.match(/^\w+/)[0];
                 let replacedWord = firstWord.replace(/[aeiou]/gi, '');
                 return str.replace(firstWord, replacedWord);
               });
-            // console.log(data_count)
-            // sql_count    = data_count.map(item => `COUNT(${item}) AS Count_of_${item.split('.')[1]}`).join(', ');
+            
             sql_count = data_count.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
                 console.log(words)
@@ -1103,8 +1023,7 @@ var root = new Vue({
             grp_by_table = data['group_by'].split(".")[0]
             grp_by_field = data['group_by'].split(".")[1]
             sql_group_by = grp_by_table.replace(/[aeiou]/gi, '') + "." + grp_by_field
-            // console.log(sql_count)
-            // console.log(sql_sum)
+
             if(grp_by_table != '') {
                 group_by = ' GROUP BY ' + sql_group_by
                 select_grp_by = sql_group_by + ", "
@@ -1137,10 +1056,7 @@ var root = new Vue({
                     str_fields = select_grp_by + data['tables'].join(', ')
                 }
             } 
-            console.log(str_fields)
-            
-            
-            // str_fields = select_grp_by + sql_sum + ", " + sql_count
+
             // WHERE CLAUSE
             arr_where_clause = []
             for (let index = 0; index < data['filters'].length; index++) {
@@ -1165,17 +1081,12 @@ var root = new Vue({
                     arr_where_clause.push(where_clause)
                 }
             }
-            console.log(root.filter_has_value)
-            if(root.filter_has_value) {
-                // if(data['tables'].length > 1) {
-                //     where_clause = ' AND ' + arr_where_clause.join(' AND ')
-                // } else {
+            console.log(arr_where_clause.length)
+            if(arr_where_clause.length > 0 && root.filter_has_value) {
                 where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
-                // }
             } else {
                 where_clause = ''
             }
-
 
             // ORDER BY
             arr_sort = []
@@ -1194,7 +1105,6 @@ var root = new Vue({
             } else {
                 sort = ''
             }
-            // console.log(str_table)
 
             query = "SELECT " + str_fields + " FROM " + str_table + where_clause + group_by + sort 
             console.log(query)
@@ -1218,7 +1128,7 @@ var root = new Vue({
                 let words = elem.split(" ");
                 let capitalizedWords = words.map(word => word.charAt(0).toLowerCase() + word.slice(1));
                 let joinedWords = capitalizedWords.join("_");
-                // console.log(joinedWords)
+                
                 return joinedWords
             } else {
                 rpt_header = []
@@ -1296,7 +1206,4 @@ var root = new Vue({
     },
 })
 root.get_tables()
-// root.get_table_fields(root.checked_tables)
-// root.checked_fields = []
 root.add_row('Filter')
-// root.add_row('Sort')
