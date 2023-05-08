@@ -34,6 +34,7 @@ def create(data):
 
     #STARK-provided common methods go here
     source_code += f"""
+            'Analytics_url':`${{api_endpoint_1}}/STARK_Analytics`,
             'STARK_User_url':`${{api_endpoint_1}}/STARK_User`,
             'STARK_Module_url':`${{api_endpoint_1}}/STARK_Module`,
             'STARK_User_Roles_url':`${{api_endpoint_1}}/STARK_User_Roles`,
