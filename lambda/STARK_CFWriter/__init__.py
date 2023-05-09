@@ -349,22 +349,6 @@ def lambda_handler(event, context):
     else:    
         cf_template +=f"""\
                     -
-                        Name: Test
-                        Actions:
-                            -
-                                Name: TestAction
-                                RunOrder: 2
-                                ActionTypeId:
-                                    Category: Test
-                                    Owner: AWS
-                                    Provider: CodeBuild
-                                    Version: '1'
-                                Configuration:
-                                    ProjectName: !Ref STARKProjectTestProject
-                                InputArtifacts:
-                                    - Name: SourceArtifact
-                                OutputArtifacts: []
-                    -
                         Name: Build
                         Actions:
                             -
