@@ -122,6 +122,7 @@ def create(cloud_resources, project_basedir):
         })
     ########################################
     #Update conftest of test_cases 
+    current_model.update(models)
     data = {
         "Entities": [*current_entities, *entities],
         "Models": current_model,
