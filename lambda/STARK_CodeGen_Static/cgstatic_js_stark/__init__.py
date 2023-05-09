@@ -34,6 +34,7 @@ def create(data):
 
     #STARK-provided common methods go here
     source_code += f"""
+            'Analytics_url':`${{api_endpoint_1}}/STARK_Analytics`,
             'STARK_User_url':`${{api_endpoint_1}}/STARK_User`,
             'STARK_Module_url':`${{api_endpoint_1}}/STARK_Module`,
             'STARK_User_Roles_url':`${{api_endpoint_1}}/STARK_User_Roles`,
@@ -51,7 +52,9 @@ def create(data):
             'local_storage_item_ttl': {{ //in minutes
                                         'default': 1,
                                         'Permissions': 360,
-                                        'Listviews': 10
+                                        'Listviews': 10,
+                                        'Analytics_Input': 10,
+                                        'Analytics_Data': 10
                                     }}, 
 
             request: function(method, fetchURL, payload='') {{
