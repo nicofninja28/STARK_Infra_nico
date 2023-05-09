@@ -72,7 +72,11 @@ def create(cloud_resources, current_cloud_resources, project_basedir):
                 rel_col = models.get(relationship.get('entity'), '')
                 rel_model.update({(relationship.get('entity')) : rel_col})
 
-        cgstatic_data = { "Entity": entity, "PK": pk, "Columns": cols, "Project Name": project_name, "Relationships" : relationships, "Rel Model": rel_model }
+        seq = {}
+        if len(models[entity].get("sequence", {})) > 0:
+            seq = models[entity]["sequence"]
+
+        cgstatic_data = { "Entity": entity, "PK": pk, "Columns": cols, "Project Name": project_name, "Relationships" : relationships, "Rel Model": rel_model, "Sequence": seq }
         entity_varname = converter.convert_to_system_name(entity)
         for rel in rel_model:
             pk   = rel_model[rel]["pk"]
@@ -96,7 +100,7 @@ def create(cloud_resources, current_cloud_resources, project_basedir):
     combined_models = current_cloud_resources["Data Model"].copy()
     combined_models.update(models)
 
-    data = { 'API Endpoint': endpoint, 'Entities': combined_models, "Bucket Name": web_bucket_name }
+    data = { 'API Endpoint': endpoint, 'Entities': combined_models, "Bucket Name": web_bucket_name, "Project Name": project_varname }
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
     ##################################################

@@ -102,8 +102,8 @@ def create(data):
             """
 
         if len(data['Models'][entity].get("sequence", {})) > 0:
-            print('here')
-            source_code += f"""
+                # print('here')
+                source_code += f"""
         @pytest.fixture
         def set_{entity_varname.lower()}_payload_sequence():
             return {entity_varname.lower()}.set_payload_sequence()
