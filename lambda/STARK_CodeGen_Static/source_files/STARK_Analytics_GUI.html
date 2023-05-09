@@ -516,8 +516,8 @@
                             <b-form-text id="text" class="form-control" v-model="Analytics.Report_Name" placeholder=""></b-form-textarea>
                         </b-form-group>
                         
-                        <button type="button" class="btn btn-secondary" onClick="root.change_page(6, 'Back')">Back</button>
-                        <button type="button" class="btn btn-primary float-right mb-2" :disabled="Analytics.Save_Report == 'No'">Save</button>
+                        <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(6, 'Back')">Back</button>
+                        <button type="button" class="btn btn-primary mb-2" :disabled="Analytics.Save_Report == 'No'">Save</button>
                         <button type="button" class="btn btn-primary float-right mb-2" onClick="root.submit()">Submit</button>
                         </form>
                     </div>
