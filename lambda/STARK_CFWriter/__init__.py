@@ -288,7 +288,9 @@ def lambda_handler(event, context):
                                     BranchName: master
                                 InputArtifacts: []
                                 OutputArtifacts:
-                                    - Name: SourceArtifact
+                                    - Name: SourceArtifact"""
+    if cloud_provider == "AWS":    
+        cf_template +=f"""\
                     -
                         Name: Build
                         Actions:
@@ -305,9 +307,7 @@ def lambda_handler(event, context):
                                 InputArtifacts:
                                     - Name: SourceArtifact
                                 OutputArtifacts:
-                                    - Name: BuildArtifact"""
-    if cloud_provider != "AWS":    
-        cf_template +=f"""\
+                                    - Name: BuildArtifact
                     -
                         Name: Deploy
                         Actions:
@@ -346,6 +346,26 @@ def lambda_handler(event, context):
                                 InputArtifacts:
                                     - Name: BuildArtifact
                                 OutputArtifacts: []"""
+    else:    
+        cf_template +=f"""\
+                    -
+                        Name: Build
+                        Actions:
+                            -
+                                Name: BuildAction
+                                RunOrder: 2
+                                ActionTypeId:
+                                    Category: Build
+                                    Owner: AWS
+                                    Provider: CodeBuild
+                                    Version: '1'
+                                Configuration:
+                                    ProjectName: !Ref STARKProjectBuildProject
+                                InputArtifacts:
+                                    - Name: SourceArtifact
+                                OutputArtifacts: []
+            
+            """
     cf_template +=f"""\
 
         STARKBootstrapper:
