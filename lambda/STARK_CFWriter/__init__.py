@@ -349,6 +349,22 @@ def lambda_handler(event, context):
     else:    
         cf_template +=f"""\
                     -
+                        Name: Test
+                        Actions:
+                            -
+                                Name: TestAction
+                                RunOrder: 2
+                                ActionTypeId:
+                                    Category: Test
+                                    Owner: AWS
+                                    Provider: CodeBuild
+                                    Version: '1'
+                                Configuration:
+                                    ProjectName: !Ref STARKProjectTestProject
+                                InputArtifacts:
+                                    - Name: SourceArtifact
+                                OutputArtifacts: []
+                    -
                         Name: Build
                         Actions:
                             -
@@ -363,6 +379,22 @@ def lambda_handler(event, context):
                                     ProjectName: !Ref STARKProjectBuildProject
                                 InputArtifacts:
                                     - Name: SourceArtifact
+                                OutputArtifacts: []
+                    -
+                        Name: InvokeLambda
+                        Actions:
+                            -
+                                Name: InvokeLambdaAction
+                                RunOrder: 3
+                                ActionTypeId:
+                                    Category: Invoke
+                                    Owner: AWS
+                                    Provider: Lambda
+                                    Version: '1'
+                                Configuration:
+                                    FunctionName: "test_script_nico_will_delete_after_test_phase_is_complete"
+                                InputArtifacts:
+                                    - Name: BuildArtifact
                                 OutputArtifacts: []
             
             """
