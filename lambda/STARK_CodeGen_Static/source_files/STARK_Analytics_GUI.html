@@ -114,10 +114,8 @@
                                 </tr>
                             </template>
                             
-    
-                            
                         </table>
-                        <button type="button" class="btn btn-secondary" onClick="window.location.href='Home.html'">Back</button>
+                        <button type="button" class="btn btn-secondary" onClick="window.location.href='home.html'">Back</button>
                         <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(2, 'Next')">Next</button> -->
                         <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('1')){ root.change_page(2, 'Next') }">Next</button>
                         
@@ -305,7 +303,7 @@
                         </b-form-group>
 
                         <b-form-group class="form-group" label="Group By" label-for="Group_By" :state="validation_properties.Group_By.state" :invalid-feedback="validation_properties.Group_By.feedback">
-                            <b-form-select id="Group_By" v-model="Analytics.Group_By" :options="lists.Group_By" :state="validation_properties.Group_By.state" onmouseover="" onfocus="">
+                            <b-form-select id="Group_By" v-model="Analytics.Group_By" :options="lists.Relationship" :state="validation_properties.Group_By.state" onmouseover="" onfocus="">
                             <template v-slot:first>
                                 <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
                             </template>

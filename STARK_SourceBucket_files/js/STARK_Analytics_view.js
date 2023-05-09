@@ -385,6 +385,7 @@ var root = new Vue({
                     root.checked_fields = root.system_fields
                 } else {
                     loading_modal.show()
+                    STARK.local_storage_delete_key('Analytics_Data', 'Table_Fields_Option')
                     root.same_table_selected = false
                     fetch_from_db = true
                     
@@ -527,13 +528,7 @@ var root = new Vue({
 
             if(list_field_data) {
                 console.log(root.same_table_selected)
-                if(root.same_table_selected) {
-                    root.lists[action] = list_field_data['table_fields_option']
-                    console.log('486')
-                } else {
-                    fetch_from_db = true
-                    console.log('488')
-                }
+                root.lists[action] = list_field_data['table_fields_option']
             }
             else {
                 fetch_from_db = true
@@ -769,7 +764,7 @@ var root = new Vue({
                 root.page_2_show = false
                 root.page_1_show = true
                 root.validate_tab('1')
-
+                root.list_status.Relationship = 'empty'
                 var selected_field_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
                 if(selected_field_data) {
                     root.checked_fields = selected_field_data['checked_fields']
@@ -804,6 +799,7 @@ var root = new Vue({
                 var data_to_store = {}
                 data_to_store['checked_fields'] = root.checked_fields
                 STARK.set_local_storage_item('Analytics_Input', 'Fields', data_to_store)
+                root.list_field_options('Relationship', root.checked_tables)
                 if(action == 'Next') {
                     root.page_2_show = false
                     if(root.checked_tables.length > 1) {
@@ -834,7 +830,7 @@ var root = new Vue({
                 root.page_5_show = false
                 root.show_result = false
                 
-                root.list_field_options('Relationship', root.checked_tables)
+                // root.list_field_options('Relationship', root.checked_tables)
                 if(action == 'Next')
                 {
                     //FIX ME: Will empty relationships from page 2 even when tables are not change
@@ -1100,7 +1096,7 @@ var root = new Vue({
                 }
             }
 
-            if(arr_sort.length > 0) {
+            if(arr_sort.length > 0 && root.filter_has_value) {
                 sort = ' ORDER BY ' + arr_sort.join(', ')
             } else {
                 sort = ''
