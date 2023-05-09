@@ -345,7 +345,8 @@ def lambda_handler(event, context):
                                     ChangeSetName: STARK-project-{project_stackname}-changeset
                                 InputArtifacts:
                                     - Name: BuildArtifact
-                                OutputArtifacts: []
+                                OutputArtifacts: []"""
+    cf_template +=f"""\
 
         STARKBootstrapper:
             Type: AWS::CloudFormation::CustomResource
