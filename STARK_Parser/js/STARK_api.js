@@ -25,7 +25,7 @@ var root = new Vue({
         ui_visibility: 'block',
         visibility: 'visible',
         wait_counter: 0,
-        wait_limit: 12, 
+        wait_limit: 100, 
         validation_properties: {
             'project_name': {
                 'state': null,
