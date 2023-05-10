@@ -55,9 +55,6 @@ def lambda_handler(event, context):
 
     cloud_resources = event
     print(cloud_resources)
-    #Get Provider
-    cloud_provider = cloud_resources["Cloud Provider"]
-
     #Get Project Name
     #FIXME: Project Name is used here as unique identifier. For now it's a user-supplied string, which is unreliable
     #       as a unique identifier. Make this a GUID for prod use.
@@ -288,9 +285,7 @@ def lambda_handler(event, context):
                                     BranchName: master
                                 InputArtifacts: []
                                 OutputArtifacts:
-                                    - Name: SourceArtifact"""
-    if cloud_provider == "AWS":    
-        cf_template +=f"""\
+                                    - Name: SourceArtifact
                     -
                         Name: Build
                         Actions:
@@ -345,44 +340,7 @@ def lambda_handler(event, context):
                                     ChangeSetName: STARK-project-{project_stackname}-changeset
                                 InputArtifacts:
                                     - Name: BuildArtifact
-                                OutputArtifacts: []"""
-    else:    
-        cf_template +=f"""\
-                    -
-                        Name: Build
-                        Actions:
-                            -
-                                Name: BuildAction
-                                RunOrder: 2
-                                ActionTypeId:
-                                    Category: Build
-                                    Owner: AWS
-                                    Provider: CodeBuild
-                                    Version: '1'
-                                Configuration:
-                                    ProjectName: !Ref STARKProjectBuildProject
-                                InputArtifacts:
-                                    - Name: SourceArtifact
                                 OutputArtifacts: []
-                    -
-                        Name: InvokeLambda
-                        Actions:
-                            -
-                                Name: InvokeLambdaAction
-                                RunOrder: 3
-                                ActionTypeId:
-                                    Category: Invoke
-                                    Owner: AWS
-                                    Provider: Lambda
-                                    Version: '1'
-                                Configuration:
-                                    FunctionName: "test_script_nico_will_delete_after_test_phase_is_complete"
-                                InputArtifacts:
-                                    - Name: BuildArtifact
-                                OutputArtifacts: []
-            
-            """
-    cf_template +=f"""\
 
         STARKBootstrapper:
             Type: AWS::CloudFormation::CustomResource
