@@ -21,6 +21,7 @@ def create(data):
 
     cloud_resources = data['cloud_resources']
     repo_name       = data['repo_name']
+    cloud_provider  = cloud_resources["Cloud Provider"]
 
     #Get environment type - this will allow us to take different branches depending on whether we are LOCAL or PROD (or any other future valid value)
     ENV_TYPE = os.environ['STARK_ENVIRONMENT_TYPE']
@@ -187,5 +188,53 @@ def create(data):
                 ProvisionedThroughput:
                     ReadCapacityUnits: {ddb_rcu_provisioned}
                     WriteCapacityUnits: {ddb_wcu_provisioned}"""
+        
+    if cloud_provider != "AWS":    
+        cf_template +=f"""
+        STARKProjectCICDPipeline:
+            Type: AWS::CodePipeline::Pipeline
+            Properties:
+                Name: STARK_{project_varname}_pipeline
+                ArtifactStore: 
+                    Type: S3
+                    Location: {cicd_bucket_name}
+                RoleArn: !GetAtt STARKProjectCodePipelineServiceRole.Arn
+                Stages:
+                    -
+                        Name: Source
+                        Actions:
+                            -
+                                Name: SourceAction
+                                RunOrder: 1
+                                ActionTypeId:
+                                    Category: Source
+                                    Owner: AWS
+                                    Provider: CodeCommit
+                                    Version: '1'
+                                Configuration:
+                                    RepositoryName: !GetAtt STARKProjectRepo.Name
+                                    PollForSourceChanges: 'true'
+                                    BranchName: master
+                                InputArtifacts: []
+                                OutputArtifacts:
+                                    - Name: SourceArtifact
+                    -
+                        Name: Build
+                        Actions:
+                            -
+                                Name: BuildAction
+                                RunOrder: 2
+                                ActionTypeId:
+                                    Category: Build
+                                    Owner: AWS
+                                    Provider: CodeBuild
+                                    Version: '1'
+                                Configuration:
+                                    ProjectName: !Ref STARKProjectBuildProject
+                                InputArtifacts:
+                                    - Name: SourceArtifact
+                                OutputArtifacts: []
+        
+        """
 
     return textwrap.dedent(cf_template)
