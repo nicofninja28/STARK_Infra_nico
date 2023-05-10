@@ -14,7 +14,6 @@ import botocore
 from crhelper import CfnResource
 
 #Private modules
-import bootstrap_buildspec as boot_build
 import bootstrap_sam_template as boot_sam
 import bootstrap_template_conf as boot_conf
 import convert_friendly_to_system as converter
@@ -46,7 +45,12 @@ def create_handler(event, context):
         Key=f'codegen_dynamic/{project_varname}/{project_varname}.yaml'
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
-
+    cloud_provider = cloud_resources["Cloud Provider"]
+    
+    if cloud_provider == 'AWS':
+        import bootstrap_buildspec as boot_build
+    else:
+        import bootstrap_az_buildspec as boot_build
 
     models   = cloud_resources["Data Model"]
     entities = []
