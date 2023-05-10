@@ -290,7 +290,7 @@ def lambda_handler(event, context):
                                 OutputArtifacts:
                                     - Name: SourceArtifact"""
     if cloud_provider == "AWS":    
-        cf_template +=f"""\
+        cf_template +=f"""
                     -
                         Name: Build
                         Actions:
@@ -347,7 +347,7 @@ def lambda_handler(event, context):
                                     - Name: BuildArtifact
                                 OutputArtifacts: []"""
     else:    
-        cf_template +=f"""\
+        cf_template +=f"""
                     -
                         Name: Build
                         Actions:
@@ -366,8 +366,7 @@ def lambda_handler(event, context):
                                 OutputArtifacts: []
             
             """
-    cf_template +=f"""\
-
+    cf_template +=f"""
         STARKBootstrapper:
             Type: AWS::CloudFormation::CustomResource
             Properties:
