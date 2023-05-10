@@ -8,3 +8,8 @@ Default:
     Description: "STARK Business modules"
     Icon: "gears.svg"
     Priority: "0"
+Analytics:
+    sk: "STARK|module_group"
+    Description: "Central Reporting module"
+    Icon: "gears.svg"
+    Priority: "5"
