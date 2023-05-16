@@ -147,23 +147,21 @@ def create(data):
                     response = report_list, csv_bucket_key, pdf_bucket_key
                 else:
                     response = []
-        elif request_type == 'get_saved_reports':
-            response = get_saved_reports()
-        elif request_type == "get_saved_report_settings":
-            report_name = event.get('queryStringParameters').get('report_name','')
-            print(report_name)
-            response = get_saved_report_settings(report_name)
-    
-
-
-    return {{
-        "isBase64Encoded": False,
-        "statusCode": responseStatusCode,
-        "body": json.dumps(response),
-        "headers": {{
-            "Content-Type": "application/json",
+            elif request_type == 'get_saved_reports':
+                response = get_saved_reports()
+            elif request_type == "get_saved_report_settings":
+                report_name = event.get('queryStringParameters').get('report_name','')
+                print(report_name)
+                response = get_saved_report_settings(report_name)
+        
+        return {{
+            "isBase64Encoded": False,
+            "statusCode": responseStatusCode,
+            "body": json.dumps(response),
+            "headers": {{
+                "Content-Type": "application/json",
+            }}
         }}
-    }}
 
     def get_saved_report_settings(pk, sk=default_sk, db_handler = None):
         if db_handler == None:

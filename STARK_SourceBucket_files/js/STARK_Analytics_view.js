@@ -436,6 +436,7 @@ var root = new Vue({
                     root.page_6_show = false
                     root.page_7_show = false
                     root.show_result = true
+                    loading_modal.hide();
                 })
                 .catch(function(error) {
                     console.log("Encountered an error! [" + error + "]")
@@ -1515,12 +1516,12 @@ var root = new Vue({
             return ''
         },
     },
-    created() {
-        window.onbeforeunload = this.handlePageRefresh;
-    },
-    destroyed() {
-        window.onbeforeunload = null;
-    },
+    // created() {
+    //     window.onbeforeunload = this.handlePageRefresh;
+    // },
+    // destroyed() {
+    //     window.onbeforeunload = null;
+    // },
 })
 // root.get_tables()
 root.add_row('Filter')
