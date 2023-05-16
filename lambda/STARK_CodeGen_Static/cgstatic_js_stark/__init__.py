@@ -53,8 +53,8 @@ def create(data):
                                         'default': 1,
                                         'Permissions': 360,
                                         'Listviews': 10,
-                                        'Analytics_Input': 10,
-                                        'Analytics_Data': 10
+                                        'Analytics_Input': 360,
+                                        'Analytics_Data': 360
                                     }}, 
 
             request: function(method, fetchURL, payload='') {{

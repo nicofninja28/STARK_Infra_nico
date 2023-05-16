@@ -82,6 +82,62 @@
             </ol>
         </nav>
 
+        <!-- 0: Choose Report -->
+        <div v-if="page_0_show" class="container hidden" :style="{visibility: visibility}">
+            <div class="row">
+                <div class="col">
+                    <div class="my-auto">
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                        <strong>Error!</strong> Select Saved Report
+                                    </div>
+                            </table>
+                        </div>
+                        <form class="border p-3">
+
+                        <b-form-group class="form-group" label="Choose Report" label-for="Choose_Report">
+                            <b-form-radio-group id="Choose_Report" v-model="Analytics.Choose_Report" :options="lists.Report_Type" onchange="root.onReport_Type()"></b-form-radio-group>
+                        </b-form-group>
+
+                        
+
+                        <b-form-group v-if="Analytics.Choose_Report == 'Saved Report'" class="form-group" label="Saved Report" label-for="Saved_Report">
+                            <b-form-select id="Saved_Report" v-model="Analytics.Saved_Report" :options="lists.Saved_Report">
+                            <template v-slot:first>
+                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                            </template>
+                        </b-form-select>
+                        </b-form-group>
+                        
+                        <button type="button" class="btn btn-secondary mb-2" onClick="window.location.href='home.html'">Back</button>
+                        <button type="button" class="btn btn-primary mb-2" v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.load_report()">Load</button>
+                        <button type="button" class="btn btn-primary mb-2" v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.run_report()">Run</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" v-if="Analytics.Choose_Report == 'New Report' || Analytics.Choose_Report == 'Query Box' || show_next_button == true" onClick="root.change_page(1, 'Next')">Next</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="show_query_box" class="container hidden" :style="{visibility: visibility}">
+            <div class="row">
+                <div class="col">
+                    <div class="my-auto">
+                        <form class="border p-3">
+                        
+                        <b-form-group class="form-group" label="Query" label-for="Query">
+                            <b-form-textarea id="textarea" class="form-control" v-model="Analytics.Query" placeholder=""></b-form-textarea>
+                        </b-form-group>
+                        
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(0, 'Back')">Back</button>
+                        <button type="button" class="btn btn-primary float-right" onClick="root.submit()">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 1: Tables -->
         <div v-if="page_1_show" class="container hidden" :style="{visibility: visibility}">
         <!-- <div class="container hidden" :style="{visibility: visibility}"> -->
@@ -115,10 +171,8 @@
                             </template>
                             
                         </table>
-                        <button type="button" class="btn btn-secondary" onClick="window.location.href='home.html'">Back</button>
-                        <!-- <button type="button" class="btn btn-primary float-right" onClick="root.change_page(2, 'Next')">Next</button> -->
+                        <button type="button" class="btn btn-secondary" onClick="root.change_page(0, 'Back')">Back</button>
                         <button type="button" class="btn btn-primary float-right" onClick="if(root.validate_tab('1')){ root.change_page(2, 'Next') }">Next</button>
-                        
                     </form>
                 </div>   
             </div>
@@ -504,6 +558,13 @@
                 <div class="col">
                     <div class="my-auto">
                         <h3>Page 7: Save Report</h3>
+                        <div>
+                            <table class="table table-bordered">
+                                    <div class="alert alert-dark alert-dismissible fade show" v-if="showSuccessSaveReport">
+                                        Report saved successfully.
+                                    </div>
+                            </table>
+                        </div>
                         <form class="border p-3">
 
                         <b-form-group class="form-group" label="Save Report?" label-for="Save_Report">
@@ -511,11 +572,11 @@
                         </b-form-group>
                         
                         <b-form-group v-if="show_report_name_input" class="form-group" label="Report Name" label-for="Report_Name">
-                            <b-form-text id="text" class="form-control" v-model="Analytics.Report_Name" placeholder=""></b-form-textarea>
+                            <b-form-input type="text" class="form-control" id="Report_Name" placeholder="" v-model="Save_Report_Settings.Report_Name"></b-form-input>
                         </b-form-group>
                         
                         <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(6, 'Back')">Back</button>
-                        <button type="button" class="btn btn-primary mb-2" :disabled="Analytics.Save_Report == 'No'">Save</button>
+                        <button type="button" class="btn btn-primary mb-2" onClick="root.saveReport()" :disabled="Analytics.Save_Report == 'No'" >Save</button>
                         <button type="button" class="btn btn-primary float-right mb-2" onClick="root.submit()">Submit</button>
                         </form>
                     </div>

@@ -26,20 +26,43 @@ def create(data):
 
     #######
     #CONFIG
-    ddb_table         = stark_core.ddb_table
-    bucket_name       = stark_core.bucket_name
-    region_name       = stark_core.region_name
-    page_limit        = stark_core.page_limit
-    bucket_url        = stark_core.bucket_url
-    bucket_tmp        = stark_core.bucket_tmp
-    athena            = boto3.client('athena')
-    database          = "stark_{project_varname.lower()}_db"
+    ddb_table       = stark_core.ddb_table
+    bucket_name     = stark_core.bucket_name
+    region_name     = stark_core.region_name
+    page_limit      = stark_core.page_limit
+    bucket_url      = stark_core.bucket_url
+    bucket_tmp      = stark_core.bucket_tmp
+    athena          = boto3.client('athena')
+    database        = "stark_{project_varname.lower()}_db"
+    ddb             = boto3.client('dynamodb')
+    default_sk      = "Analytics|Settings"
+    report_pk_field = "Report_Name"
 
     def lambda_handler(event, context):
         responseStatusCode = 200
         request_type = event.get('queryStringParameters',{{}}).get('rt','')
+        global username
+        username = event.get('requestContext',{{}}).get('authorizer',{{}}).get('lambda',{{}}).get('Username','')
+        response = []
         if request_type == '':
-            dump_csv()
+            method  = event.get('requestContext', {{}}).get('http', {{}}).get('method', '')
+            if event.get('isBase64Encoded') == True :
+                payload = json.loads(base64.b64decode(event.get('body'))).get('Analytics_Report',"")
+            else:    
+                if method == 'POST':
+                    payload = json.loads(event.get('body', {{}})).get('Analytics_Report',"")
+                else:
+                    payload = event.get('body', {{}}).get('Analytics_Report',"")
+            
+            data    = {{}}
+            if payload != "":
+                data['Report_Name'] = payload.get('Report_Name', '')
+                data['Report_Settings'] = payload.get('Report_Settings','')
+                
+            if method == 'POST':
+                response = save_report(data)
+            else:
+                dump_csv()
         else:
             
             if request_type == 'get_tables':
@@ -124,16 +147,103 @@ def create(data):
                     response = report_list, csv_bucket_key, pdf_bucket_key
                 else:
                     response = []
-            
+        elif request_type == 'get_saved_reports':
+            response = get_saved_reports()
+        elif request_type == "get_saved_report_settings":
+            report_name = event.get('queryStringParameters').get('report_name','')
+            print(report_name)
+            response = get_saved_report_settings(report_name)
+    
 
-            return {{
-                "isBase64Encoded": False,
-                "statusCode": responseStatusCode,
-                "body": json.dumps(response),
-                "headers": {{
-                    "Content-Type": "application/json",
-                }}
-            }}
+
+    return {{
+        "isBase64Encoded": False,
+        "statusCode": responseStatusCode,
+        "body": json.dumps(response),
+        "headers": {{
+            "Content-Type": "application/json",
+        }}
+    }}
+
+    def get_saved_report_settings(pk, sk=default_sk, db_handler = None):
+        if db_handler == None:
+            db_handler = ddb
+        
+        items = []
+        ddb_arguments = {{}}
+        ddb_arguments['TableName'] = ddb_table
+        ddb_arguments['Select'] = "ALL_ATTRIBUTES"
+        ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
+        ddb_arguments['ExpressionAttributeNames'] = {{
+                                                    '#pk' : 'pk',
+                                                    '#sk' : 'sk'
+                                                }}
+        ddb_arguments['ExpressionAttributeValues'] = {{
+                                                    ':pk' : {{'S' : pk }},
+                                                    ':sk' : {{'S' : sk }}
+                                                }}
+        
+        print(db_handler)
+        response = db_handler.query(**ddb_arguments)
+        raw = response.get('Items')
+
+        for record in raw:
+            item = {{}}
+            item['Report_Name'] = record.get('pk', {{}}).get('S','')
+            item['Report_Settings'] = record.get('Report_Settings',{{}}).get('S','')
+            items.append(item)
+
+        return items
+
+    def save_report(data, method='POST', db_handler = None):
+        print('data')
+        print(data)
+        if db_handler == None:
+            db_handler = ddb
+        sk = default_sk
+        pk = str(data.get('Report_Name', ''))
+        Report_Settings = str(data.get('Report_Settings', ''))
+        item = utilities.append_record_metadata('add', username)
+        item['pk'] = {{'S' : pk}}
+        item['sk'] = {{'S' : sk}}
+        item['Report_Settings'] = {{'S' : Report_Settings}}
+        item['STARK-ListView-sk'] = {{'S' : pk}}
+
+        ddb_arguments = {{}}
+        ddb_arguments['TableName'] = ddb_table
+        ddb_arguments['Item'] = item
+        response = db_handler.put_item(**ddb_arguments)
+    
+        global resp_obj
+        resp_obj = response
+        return "OK"
+
+    def get_saved_reports(sk=default_sk, db_handler = None):
+        if db_handler == None:
+            db_handler = ddb
+
+        ExpressionAttributeNamesDict = {{
+            '#isDeleted' : 'STARK-Is-Deleted',
+        }}
+        items = []
+        ddb_arguments = {{}}
+        ddb_arguments['TableName'] = ddb_table
+        ddb_arguments['IndexName'] = "STARK-ListView-Index"
+        ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+        ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
+        ddb_arguments['ExpressionAttributeValues'] = {{ ':sk' : {{'S' : sk }} }}
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+
+        response = db_handler.query(**ddb_arguments)
+        raw = response.get('Items')
+        
+        for record in raw:
+            item = {{}}
+            item['Report_Name'] = record.get('pk', {{}}).get('S','')
+            item['Report_Settings'] = record.get('Report_Settings',{{}}).get('S','')
+            items.append(item)
+
+        return items
 
     def get_query_result(analytics_query):
         print(analytics_query)
