@@ -585,17 +585,20 @@
         </div>
 
         <!-- 8: Result -->
-        <div v-if="show_result" class="container hidden" :style="{visibility: visibility}">
+        <div v-if="show_result">
+            <h3>Page 8: Result</h3>
+            <div class="row">
+                <div class="col-6 text-left d-inline-block">
+                    <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(7, 'Back')">Back</button>
+                    <button type="button" class="btn btn-success mb-2" onClick="root.download_report('csv')" :disabled="report_result.length < 1"> Export as CSV</button>
+                    <button type="button" class="btn btn-danger mb-2" onClick="root.download_report('pdf')" :disabled="report_result.length < 1"> Export as PDF</button>
+                </div>
+                <div class="col-6">
+                </div>
+            </div>
             
             <div class="row">
                 <div class="col overflow-auto">
-                    <h3>Page 8: Result</h3>
-                    
-                    <div class="col-6 text-left d-inline-block">
-                        <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(7, 'Back')">Back</button>
-                        <button type="button" class="btn btn-success mb-2" onClick="root.download_report('csv')" :disabled="report_result.length < 1"> Export as CSV</button>
-                        <button type="button" class="btn btn-danger mb-2" onClick="root.download_report('pdf')" :disabled="report_result.length < 1"> Export as PDF</button>
-                    </div>
                     <table class="table  table-hover table-striped table-dark">
                         <thead class="thead-dark">
                             <tr>
@@ -617,8 +620,9 @@
                                     No records found            
                                 </tr>
                             </template>
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

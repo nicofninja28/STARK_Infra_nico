@@ -166,6 +166,7 @@ var root = new Vue({
         show_next_button: false,
         show_report_name_input: false,
         from_run_report: false,
+        from_load_report: false,
         table_field: [],
         disableRelationship: true,
         Relationship: {
@@ -487,7 +488,6 @@ var root = new Vue({
         },
 
         load_report: function() {
-
             if(root.Analytics.Saved_Report == '') {
                 root.showError = true
             } else {
@@ -497,6 +497,8 @@ var root = new Vue({
                     Analytics_app.get_saved_report_settings(report_name).then( function(data) {
                         report_setting = JSON.parse(data[0]['Report_Settings'])
                         root.set_local_storage_from_setting(report_setting)
+                        root.from_load_report = true
+                        root.from_run_report = false
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -520,6 +522,7 @@ var root = new Vue({
                         root.submit(report_setting)
                         root.page_0_show = false
                         root.from_run_report = true
+                        root.from_load_report = false
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -1182,6 +1185,15 @@ var root = new Vue({
                     var data_to_store = {}
                     data_to_store['sum'] = root.multi_select_values.Sum
                     STARK.set_local_storage_item('Analytics_Input', 'Sum', data_to_store)
+
+                    var data_to_store = {}
+                    data_to_store['count'] = root.multi_select_values.Count
+                    STARK.set_local_storage_item('Analytics_Input', 'Count', data_to_store)
+
+                    var data_to_store = {}
+                    data_to_store['group_by'] = root.Analytics.Group_By
+                    STARK.set_local_storage_item('Analytics_Input', 'Group_by', data_to_store)
+                
                 } else {
                     var selected_filter_data = STARK.get_local_storage_item('Analytics_Input', 'Filters') 
                     root.filter_many = selected_filter_data['filters']
@@ -1231,7 +1243,7 @@ var root = new Vue({
                 root.show_result = false
                 
                 if(action == 'Back') {
-                    if(root.from_run_report) {
+                    if(root.from_run_report && !root.from_load_report) {
                         root.page_7_show = false
                         root.page_0_show = true
                     } else {
