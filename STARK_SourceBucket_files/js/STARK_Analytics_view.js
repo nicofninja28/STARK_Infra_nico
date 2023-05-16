@@ -208,7 +208,8 @@ var root = new Vue({
         sort_has_value: false,
         same_table_selected: false,
         action_from_saved_report: false,
-        showSuccessSaveReport: false
+        showSuccessSaveReport: false,
+        action_from_run_saved_report: false
     },
     methods: {
         
@@ -510,15 +511,15 @@ var root = new Vue({
                 root.showError = true
             } else {
                 root.showError = false
+                root.action_from_run_saved_report = true
                 if(root.Analytics.Choose_Report == 'Saved Report') {
                     report_name = root.Analytics.Saved_Report
                     
                     Analytics_app.get_saved_report_settings(report_name).then( function(data) {
-                        root.submit(JSON.parse(data[0]['Report_Settings']))
+                        report_setting = JSON.parse(data[0]['Report_Settings'])
+                        root.submit(report_setting)
                         root.page_0_show = false
                         root.from_run_report = true
-                        
-    
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -534,6 +535,7 @@ var root = new Vue({
                 root.action_from_saved_report = false
             }
             console.log(root.Analytics.Choose_Report)
+            // Analytics_app.test_dump().then( function(data) {})
             if(root.Analytics.Choose_Report == 'Saved Report') {
                 root.action_from_saved_report = true
                 Analytics_app.get_saved_reports().then( function(data) {
@@ -1402,7 +1404,11 @@ var root = new Vue({
             if(arr_where_clause.length > 0 && root.filter_has_value) {
                 where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
             } else {
-                where_clause = ''
+                if(root.action_from_run_saved_report && arr_where_clause.length > 0) {
+                    where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
+                } else {
+                    where_clause = ''
+                }
             }
 
             // ORDER BY
@@ -1420,7 +1426,14 @@ var root = new Vue({
             if(arr_sort.length > 0 && root.sort_has_value) {
                 sort = ' ORDER BY ' + arr_sort.join(', ')
             } else {
-                sort = ''
+                console.log('here')
+                console.log(root.action_from_run_saved_report)
+                if(root.action_from_run_saved_report && arr_sort.length > 0) {
+                    console.log('here')
+                    sort = ' ORDER BY ' + arr_sort.join(', ')
+                } else {
+                    sort = ''
+                }
             }
 
             query = "SELECT " + str_fields + " FROM " + str_table + where_clause + group_by + sort 
