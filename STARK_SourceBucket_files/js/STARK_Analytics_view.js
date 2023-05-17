@@ -135,6 +135,7 @@ var root = new Vue({
             'Sum': 'empty',
             'Count': 'empty',
             'Group_By': 'empty',
+            'Saved_Report': 'empty'
         },
         validation_properties: {
             'Group_By': {
@@ -537,24 +538,26 @@ var root = new Vue({
                 root.delete_local_storage()
                 root.action_from_saved_report = false
             }
-            console.log(root.Analytics.Choose_Report)
-            // Analytics_app.test_dump().then( function(data) {})
+
             if(root.Analytics.Choose_Report == 'Saved Report') {
                 root.action_from_saved_report = true
-                Analytics_app.get_saved_reports().then( function(data) {
-                    console.log(data)
-                    root.lists.Saved_Report = []
-                    data.forEach(function(arrayItem) {
-                        text = arrayItem['Report_Name']
-                        value = arrayItem['Report_Name']            
-                        root.lists.Saved_Report.push({ value: value, text: text }) 
-                    })
-                }).catch(function(error) {
-                    console.log("Encountered an error! [" + error + "]")
-                    alert("Request Failed: System error or you may not have enough privileges")
-                    loading_modal.hide()
-                });
-            }
+                if (root.list_status.Saved_Report == 'empty') {
+                    Analytics_app.get_saved_reports().then( function(data) {
+                        console.log(data)
+                        root.lists.Saved_Report = []
+                        data.forEach(function(arrayItem) {
+                            text = arrayItem['Report_Name']
+                            value = arrayItem['Report_Name']            
+                            root.lists.Saved_Report.push({ value: value, text: text }) 
+                        })
+                        root.list_status.Saved_Report = 'populated'
+                    }).catch(function(error) {
+                        console.log("Encountered an error! [" + error + "]")
+                        alert("Request Failed: System error or you may not have enough privileges")
+                        loading_modal.hide()
+                    });
+                }
+            } 
         },
 
         get_tables: function() {
