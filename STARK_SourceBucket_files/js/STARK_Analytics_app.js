@@ -6,6 +6,27 @@ var Analytics_app = {
     //     return STARK.request('GET', fetchUrl)
     // },
 
+    test_dump: function () {
+        fetchUrl = this.api_endpoint + '?rt=' 
+        return STARK.request('GET', fetchUrl)
+    },
+
+    add: function (payload) {
+        console.log(payload)
+        fetchUrl = this.api_endpoint
+        return STARK.request('POST', fetchUrl, payload)
+    },
+
+    get_saved_reports: function () {
+        fetchUrl = this.api_endpoint + '?rt=get_saved_reports'
+        return STARK.request('GET', fetchUrl)
+    },  
+
+    get_saved_report_settings: function (report_name) {
+        fetchUrl = this.api_endpoint + '?rt=get_saved_report_settings&report_name=' + report_name
+        return STARK.request('GET', fetchUrl)
+    },
+
     get: function (payload) {
         console.log(payload)
         fetchUrl = this.api_endpoint
