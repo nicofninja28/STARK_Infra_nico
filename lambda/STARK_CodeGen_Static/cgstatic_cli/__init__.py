@@ -24,8 +24,7 @@ cg_view              = importlib.import_module(f"{prepend_dir}cgstatic_html_view
 cg_delete            = importlib.import_module(f"{prepend_dir}cgstatic_html_delete")  
 cg_listview          = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")
 cg_report            = importlib.import_module(f"{prepend_dir}cgstatic_html_report")
-cg_js_many           = importlib.import_module(f"{prepend_dir}cgstatic_js_many")   
-cg_js_analytics_data = importlib.import_module(f"{prepend_dir}cgstatic_js_analytics_data")   
+cg_js_many           = importlib.import_module(f"{prepend_dir}cgstatic_js_many")
 
 ##unused imports
 # import cgstatic_html_homepage as cg_homepage
@@ -109,9 +108,6 @@ def create(cloud_resources, current_cloud_resources, project_basedir):
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
 
-    #for analytics data
-    data = { 'Entities': combined_models, "Project Name": project_varname }
-    add_to_commit(cg_js_analytics_data.create(combined_models), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
     ##################################################
     #Write files
     for code in files_to_commit:

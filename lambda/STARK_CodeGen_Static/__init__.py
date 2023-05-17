@@ -94,7 +94,7 @@ def create_handler(event, context):
     data = { 'API Endpoint': endpoint, 'Entities': models, "Bucket Name": bucket_name, 'Project Name': project_varname }
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
-    #STARK main JS file
+    #STARK Analytics Data
     data = { 'Entities': models, 'Project Name': project_varname }
     add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
 
@@ -276,6 +276,7 @@ def lambda_handler(event, context):
 
 
 def add_to_commit(source_code, key, files_to_commit, file_path=''):
+    print(files_to_commit)
 
     if type(source_code) is str:
         source_code = source_code.encode()

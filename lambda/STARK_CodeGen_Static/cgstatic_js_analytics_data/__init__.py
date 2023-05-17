@@ -1,15 +1,38 @@
 #Python Standard Library
 import textwrap
 import os
+import importlib
 
 #Private modules
+prepend_dir = ""
+if 'libstark' in os.listdir():
+    prepend_dir = "libstark.STARK_CodeGen_Static."
+
+cg_coltype = importlib.import_module(f"{prepend_dir}cgstatic_controls_coltype")  
+
 import convert_friendly_to_system as converter
 
 def create(data):
-    print('data in cg static')
-    print(data)
-
+    models = data['Entities']
     
+    source_code = f"""\
+analytics_data: {{"""
+    for entities in models:
+        source_code += f"""
+    {entities}: """
+        # print(entities)
+        # print(models[entities]['pk'])
+        source_code += f"""
+        {models[entities]['pk']}: String""" 
+        for fields in models[entities]['data']:
+            # print(fields)
+            data_type = set_data_type(models[entities]['data'][fields])
+            source_code += f"""
+        {fields}: {data_type}""" 
+    source_code += f"""
+}}"""
+        
+    return textwrap.dedent(source_code)
 
 def set_data_type(col_type):
 
