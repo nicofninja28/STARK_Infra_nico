@@ -39,8 +39,9 @@ import get_relationship as get_rel
 
 def create(cloud_resources, current_cloud_resources, project_basedir):
     models = cloud_resources["Data Model"]
+    print('models here')
     print(models)
-    print(a)
+    # print(a)
     entities = []
     for entity in models:
         entities.append(entity)
