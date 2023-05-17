@@ -90,6 +90,9 @@ def create_handler(event, context):
     data = { 'API Endpoint': endpoint, 'Entities': models, "Bucket Name": bucket_name, 'Project Name': project_varname }
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
+    #STARK main JS file
+    add_to_commit(cg_js_analytics_data.create(models), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
+
     #For each entity, we'll create a set of HTML and JS Files and uploaded folder
     for entity in models:
         # print(models)
