@@ -110,6 +110,7 @@ def create(cloud_resources, current_cloud_resources, project_basedir):
 
 
     #for analytics data
+    data = { 'Entities': combined_models, "Project Name": project_varname }
     add_to_commit(cg_js_analytics_data.create(combined_models), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
     ##################################################
     #Write files

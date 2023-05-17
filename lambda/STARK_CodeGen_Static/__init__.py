@@ -52,8 +52,8 @@ helper = CfnResource() #We're using the AWS-provided helper library to minimize 
 @helper.create
 @helper.update
 def create_handler(event, context):
-    print('event here')
-    print(event)
+    # print('event here')
+    # print(event)
     #Project, bucket name and API Gateway ID from our CF template
     repo_name       = event.get('ResourceProperties', {}).get('RepoName','')
     bucket_name     = event.get('ResourceProperties', {}).get('Bucket','')
@@ -95,7 +95,7 @@ def create_handler(event, context):
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
     #STARK main JS file
-    data = { 'Entities': models }
+    data = { 'Entities': models, 'Project Name': project_varname }
     add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
 
     #For each entity, we'll create a set of HTML and JS Files and uploaded folder

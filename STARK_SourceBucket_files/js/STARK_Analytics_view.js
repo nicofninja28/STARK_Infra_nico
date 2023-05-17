@@ -543,6 +543,7 @@ var root = new Vue({
                 root.action_from_saved_report = true
                 Analytics_app.get_saved_reports().then( function(data) {
                     console.log(data)
+                    root.lists.Saved_Report = []
                     data.forEach(function(arrayItem) {
                         text = arrayItem['Report_Name']
                         value = arrayItem['Report_Name']            
