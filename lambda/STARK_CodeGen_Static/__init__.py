@@ -46,6 +46,7 @@ api  = boto3.client('apigatewayv2')
 git  = boto3.client('codecommit')
 cdpl = boto3.client('codepipeline')
 
+
 helper = CfnResource() #We're using the AWS-provided helper library to minimize the tedious boilerplate just to signal back to CloudFormation
 
 @helper.create
@@ -83,6 +84,9 @@ def create_handler(event, context):
     print('models here')
     print(models)
 
+    # #Analytics config
+    # analytics_config    = cloud_resources.get('Analytics', '')
+
     #Collect list of files to commit to project repository
     files_to_commit = []
 
@@ -91,7 +95,8 @@ def create_handler(event, context):
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
     #STARK main JS file
-    add_to_commit(cg_js_analytics_data.create(models), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
+    data = { 'Entities': models }
+    add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
 
     #For each entity, we'll create a set of HTML and JS Files and uploaded folder
     for entity in models:
