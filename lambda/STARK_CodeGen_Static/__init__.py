@@ -20,22 +20,23 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Static."
 
-cg_js_app    = importlib.import_module(f"{prepend_dir}cgstatic_js_app")  
-cg_js_view   = importlib.import_module(f"{prepend_dir}cgstatic_js_view")  
-cg_js_many   = importlib.import_module(f"{prepend_dir}cgstatic_js_many")  
-cg_js_login  = importlib.import_module(f"{prepend_dir}cgstatic_js_login")  
-cg_js_home   = importlib.import_module(f"{prepend_dir}cgstatic_js_homepage")  
-cg_js_stark  = importlib.import_module(f"{prepend_dir}cgstatic_js_stark")  
-cg_css_login = importlib.import_module(f"{prepend_dir}cgstatic_css_login")  
-cg_git       = importlib.import_module(f"{prepend_dir}cgstatic_gitignore")  
-cg_add       = importlib.import_module(f"{prepend_dir}cgstatic_html_add")   
-cg_edit      = importlib.import_module(f"{prepend_dir}cgstatic_html_edit")  
-cg_view      = importlib.import_module(f"{prepend_dir}cgstatic_html_view")  
-cg_login     = importlib.import_module(f"{prepend_dir}cgstatic_html_login")  
-cg_delete    = importlib.import_module(f"{prepend_dir}cgstatic_html_delete")  
-cg_listview  = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")  
-cg_homepage  = importlib.import_module(f"{prepend_dir}cgstatic_html_homepage")  
-cg_report    = importlib.import_module(f"{prepend_dir}cgstatic_html_report")   
+cg_js_app            = importlib.import_module(f"{prepend_dir}cgstatic_js_app")  
+cg_js_view           = importlib.import_module(f"{prepend_dir}cgstatic_js_view")  
+cg_js_many           = importlib.import_module(f"{prepend_dir}cgstatic_js_many")  
+cg_js_analytics_data = importlib.import_module(f"{prepend_dir}cgstatic_js_analytics_data")  
+cg_js_login          = importlib.import_module(f"{prepend_dir}cgstatic_js_login")  
+cg_js_home           = importlib.import_module(f"{prepend_dir}cgstatic_js_homepage")  
+cg_js_stark          = importlib.import_module(f"{prepend_dir}cgstatic_js_stark")  
+cg_css_login         = importlib.import_module(f"{prepend_dir}cgstatic_css_login")  
+cg_git               = importlib.import_module(f"{prepend_dir}cgstatic_gitignore")  
+cg_add               = importlib.import_module(f"{prepend_dir}cgstatic_html_add")   
+cg_edit              = importlib.import_module(f"{prepend_dir}cgstatic_html_edit")  
+cg_view              = importlib.import_module(f"{prepend_dir}cgstatic_html_view")  
+cg_login             = importlib.import_module(f"{prepend_dir}cgstatic_html_login")  
+cg_delete            = importlib.import_module(f"{prepend_dir}cgstatic_html_delete")  
+cg_listview          = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")  
+cg_homepage          = importlib.import_module(f"{prepend_dir}cgstatic_html_homepage")  
+cg_report            = importlib.import_module(f"{prepend_dir}cgstatic_html_report")   
 
 import convert_friendly_to_system as converter
 import get_relationship as get_rel
@@ -50,6 +51,8 @@ helper = CfnResource() #We're using the AWS-provided helper library to minimize 
 @helper.create
 @helper.update
 def create_handler(event, context):
+    print('event here')
+    print(event)
     #Project, bucket name and API Gateway ID from our CF template
     repo_name       = event.get('ResourceProperties', {}).get('RepoName','')
     bucket_name     = event.get('ResourceProperties', {}).get('Bucket','')
@@ -72,9 +75,13 @@ def create_handler(event, context):
     #raw_cloud_resources = response['Body'].read().decode('utf-8')
     #cloud_resources     = yaml.safe_load(raw_cloud_resources) 
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
+    print('cloud_resources here')
+    print(cloud_resources)
 
     #Get relevant info from cloud_resources
     models = cloud_resources["Data Model"]
+    print('models here')
+    print(models)
 
     #Collect list of files to commit to project repository
     files_to_commit = []
