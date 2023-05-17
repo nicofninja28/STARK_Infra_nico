@@ -925,6 +925,14 @@ def get_user_modules(username, sk=default_sk):
                     item['priority'] = record.get('Priority',{}).get('N','')
                     grps.append(item['group'])
                     items.append(item)
+
+    report_items = []
+    for record in raw:
+        if 'pk' in record and '|Report' in record['pk']['S'] and record.get('Module_Group', {}).get('S') != 'System Administration':
+            if record.get('pk', {}).get('S','') in permissions_list:
+                item = {}
+                item = record.get('Descriptive_Title',{}).get('S','').replace('Report ', '')
+                report_items.append(item)
     
     grps = unique(grps) 
 
@@ -936,5 +944,6 @@ def get_user_modules(username, sk=default_sk):
 
     return {
         'items': items,
-        'module_grps': module_grps
+        'module_grps': module_grps,
+        'report_items': report_items
     }

@@ -43,6 +43,11 @@ var sidebar = new Vue({
                 root.modules = grouped_modules
                 STARK.set_local_storage_item('Permissions', 'modules', grouped_modules)
                 console.log(sidebar.modules)
+
+                var data_to_store = {}
+                data_to_store['tables'] = data['report_items']
+                STARK.set_local_storage_item('Analytics_Data', 'Tables', data_to_store)
+                
                 console.log("DONE! Retrieved list of modules.")
                 spinner.hide();
             })                    
