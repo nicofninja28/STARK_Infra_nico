@@ -95,11 +95,11 @@ def create_handler(event, context):
     source_code = f"""\
     {{
         "ResourceProperties": {{
-            "Project": {project_name},
+            "Project": "{project_name}",
             "DDBTable": "willbechangedtomongodb",
-            "CICDBucket": {cicd_bucket},
+            "CICDBucket": "{cicd_bucket}",
             "Bucket": "TestBucket",
-            "RepoName": {repo_name}
+            "RepoName": "{repo_name}"
         }}
     }}"""
 
