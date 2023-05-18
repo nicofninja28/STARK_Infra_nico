@@ -205,6 +205,7 @@ def create(data):
                             Action: 'sts:AssumeRole'
                 ManagedPolicyArns:
                     - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+                    - 'arn:aws:iam::aws:policy/AWSLambda_FullAccess'
                 Policies:
                     - 
                         PolicyName: PolicyForSTARKProjectCodeBuildServiceRole
