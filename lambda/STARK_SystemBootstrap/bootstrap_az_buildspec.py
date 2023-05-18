@@ -31,7 +31,7 @@ def create(data):
         )
         config = yaml.safe_load(response['Body'].read().decode('utf-8'))
 
-    cgdynamic_writer_arn = config["CG_DYNAMICV2_ARN"]
+    cgdynamic_writer_arn = config["CGDynamicV2_ARN"]
     print(cgdynamic_writer_arn)
 
     source_code = f"""\
