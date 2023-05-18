@@ -94,9 +94,7 @@ def create_handler(event, context):
     data = { 'API Endpoint': endpoint, 'Entities': models, "Bucket Name": bucket_name, 'Project Name': project_varname }
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
 
-    #STARK Analytics Data
-    data = { 'Entities': models, 'Project Name': project_varname }
-    add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
+    
 
     #For each entity, we'll create a set of HTML and JS Files and uploaded folder
     for entity in models:
@@ -127,8 +125,8 @@ def create_handler(event, context):
         cgstatic_data["Sequence"] = {}
         if "sequence" in models[entity]:
             cgstatic_data["Sequence"] = models[entity]["sequence"]
-        print('cgstatic_data')
-        print(cgstatic_data)
+        # print('cgstatic_data')
+        # print(cgstatic_data)
         
         add_to_commit(source_code=cg_add.create(cgstatic_data), key=f"{entity_varname}_add.html", files_to_commit=files_to_commit, file_path='static')
         add_to_commit(source_code=cg_edit.create(cgstatic_data), key=f"{entity_varname}_edit.html", files_to_commit=files_to_commit, file_path='static')
@@ -153,6 +151,10 @@ def create_handler(event, context):
     
     #TMP folder
     add_to_commit(source_code="Temporary files", key=f"tmp/README.txt", files_to_commit=files_to_commit, file_path='')
+
+    #STARK Analytics Data
+    data = { 'Entities': models, 'Project Name': project_varname }
+    add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
 
     ##########################################
     #Add cloud resources document to our files
@@ -276,7 +278,7 @@ def lambda_handler(event, context):
 
 
 def add_to_commit(source_code, key, files_to_commit, file_path=''):
-    print(files_to_commit)
+    # print(files_to_commit)
 
     if type(source_code) is str:
         source_code = source_code.encode()
