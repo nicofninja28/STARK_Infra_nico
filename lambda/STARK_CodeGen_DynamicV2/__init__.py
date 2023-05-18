@@ -12,22 +12,25 @@ import importlib
 #Extra modules
 import yaml
 import boto3
-from crhelper import CfnResource
 
 #Private modules
 prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Dynamic."
 
-cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
-cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_dynamodb")
+# cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
+# cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_dynamodb")
 
+cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
+cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
+cg_login     = importlib.import_module(f"{prepend_dir}az_cgdynamic_login")
+cg_logout    = importlib.import_module(f"{prepend_dir}az_cgdynamic_logout")
 
-cg_sam       = importlib.import_module(f"{prepend_dir}cgdynamic_sam_template")
-cg_conf      = importlib.import_module(f"{prepend_dir}cgdynamic_template_conf")
+# cg_sam       = importlib.import_module(f"{prepend_dir}cgdynamic_sam_template")
+# cg_conf      = importlib.import_module(f"{prepend_dir}cgdynamic_template_conf")
 
-cg_analytics  = importlib.import_module(f"{prepend_dir}cgdynamic_analytics")
-cg_etl_script = importlib.import_module(f"{prepend_dir}cgdynamic_etl_script")
+# cg_analytics  = importlib.import_module(f"{prepend_dir}cgdynamic_analytics")
+# cg_etl_script = importlib.import_module(f"{prepend_dir}cgdynamic_etl_script")
 
 cg_conftest = importlib.import_module(f"{prepend_dir}cgdynamic_conftest")
 cg_test     = importlib.import_module(f"{prepend_dir}cgdynamic_test_cases")
@@ -69,16 +72,6 @@ def lambda_handler(event, context):
     cloud_provider = cloud_resources["Cloud Provider"]
     models   = cloud_resources["Data Model"]
     
-    if cloud_provider == 'Azure':
-        cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
-        cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
-        cg_login     = importlib.import_module(f"{prepend_dir}az_cgdynamic_login")
-        cg_logout    = importlib.import_module(f"{prepend_dir}az_cgdynamic_logout")
-    else:
-        cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
-        cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
-        cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
-        cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
 
     print(cloud_provider)
 
@@ -125,10 +118,10 @@ def lambda_handler(event, context):
         
             
         print(data)    
-        source_code            = cg_ddb.create(data)
+        # source_code            = cg_ddb.create(data)
         test_source_code       = cg_test.create(data)
         fixtures_source_code   = cg_fixtures.create(data)
-        etl_script_source_code = cg_etl_script.create(data)
+        # etl_script_source_code = cg_etl_script.create(data)
 
         #Step 2: Add source code to our commit list to the project repo
         files_to_commit.append({
@@ -148,11 +141,11 @@ def lambda_handler(event, context):
             'fileContent': fixtures_source_code.encode()
         })
 
-        # etl scripts
-        files_to_commit.append({
-            'filePath': f"lambda/STARK_Analytics/ETL_Scripts/{entity_varname}.py",
-            'fileContent': etl_script_source_code.encode()
-        })
+        # # etl scripts
+        # files_to_commit.append({
+        #     'filePath': f"lambda/STARK_Analytics/ETL_Scripts/{entity_varname}.py",
+        #     'fileContent': etl_script_source_code.encode()
+        # })
 
     ###########################################################
     #Create necessary files for test_cases directories
@@ -222,11 +215,11 @@ def lambda_handler(event, context):
     #########################################
     #Create Lambdas of built-in STARK modules 
     #    (Analytics)
-    analytics_source_code = cg_analytics.create({"Entities": entities})
-    files_to_commit.append({
-        'filePath': f"lambda/STARK_Analytics/__init__.py",
-        'fileContent': analytics_source_code.encode()
-    })
+    # analytics_source_code = cg_analytics.create({"Entities": entities})
+    # files_to_commit.append({
+    #     'filePath': f"lambda/STARK_Analytics/__init__.py",
+    #     'fileContent': analytics_source_code.encode()
+    # })
 
     #    (user management, permissions, etc)
     for root, subdirs, files in os.walk('source_files'):
@@ -258,27 +251,27 @@ def lambda_handler(event, context):
     })
 
     data = { 'cloud_resources': cloud_resources, 'entities': entities }
-    source_code = cg_sam.create(data)
-    files_to_commit.append({
-        'filePath': "template.yml",
-        'fileContent': source_code.encode()
-    })
+    # source_code = cg_sam.create(data)
+    # files_to_commit.append({
+    #     'filePath': "template.yml",
+    #     'fileContent': source_code.encode()
+    # })
 
     data = {
         'cicd_bucket': cicd_bucket,
         'website_bucket': website_bucket
     }
-    source_code = cg_conf.create(data)
-    files_to_commit.append({
-        'filePath': "template_configuration.json",
-        'fileContent': source_code.encode()
-    })
+    # source_code = cg_conf.create(data)
+    # files_to_commit.append({
+    #     'filePath': "template_configuration.json",
+    #     'fileContent': source_code.encode()
+    # })
     
-    source_code = cg_builder.create()
-    files_to_commit.append({
-        'filePath': "builder.py",
-        'fileContent': source_code.encode()
-    })
+    # source_code = cg_builder.create()
+    # files_to_commit.append({
+    #     'filePath': "builder.py",
+    #     'fileContent': source_code.encode()
+    # })
    
     ##################################################
     # Optimization Attempt
