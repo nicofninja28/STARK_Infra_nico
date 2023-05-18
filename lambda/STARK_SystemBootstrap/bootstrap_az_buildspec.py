@@ -5,15 +5,33 @@
 import base64
 import textwrap
 import os
+import yaml
+
+import boto3
 
 #Private modules
 import convert_friendly_to_system as converter
 
 def create(data):
 
-    cicd_bucket          = data['cicd_bucket']
-    project_varname      = data['project_varname']
-    cgdynamic_writer_arn = os.environ["CG_DYNAMICV2_ARN"]
+    cicd_bucket        = data['cicd_bucket']
+    project_varname    = data['project_varname']
+
+    ENV_TYPE = os.environ['STARK_ENVIRONMENT_TYPE']
+
+    config = {}
+    if ENV_TYPE == "PROD":
+        default_response_headers = { "Content-Type": "application/json" }
+        s3  = boto3.client('s3')
+
+        codegen_bucket_name  = os.environ['CODEGEN_BUCKET_NAME']
+        response = s3.get_object(
+            Bucket=codegen_bucket_name,
+            Key=f'STARKConfiguration/STARK_config.yml'
+        )
+        config = yaml.safe_load(response['Body'].read().decode('utf-8'))
+
+    cgdynamic_writer_arn = config["CG_DYNAMICV2_ARN"]
     print(cgdynamic_writer_arn)
 
     source_code = f"""\
