@@ -19,12 +19,10 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Dynamic."
 
-cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
-cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
 cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
 cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_dynamodb")
-cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
-cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
+
+
 cg_sam       = importlib.import_module(f"{prepend_dir}cgdynamic_sam_template")
 cg_conf      = importlib.import_module(f"{prepend_dir}cgdynamic_template_conf")
 
@@ -43,11 +41,7 @@ lmb  = boto3.client('lambda')
 git  = boto3.client('codecommit')
 cdpl = boto3.client('codepipeline')
 
-helper = CfnResource() #We're using the AWS-provided helper library to minimize the tedious boilerplate just to signal back to CloudFormation
-
-@helper.create
-@helper.update
-def create_handler(event, context):
+def lambda_handler(event, context):
     print(event.get('ResourceProperties', {}))
     #Project name from our CF template
     project_name    = event.get('ResourceProperties', {}).get('Project','')
@@ -72,8 +66,22 @@ def create_handler(event, context):
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
 
-
+    cloud_provider = cloud_resources["Cloud Provider"]
     models   = cloud_resources["Data Model"]
+    
+    if cloud_provider == 'Azure':
+        cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
+        cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
+        cg_login     = importlib.import_module(f"{prepend_dir}az_cgdynamic_login")
+        cg_logout    = importlib.import_module(f"{prepend_dir}az_cgdynamic_logout")
+    else:
+        cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
+        cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
+        cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
+        cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
+
+    print(cloud_provider)
+
     entities = []
     for entity in models: entities.append(entity)
 
@@ -98,7 +106,7 @@ def create_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
                         
         seq = {}
-        if len(models[entity].get("sequence", {})) > 0:
+        if len(models[entity]["sequence"]) > 0:
             seq = models[entity]["sequence"]
 
         data = {
@@ -272,9 +280,6 @@ def create_handler(event, context):
         'fileContent': source_code.encode()
     })
    
-
-
-
     ##################################################
     # Optimization Attempt
     #   Before we commit code to the repo, let's disable the Pipeline's source stage change detection 
@@ -330,13 +335,3 @@ def create_handler(event, context):
             commitMessage=f'Initial commit of Lambda source codes (commit {ctr} of {batch_count})',
             putFiles=files_to_commit
         )
-
-
-@helper.delete
-def no_op(_, __):
-    #Nothing to do, our Lambdas will be deleted by CloudFormation
-    pass
-
-
-def lambda_handler(event, context):
-    helper(event, context)
