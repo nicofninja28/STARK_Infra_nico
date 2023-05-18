@@ -4,11 +4,11 @@ import os
 import importlib
 
 #Private modules
-prepend_dir = ""
-if 'libstark' in os.listdir():
-    prepend_dir = "libstark.STARK_CodeGen_Static."
+# prepend_dir = ""
+# if 'libstark' in os.listdir():
+#     prepend_dir = "libstark.STARK_CodeGen_Static."
 
-cg_coltype = importlib.import_module(f"{prepend_dir}cgstatic_controls_coltype")  
+# cg_coltype = importlib.import_module(f"{prepend_dir}cgstatic_controls_coltype")  
 
 import convert_friendly_to_system as converter
 
@@ -16,22 +16,21 @@ def create(data):
     models = data['Entities']
     
     source_code = f"""\
-analytics_data: {{"""
+analytics_data = {{"""
     for entities in models:
         source_code += f"""
-    {entities}: """
-        # print(entities)
-        # print(models[entities]['pk'])
+    '{entities}': {{"""
         source_code += f"""
-        {models[entities]['pk']}: String""" 
+        '{models[entities]['pk']}': 'String',"""
         for fields in models[entities]['data']:
-            # print(fields)
             data_type = set_data_type(models[entities]['data'][fields])
             source_code += f"""
-        {fields}: {data_type}""" 
+        '{fields}': '{data_type}',""" 
+        source_code += f"""
+    }},"""
     source_code += f"""
 }}"""
-        
+    # print(source_code)
     return textwrap.dedent(source_code)
 
 def set_data_type(col_type):
