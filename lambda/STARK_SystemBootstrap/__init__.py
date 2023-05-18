@@ -72,6 +72,7 @@ def create_handler(event, context):
         'filePath': "buildspec.yml",
         'fileContent': source_code.encode()
     })
+    
 
     data = { 
         'cloud_resources': cloud_resources,
@@ -87,7 +88,25 @@ def create_handler(event, context):
     files_to_commit.append({
         'filePath': "template_configuration.json",
         'fileContent': source_code.encode()
-    })   
+    })  
+
+    ##FIXME: json payloads for cgdynamic, cgstatic, and prelaunch v2. revisit later if still needs optimization
+    
+    source_code = f"""\
+    {{
+        "ResourceProperties": {{
+            "Project": {project_name},
+            "DDBTable": "willbechangedtomongodb",
+            "CICDBucket": {cicd_bucket},
+            "Bucket": "TestBucket",
+            "RepoName": {repo_name}
+        }}
+    }}"""
+
+    files_to_commit.append({
+        'filePath': "cgdynamic_payload.json",
+        'fileContent': source_code.encode()
+    }) 
 
     ############################################
     #Commit our static files to the project repo

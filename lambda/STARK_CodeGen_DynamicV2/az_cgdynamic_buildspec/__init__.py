@@ -1,23 +1,22 @@
 #STARK Code Generator component.
-#Produces the customized dynamic content for a STARK system
+#Produces the customized dynamic content for an Azure STARK system 
 
 #Python Standard Library
 import base64
 import textwrap
-import os
 
 #Private modules
 import convert_friendly_to_system as converter
 
+
 def create(data):
 
-    cicd_bucket          = data['cicd_bucket']
-    project_varname      = data['project_varname']
-    cgdynamic_writer_arn = os.environ["CG_DYNAMICV2_ARN"]
-    print(cgdynamic_writer_arn)
+    project_varname = data['project_varname']
+    
 
     source_code = f"""\
         version: 0.2
+
         env:
             variables:
                 ARM_SUBSCRIPTION_ID: "6e672af2-b111-49d2-8291-46038afe5f04"
@@ -37,10 +36,12 @@ def create(data):
                 - terraform --version
             build:
                 commands:
-                - BUCKET={cicd_bucket}
-                - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
-                - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
-                - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
+                - BUCKET=$(cat template_configuration.json | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameters']['UserCICDPipelineBucketNameParameter'])")
+                - WEBSITE=$(cat template_configuration.json | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameters']['UserWebsiteBucketNameParameter'])")
+                - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
+                - cp -R lambda lambda_src
+                - pip install pyyaml
+                - python3 ./builder.py
                 - terraform init
                 - terraform plan
                 - terraform apply --auto-approve
@@ -51,5 +52,5 @@ def create(data):
                 - outputtemplate.yml
                 - template_configuration.json
         """
-    
+
     return textwrap.dedent(source_code)

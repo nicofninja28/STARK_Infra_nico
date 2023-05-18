@@ -304,6 +304,30 @@ Resources:
             Timeout: 60
             Architectures:
                 - arm64
+    STARKCodeGenDynamicWriterV2:
+        Type: AWS::Serverless::Function
+        Properties:
+            Runtime: python3.9
+            Handler: __init__.lambda_handler
+            CodeUri: lambda/STARK_CodeGen_DynamicV2
+            Environment:
+                Variables:
+                    STARK_ENVIRONMENT_TYPE: PROD
+                    CODEGEN_BUCKET_NAME: !Ref UserCodeGenBucketNameParameter
+            Policies:
+                - AmazonS3FullAccess
+                - AWSLambda_FullAccess 
+                - AWSCodeCommitFullAccess
+                - AWSCodePipeline_FullAccess
+                - IAMFullAccess
+            Layers:
+                - !Ref PyYamlLayer
+                - !Ref STARKFriendlyToSystemNamesLayer
+                - !Ref STARKGetRelationshipLayer
+                - !Ref STARKSuggestGraphicLayer
+            Timeout: 60
+            Architectures:
+                - arm64
     STARKBucketCleanerFunc:
         Type: AWS::Serverless::Function
         Properties:
@@ -413,6 +437,7 @@ Resources:
                     CLEANER_ARN: !GetAtt STARKBucketCleanerFunc.Arn
                     CF_WRITER_ARN: !GetAtt STARKCFWriterFunc.Arn
                     CG_DYNAMIC_ARN: !GetAtt STARKCodeGenDynamicWriter.Arn
+                    CG_DYNAMICV2_ARN: !GetAtt STARKCodeGenDynamicWriterV2.Arn
                     CG_STATIC_ARN: !GetAtt STARKCodeGenStaticWriter.Arn
                     CF_DEPLOY_ROLE_ARN: !GetAtt STARKCloudFormationDeployServiceRole.Arn
                     SYSTEM_BOOTSTRAP_ARN: !GetAtt STARKSystemBootstrap.Arn
