@@ -25,7 +25,7 @@ def make_config_file(event, _):
     cleaner_arn          = os.environ['CLEANER_ARN']
     cf_writer_arn        = os.environ['CF_WRITER_ARN']
     cg_dynamic_arn       = os.environ['CG_DYNAMIC_ARN']
-    cg_dynamicv2_arn     = os.environ['CG_DYNAMICv2_ARN']
+    cg_dynamicv2_arn     = os.environ['CG_DYNAMICV2_ARN']
     cg_static_arn        = os.environ['CG_STATIC_ARN']
     cf_deploy_role_arn   = os.environ['CF_DEPLOY_ROLE_ARN']
     api_gateway_id       = os.environ['API_GATEWAY_ID']
