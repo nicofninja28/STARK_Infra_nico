@@ -108,6 +108,24 @@ def create_handler(event, context):
         'fileContent': source_code.encode()
     }) 
 
+    source_code = f"""\
+    {{
+        "ResourceProperties": {{
+            "Project": "{project_name}",
+            "DDBTable": "willbechangedtomongodb",
+            "CICDBucket": "{cicd_bucket}",
+            "Bucket": "TestBucket",
+            "RepoName": "{repo_name}",
+            "ApiGatewayId": "tobeadded"
+        }}
+    }}"""
+
+    files_to_commit.append({
+        'filePath': "cgstatic_payload.json",
+        'fileContent': source_code.encode()
+    }) 
+
+
     ############################################
     #Commit our static files to the project repo
     #We have a try-except block here to distringuish a CREATE from an UPDATE.
