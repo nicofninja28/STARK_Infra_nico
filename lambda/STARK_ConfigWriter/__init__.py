@@ -27,6 +27,7 @@ def make_config_file(event, _):
     cg_dynamic_arn       = os.environ['CG_DYNAMIC_ARN']
     cg_dynamicv2_arn     = os.environ['CG_DYNAMICV2_ARN']
     cg_static_arn        = os.environ['CG_STATIC_ARN']
+    cg_staticv2_arn      = os.environ['CG_STATICV2_ARN']
     cf_deploy_role_arn   = os.environ['CF_DEPLOY_ROLE_ARN']
     api_gateway_id       = os.environ['API_GATEWAY_ID']
     cicd_bucket_name     = os.environ['CICD_BUCKET_NAME']
@@ -41,6 +42,7 @@ def make_config_file(event, _):
         CGDynamic_ARN: '{cg_dynamic_arn}'
         CGDynamicV2_ARN: '{cg_dynamicv2_arn}'
         CGStatic_ARN: '{cg_static_arn}'
+        CGStaticV2_ARN: '{cg_staticv2_arn}'
         CICD_Bucket_Name: '{cicd_bucket_name}'
         Cleaner_ARN: '{cleaner_arn}'
         CodeGen_Bucket_Name: '{codegen_bucket_name}'
