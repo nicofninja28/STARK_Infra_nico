@@ -13,7 +13,8 @@ import importlib
 import convert_friendly_to_system as converter
 
 def create(data):
-    models = data['Entities']
+    models        = data['Entities']
+    relationships = data["Relationships"]
     
     source_code = f"""\
 analytics_data = {{"""

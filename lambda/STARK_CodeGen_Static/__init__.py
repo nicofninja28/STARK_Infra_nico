@@ -153,7 +153,7 @@ def create_handler(event, context):
     add_to_commit(source_code="Temporary files", key=f"tmp/README.txt", files_to_commit=files_to_commit, file_path='')
 
     #STARK Analytics Data
-    data = { 'Entities': models, 'Project Name': project_varname }
+    data = { 'Entities': models, 'Project Name': project_varname, "Relationships": relationships }
     add_to_commit(cg_js_analytics_data.create(data), key=f"js/STARK_Analytics_data.js", files_to_commit=files_to_commit, file_path='static')
 
     ##########################################
