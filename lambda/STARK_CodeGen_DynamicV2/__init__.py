@@ -18,13 +18,13 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Dynamic."
 
-# cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
-# cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_dynamodb")
+cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
+cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_modules")
 
-cg_build     = importlib.import_module(f"{prepend_dir}az_cgdynamic_buildspec")
-cg_auth      = importlib.import_module(f"{prepend_dir}az_cgdynamic_authorizer")
-cg_login     = importlib.import_module(f"{prepend_dir}az_cgdynamic_login")
-cg_logout    = importlib.import_module(f"{prepend_dir}az_cgdynamic_logout")
+cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
+cg_auth      = importlib.import_module(f"{prepend_dir}cgdynamic_authorizer")
+cg_login     = importlib.import_module(f"{prepend_dir}cgdynamic_login")
+cg_logout    = importlib.import_module(f"{prepend_dir}cgdynamic_logout")
 
 # cg_sam       = importlib.import_module(f"{prepend_dir}cgdynamic_sam_template")
 # cg_conf      = importlib.import_module(f"{prepend_dir}cgdynamic_template_conf")
@@ -99,8 +99,8 @@ def lambda_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
                         
         seq = {}
-        if len(models[entity]["sequence"]) > 0:
-            seq = models[entity]["sequence"]
+        if len(models[entity].get("sequence",{})) > 0:
+            seq = models[entity].get("sequence")
 
         data = {
                 "Entity": entity, 
@@ -117,17 +117,17 @@ def lambda_handler(event, context):
             }
         
             
-        print(data)    
-        # source_code            = cg_ddb.create(data)
+        # ddb source code
+        source_code            = cg_ddb.create(data)
         test_source_code       = cg_test.create(data)
         fixtures_source_code   = cg_fixtures.create(data)
         # etl_script_source_code = cg_etl_script.create(data)
 
         #Step 2: Add source code to our commit list to the project repo
-        files_to_commit.append({
-            'filePath': f"lambda/{entity_varname}/__init__.py",
-            'fileContent': source_code.encode()
-        })
+        # files_to_commit.append({
+        #     'filePath': f"lambda/{entity_varname}/__init__.py",
+        #     'fileContent': source_code.encode()
+        # })
 
         # test cases
         files_to_commit.append({

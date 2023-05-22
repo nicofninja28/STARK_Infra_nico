@@ -20,24 +20,15 @@ def create():
         resources_raw = f.read()
         resources_yml = yaml.safe_load(resources_raw)
 
+    os.system(f"mkdir functions_package")
+    os.system(f"cp -R lambda/* functions_package")
 
     for stark_func in resources_yml['Lambda']:
         func_def = resources_yml['Lambda'][stark_func]
-        print (stark_func)
-        print (func_def)
         destination_varname = converter.convert_to_system_name(stark_func)
         
-        #Check if there is a dependency specified
-        if "Dependencies" in func_def:
-            print (f"Depends on: {{func_def['Dependencies']}}")
-
-            for dependency in func_def['Dependencies']:
-                #Copy entire Lambda module code (folder)    
-                dependency_varname =  converter.convert_to_system_name(dependency)
-                os.system(f"cp -R lambda_src/{{dependency_varname}} lambda/{{destination_varname}}")
-
-        #Additionally, every module by default gets stark_core bundled with them
-        os.system(f"cp -R lambda_src/stark_core lambda/{{destination_varname}}")
+        if destination_varname != "stark_sysmodules":
+            os.system(f"cp function.json functions_package/{{destination_varname}}/function.json")
     """
     return textwrap.dedent(source_code)
 
