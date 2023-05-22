@@ -11,6 +11,7 @@ import importlib
 # cg_coltype = importlib.import_module(f"{prepend_dir}cgstatic_controls_coltype")  
 
 import convert_friendly_to_system as converter
+import get_relationship as get_rel
 
 def create(data):
     models        = data['Entities']
@@ -29,14 +30,18 @@ analytics_data = {{"""
             data_type = set_data_type(models[entities]['data'][fields])
             source_code += f"""
         '{fields}': '{data_type}',""" 
-        
-        for relation in relationships.get("belongs_to", []):
-            print('relation')
-            print(relation)
-            if relation['rel_type'] == 'has_many':
-                print("relation['pk_field']")
-                print(relation['pk_field'])
-                source_code += f"""
+            
+        for entity in entities:
+            relationships = get_rel.get_relationship(models, entity, entity)
+            print('relationships here2')
+            print(relationships)
+            for relation in relationships.get("belongs_to", []):
+                print('relation')
+                print(relation)
+                if relation['rel_type'] == 'has_many':
+                    print("relation['pk_field']")
+                    print(relation['pk_field'])
+                    source_code += f"""
         "{converter.convert_to_system_name(relation['pk_field'])}": 'String',"""
        
         source_code += f"""
