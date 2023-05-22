@@ -324,10 +324,8 @@ var root = new Vue({
             
             root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
             let payload = { Analytics_Report: root.Save_Report_Settings }
-            console.log(payload)
 
             Analytics_app.add(payload).then( function(data) {
-                console.log(data)
                 if(data == 'OK') {
                     root.showSuccessSaveReport = true
                 } else {
@@ -420,7 +418,6 @@ var root = new Vue({
                 loading_modal.show();
                 console.log("VIEW: Getting!")
                 Analytics_app.get_result(query, metadata).then( function(data) {
-                    console.log(data.length)
 
                     if(data.length > 0)
                     {
@@ -453,7 +450,6 @@ var root = new Vue({
         },
 
         set_local_storage_from_setting: function(data) {
-            console.log(data['relationships'])
             var data_to_store = {}
             data_to_store['checked_tables'] = data['tables']
             STARK.set_local_storage_item('Analytics_Input', 'Tables', data_to_store)
@@ -503,6 +499,7 @@ var root = new Vue({
                         root.set_local_storage_from_setting(report_setting)
                         root.from_load_report = true
                         root.from_run_report = false
+                        root.change_page('1', 'Next')
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -547,7 +544,6 @@ var root = new Vue({
                 root.action_from_saved_report = true
                 if (root.list_status.Saved_Report == 'empty') {
                     Analytics_app.get_saved_reports().then( function(data) {
-                        console.log(data)
                         root.lists.Saved_Report = []
                         data.forEach(function(arrayItem) {
                             text = arrayItem['Report_Name']
@@ -647,12 +643,9 @@ var root = new Vue({
                 final_table_list.forEach(obj => {
                     const keys = [];
                     if (analytics_data[obj]) {
-                        console.log(analytics_data[obj])
                         keys.push(...Object.keys(analytics_data[obj]));
                     }
-                    console.log(keys)
                     if (root.STARK_Analytics_data['STARK_Analytics_data'][obj]) {
-                        
                         keys.forEach(element => {
                             data.push({
                                 column_name: element,
@@ -663,10 +656,10 @@ var root = new Vue({
                         });
                     }
                 })
-                console.log(data)
 
                 temp_metadata = data.reduce((result, { column_name, data_type }) => {
-                    const key = column_name.replace(/\s+/g, '_'); 
+                    const temp_key = column_name.replace(/\s+/g, '_'); 
+                    const key = temp_key.replace('ID', 'Id')
                     
                     if(data_type == 'varchar') {
                         data_type = 'string'
@@ -678,7 +671,6 @@ var root = new Vue({
                     result[key] = { data_type };
                     return result;
                 }, {});
-                console.log(JSON.stringify(temp_metadata))
                 root.metadata =  JSON.stringify(temp_metadata)
 
                 root.table_field = data
@@ -687,7 +679,6 @@ var root = new Vue({
                 temp_for_metadata  = []
                 for (let index = 0; index < data.length; index++) {
                     const element = data[index];
-                    console.log(element)
                     for_metadata = element['column_name'] + ' | ' + element['data_type']
                     table_field = element['table_name'] + ' | ' + element['column_name']
                     rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
@@ -695,7 +686,6 @@ var root = new Vue({
                     temp_system_fields.push(table_field)
                     temp_for_metadata.push(for_metadata)
                 }
-                console.log(temp_for_metadata)
                 root.system_fields = temp_system_fields
 
                 if(selected_table_fields_data && selected_table_fields_data['checked_fields'].length > 0) {
@@ -806,28 +796,25 @@ var root = new Vue({
             if(list_field_data) {
                 action.forEach(action_element => {
                     if (JSON.stringify(selected_table_data['checked_tables']) === JSON.stringify(field_data['tables']) && root.metadata != '') {
-                        
-                            if(action_element != 'Sum') {
-                                console.log(root.same_table_selected)
-                                root.lists[action] = list_field_data['table_fields_option']
+                        if(action_element == 'Count' || action_element == 'Group_By') {
+                            root.lists[action_element] = list_field_data['table_fields_option']
+                        } else {
+                            if (list_sum_field_data && list_sum_field_data.length > 0) {
+                                if (JSON.stringify(selected_table_data['checked_tables']) === JSON.stringify(field_data['tables']) && root.metadata != '') {
+                                    root.lists.Sum = list_sum_field_data['table_fields_option']
+                                } else {
+                                    fetch_from_db = true
+                                }
+                            } else {
+                                fetch_from_db = true
                             }
-                        
+                        }
                     } else {
                         fetch_from_db = true
                     }
                 })
             }
             else {
-                fetch_from_db = true
-            }
-
-            if (list_sum_field_data) {
-                if (JSON.stringify(selected_table_data['checked_tables']) === JSON.stringify(field_data['tables']) && root.metadata != '') {
-                    root.lists.Sum = list_sum_field_data['table_fields_option']
-                } else {
-                    fetch_from_db = true
-                }
-            } else {
                 fetch_from_db = true
             }
 
@@ -845,7 +832,6 @@ var root = new Vue({
                                 if (analytics_data[obj]) {
                                     keys.push(...Object.keys(analytics_data[obj]));
                                 }
-                                console.log(keys)
                                 if (root.STARK_Analytics_data['STARK_Analytics_data'][obj]) {
                                     
                                     keys.forEach(element => {
@@ -879,7 +865,6 @@ var root = new Vue({
                                 if (analytics_data[obj]) {
                                     keys.push(...Object.keys(analytics_data[obj]));
                                 }
-                                console.log(keys)
                                 if (root.STARK_Analytics_data['STARK_Analytics_data'][obj]) {
                                     
                                     keys.forEach(element => {
@@ -978,7 +963,6 @@ var root = new Vue({
                 }
             }
 
-            console.log(is_valid_form)
             return is_valid_form
         },
 
@@ -1011,7 +995,6 @@ var root = new Vue({
             else if(page == '4') {
                 
                 if((root.multi_select_values.Sum.length > 0 || root.multi_select_values.Count.length > 0) && root.Analytics.Group_By == '') {
-                    console.log('dito')
                     root.validation_properties['Group_By']['state'] = false
                     root.validation_properties['Group_By']['feedback'] = "This field is required"
                     root.valid_page = true
@@ -1040,7 +1023,6 @@ var root = new Vue({
             } 
             else if(page == '6') {
                 if(root.sort_many.length != 0) {
-                    console.log(root.many_validation('Sort'))
                     if(root.many_validation('Sort') == false) {
                         root.showError = true
                         root.valid_page = false
@@ -1057,8 +1039,6 @@ var root = new Vue({
         },
 
         change_page: function(page_number, action) {
-            console.log(page_number)
-            console.log(action)
 
             if(page_number == '0') { //Choose Report
                 
@@ -1178,7 +1158,6 @@ var root = new Vue({
                     //FIX ME: Will empty relationships from page 2 even when tables are not change
                     if(root.same_table_selected) {
                         var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
-                        console.log(relationship_data)
                         if(relationship_data) {
                             root.rel_many = relationship_data['relationship']
                         } 
@@ -1380,14 +1359,11 @@ var root = new Vue({
                     } else {
                         str_tbls =  rel_element['Join_Type'] + " " + table2 + " AS " + table2.replace(/[aeiou]/gi, '') + " ON " + table1.replace(/[aeiou]/gi, '') + "." + table1_field + " = " + table2.replace(/[aeiou]/gi, '') + "." + table2_field
                     }
-                    console.log(str_tbls)
                     where_tbls.push(str_tbls)
                 }
                 str_table = where_tbls.join(" ")
             } else {
                 table = root.convert_to_system_name(data['tables'][0])
-                console.log(table)
-                console.log(typeof(table))
                 str_table = table + " AS " + table.replace(/[aeiou]/gi, '')
                 
             }
@@ -1400,7 +1376,6 @@ var root = new Vue({
 
             sql_sum = data_sum.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                console.log(words)
                 return `SUM(${item}) AS Sum_of_${words[1]}`;
               }).join(', ');
 
@@ -1412,7 +1387,6 @@ var root = new Vue({
             
             sql_count = data_count.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                console.log(words)
                 return `Count(${item}) AS Count_of_${words[1]}`;
               }).join(', ');
 
@@ -1429,21 +1403,17 @@ var root = new Vue({
             }
 
             if(sql_count != "" && sql_sum != "") {
-                console.log('1024')
 
                 str_fields = select_grp_by + sql_sum + ", " + sql_count
             } else if(sql_sum != '') {
-                console.log('1099')
                 str_fields = select_grp_by + sql_sum
             } else if(sql_count != '') {
-                console.log('1102')
                 str_fields = select_grp_by + sql_count
             } else if(sql_sum == '') {
                 if(root.table_field.length == temp_table_fields.length)
                 {
                     str_fields = '*'
                 } else {
-                    console.log('1007')
                     data['tables']        = []
                     for (let i = 0; i < temp_table_fields.length; i++) {
                         const [prefix, suffix] = temp_table_fields[i].split('_|_');
@@ -1477,7 +1447,6 @@ var root = new Vue({
                     arr_where_clause.push(where_clause)
                 }
             }
-            console.log(arr_where_clause.length)
             if(arr_where_clause.length > 0 && root.filter_has_value) {
                 where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
             } else {
@@ -1503,10 +1472,7 @@ var root = new Vue({
             if(arr_sort.length > 0 && root.sort_has_value) {
                 sort = ' ORDER BY ' + arr_sort.join(', ')
             } else {
-                console.log('here')
-                console.log(root.action_from_run_saved_report)
                 if(root.action_from_run_saved_report && arr_sort.length > 0) {
-                    console.log('here')
                     sort = ' ORDER BY ' + arr_sort.join(', ')
                 } else {
                     sort = ''

@@ -111,9 +111,9 @@
                         </b-form-group>
                         
                         <button type="button" class="btn btn-secondary mb-2" onClick="window.location.href='home.html'">Back</button>
-                        <button type="button" class="btn btn-primary mb-2" v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.load_report()">Load</button>
-                        <button type="button" class="btn btn-primary mb-2" v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.run_report()">Run</button>
-                        <button type="button" class="btn btn-primary float-right mb-2" v-if="Analytics.Choose_Report == 'New Report' || Analytics.Choose_Report == 'Query Box' || show_next_button == true" onClick="root.change_page(1, 'Next')">Next</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" style="margin-left: 4px;" v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.load_report()">Load</button>
+                        <button type="button" class="btn btn-primary float-right mb-2"  v-if="Analytics.Choose_Report == 'Saved Report'" onClick="root.run_report()">Run</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" v-if="Analytics.Choose_Report == 'New Report'" onClick="root.change_page(1, 'Next')">Next</button>
                         </form>
                     </div>
                 </div>
