@@ -27,6 +27,12 @@ analytics_data = {{"""
             data_type = set_data_type(models[entities]['data'][fields])
             source_code += f"""
         '{fields}': '{data_type}',""" 
+        
+        for relation in relationships.get("belongs_to", []):
+            if relation['rel_type'] == 'has_many':
+                source_code += f"""
+        "{converter.convert_to_system_name(relation['pk_field'])}": 'String',"""
+       
         source_code += f"""
     }},"""
     source_code += f"""
