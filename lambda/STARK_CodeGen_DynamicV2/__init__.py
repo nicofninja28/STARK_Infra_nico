@@ -18,7 +18,7 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Dynamic."
 
-cg_builder   = importlib.import_module(f"{prepend_dir}cgdynamic_builder")
+cg_packager   = importlib.import_module(f"{prepend_dir}cgdynamic_packager")
 cg_ddb       = importlib.import_module(f"{prepend_dir}cgdynamic_modules")
 
 cg_build     = importlib.import_module(f"{prepend_dir}cgdynamic_buildspec")
@@ -241,7 +241,7 @@ def lambda_handler(event, context):
     # - template.yml
     # - buildspec.yml
     # - template_configuration.json
-    # - builder.py
+    # - packager.py
     data = { 'project_varname': project_varname }
 
     source_code = cg_build.create(data)
@@ -267,11 +267,11 @@ def lambda_handler(event, context):
     #     'fileContent': source_code.encode()
     # })
     
-    # source_code = cg_builder.create()
-    # files_to_commit.append({
-    #     'filePath': "builder.py",
-    #     'fileContent': source_code.encode()
-    # })
+    source_code = cg_packager.create()
+    files_to_commit.append({
+        'filePath': "packager.py",
+        'fileContent': source_code.encode()
+    })
    
     ##################################################
     # Optimization Attempt
