@@ -8,6 +8,24 @@ name = "STARK Data Abstraction"
 def whoami():
     return name
 
+def az_get_fields(fields, pk_field, collection):
+    next_token = 'initial'
+    items = []
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+    }
+    documents = list(collection.find(ojbect_expression_values))
+    for record in documents:
+        item = {}
+        for field in fields:
+            if field == pk_field:
+                item[field] = record.get("_id")
+            else:
+                item[field] = record.get(field)
+        items.append(item)
+
+    return items
+
 def get_fields(fields, pk_field, sk):
 
     ddb_arguments = {}

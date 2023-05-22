@@ -368,3 +368,24 @@ def append_record_metadata(transaction_type, user ):
         metadata[':ttl'] = {'N': str(ttl_value)}
 
     return metadata  
+
+def az_append_record_metadata(transaction_type, user ):
+    metadata = {}
+    timestamp = int(time.time())
+    if transaction_type == 'add':
+        #append in item
+        metadata['STARK-Created-By'] = user
+        metadata['STARK-Created-TS'] = str(timestamp)
+        
+    elif transaction_type == 'edit':
+        metadata['STARK-Updated-By'] =  user
+        metadata['STARK-Updated-TS'] = str(timestamp)
+
+    elif transaction_type == 'delete':
+        ttl_value = timestamp + stark_core.TTL_for_deleted_records_in_days * 24 * 60 * 60
+        metadata['STARK-Deleted-By'] = user
+        metadata['STARK-Deleted-TS'] = str(timestamp)
+        metadata['STARK-Is-Deleted'] =  'Y'
+        metadata['TTL'] = str(ttl_value)
+
+    return metadata
