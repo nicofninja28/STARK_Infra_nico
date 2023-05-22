@@ -2,7 +2,8 @@ var sidebar = new Vue({
     el: "#mySidenav",
     data: {
         group_collapse_name: 'nav-group-collapse-1',
-        modules: ''
+        modules: '',
+        localStorage_tables: ''
     },
     methods:{
         get_module_list: function () {
@@ -38,6 +39,10 @@ var sidebar = new Vue({
                 grouped_modules.sort((a, b) => b.priority - a.priority)
                 // console.log(grouped_modules)
                 console.log("Hi")
+
+                var data_to_store = {}
+                data_to_store['tables'] = data['report_items']
+                STARK.set_local_storage_item('Analytics_Data', 'Tables', data_to_store)
 
                 sidebar.modules = grouped_modules;
                 root.modules = grouped_modules
