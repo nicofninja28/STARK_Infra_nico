@@ -29,7 +29,11 @@ analytics_data = {{"""
         '{fields}': '{data_type}',""" 
         
         for relation in relationships.get("belongs_to", []):
+            print('relation')
+            print(relation)
             if relation['rel_type'] == 'has_many':
+                print("relation['pk_field']")
+                print(relation['pk_field'])
                 source_code += f"""
         "{converter.convert_to_system_name(relation['pk_field'])}": 'String',"""
        
