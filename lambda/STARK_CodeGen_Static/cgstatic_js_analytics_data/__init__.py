@@ -15,39 +15,31 @@ import get_relationship as get_rel
 
 def create(data):
     models        = data['Entities']
-    relationships = data["Relationships"]
-    print('relationships here')
-    print(relationships)
+    entities = []
+    for entity in models: entities.append(entity)
     
     source_code = f"""\
 analytics_data = {{"""
-    for entities in models:
+    for entity in entities:
         source_code += f"""
-    '{entities}': {{"""
+    '{entity}': {{"""
         source_code += f"""
-        '{models[entities]['pk']}': 'String',"""
-        for fields in models[entities]['data']:
-            data_type = set_data_type(models[entities]['data'][fields])
+        '{models[entity]['pk']}': 'String',"""
+        relationships = get_rel.get_relationship(models, entity, entity)
+        for relation in relationships.get("belongs_to", []):
+            if relation['rel_type'] == 'has_many':
+                source_code += f"""
+        '{relation['pk_field']}': 'String',""" 
+                
+        for fields in models[entity]['data']:
+            data_type = set_data_type(models[entity]['data'][fields])
             source_code += f"""
         '{fields}': '{data_type}',""" 
-            
-        for entity in entities:
-            relationships = get_rel.get_relationship(models, entity, entity)
-            print('relationships here2')
-            print(relationships)
-            for relation in relationships.get("belongs_to", []):
-                print('relation')
-                print(relation)
-                if relation['rel_type'] == 'has_many':
-                    print("relation['pk_field']")
-                    print(relation['pk_field'])
-                    source_code += f"""
-        "{converter.convert_to_system_name(relation['pk_field'])}": 'String',"""
-       
         source_code += f"""
     }},"""
     source_code += f"""
 }}"""
+
     # print(source_code)
     return textwrap.dedent(source_code)
 
