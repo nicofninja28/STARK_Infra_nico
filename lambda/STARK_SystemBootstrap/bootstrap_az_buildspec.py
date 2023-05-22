@@ -32,7 +32,7 @@ def create(data):
         config = yaml.safe_load(response['Body'].read().decode('utf-8'))
 
     cgdynamic_writer_arn = config["CGDynamicV2_ARN"]
-    cgstatic_writer_arn  = config["CGstaticV2_ARN"]
+    cgstatic_writer_arn  = config["CGStaticV2_ARN"]
 
     source_code = f"""\
         version: 0.2
