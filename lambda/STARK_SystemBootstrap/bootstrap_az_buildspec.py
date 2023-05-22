@@ -32,7 +32,7 @@ def create(data):
         config = yaml.safe_load(response['Body'].read().decode('utf-8'))
 
     cgdynamic_writer_arn = config["CGDynamicV2_ARN"]
-    print(cgdynamic_writer_arn)
+    cgstatic_writer_arn  = config["CGstaticV2_ARN"]
 
     source_code = f"""\
         version: 0.2
@@ -59,6 +59,8 @@ def create(data):
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
+                - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
+                - python3 ./packager.py
                 - terraform init
                 - terraform plan
                 - terraform apply --auto-approve
