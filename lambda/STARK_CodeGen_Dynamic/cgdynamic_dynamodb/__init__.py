@@ -459,7 +459,14 @@ def create(data):
                 if sk == "":
                     sk = default_sk
 
-                response = get_by_pk(pk, sk)
+                
+
+            elif request_type == "get_metadata":
+                response = get_metadata()
+                
+            elif request_type == "get_relationship":
+                response = get_relationship()
+
             else:
                 return {{
                     "isBase64Encoded": False,
@@ -479,6 +486,12 @@ def create(data):
             }}
         }}
 
+    def get_metadata():
+        return metadata
+
+    def get_relationship():
+        return relationships
+            
     def report(data, sk=default_sk):
         #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
         #   ENHANCED LISTVIEW LOGIC LATER WHEN WE ACTUALLY IMPLEMENT REPORTING

@@ -40,18 +40,13 @@ var sidebar = new Vue({
                 // console.log(grouped_modules)
                 console.log("Hi")
 
-                var data_to_store = {}
-                data_to_store['tables'] = data['report_items']
-                STARK.set_local_storage_item('Analytics_Data', 'Tables', data_to_store)
-
                 sidebar.modules = grouped_modules;
                 root.modules = grouped_modules
                 STARK.set_local_storage_item('Permissions', 'modules', grouped_modules)
                 console.log(sidebar.modules)
 
-                var data_to_store = {}
-                data_to_store['tables'] = data['report_items']
-                STARK.set_local_storage_item('Analytics_Data', 'Tables', data_to_store)
+                //For Analytics_Data localStorage setting
+                sidebar.get_metadata(data['report_items'])
                 
                 console.log("DONE! Retrieved list of modules.")
                 spinner.hide();
@@ -59,7 +54,51 @@ var sidebar = new Vue({
             .catch(function(error) {
                 console.log("Encountered an error! [" + error + "]");
             });
-        }
+        },
+
+        get_metadata: function(tables) {
+            analytics_data = {};
+            tables.forEach(element => {
+                
+                table = element.replace(' ', '_') + "_url"
+                fetchUrl = STARK[table] + '?rt=get_metadata'
+                analytics_data[element] = {};
+                STARK.request('GET', fetchUrl)
+                .then( function(data) {
+                    dataTypeMapping = {};
+                    
+                    sidebar.get_relationship(element).then( function(rel_data) {
+                        if(rel_data['belongs_to'] && !rel_data['has_many'] && !rel_data['has_one']) {
+                            rel_data['belongs_to'].forEach(rel_element => {
+                                
+                                if(rel_element['rel_type'] == 'has_many') {
+                                    field = rel_element['pk_field']
+                                    data[field] = {data_type: 'string'};
+                                }
+                            });
+                        }
+
+                        new_data = data
+                        for (key in new_data) {
+                            fields = {}
+                            if (data.hasOwnProperty(key)) {
+                                const dataType = data[key].data_type
+                                analytics_data[element][key] = dataType.charAt(0).toUpperCase() + dataType.slice(1)
+                            }
+                        }
+                        STARK.set_local_storage_item('Analytics_Data', 'analytics', analytics_data)
+                    })
+                })
+                
+            });
+            
+        },
+
+        get_relationship: function(table) {
+            table_url = table.replace(' ', '_') + "_url"
+            fetchUrl = STARK[table_url] + '?rt=get_relationship'
+            return STARK.request('GET', fetchUrl)
+        },
     }
 })
 
