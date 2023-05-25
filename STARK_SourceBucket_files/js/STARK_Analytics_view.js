@@ -135,6 +135,7 @@ var root = new Vue({
             'Sum': 'empty',
             'Count': 'empty',
             'Group_By': 'empty',
+            'Saved_Report': 'empty'
         },
         validation_properties: {
             'Group_By': {
@@ -320,10 +321,8 @@ var root = new Vue({
             
             root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
             let payload = { Analytics_Report: root.Save_Report_Settings }
-            console.log(payload)
 
             Analytics_app.add(payload).then( function(data) {
-                console.log(data)
                 if(data == 'OK') {
                     root.showSuccessSaveReport = true
                 } else {
@@ -416,7 +415,6 @@ var root = new Vue({
                 loading_modal.show();
                 console.log("VIEW: Getting!")
                 Analytics_app.get_result(query, metadata).then( function(data) {
-                    console.log(data.length)
 
                     if(data.length > 0)
                     {
@@ -449,7 +447,6 @@ var root = new Vue({
         },
 
         set_local_storage_from_setting: function(data) {
-            console.log(data['relationships'])
             var data_to_store = {}
             data_to_store['checked_tables'] = data['tables']
             STARK.set_local_storage_item('Analytics_Input', 'Tables', data_to_store)
@@ -499,6 +496,7 @@ var root = new Vue({
                         root.set_local_storage_from_setting(report_setting)
                         root.from_load_report = true
                         root.from_run_report = false
+                        root.change_page('1', 'Next')
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -533,166 +531,122 @@ var root = new Vue({
         },
 
         onReport_Type: function() {
+            // Analytics_app.test_dump().then( function(data) {})
             if(root.Analytics.Choose_Report != ''){
                 root.delete_local_storage()
                 root.action_from_saved_report = false
             }
-            console.log(root.Analytics.Choose_Report)
-            // Analytics_app.test_dump().then( function(data) {})
+
             if(root.Analytics.Choose_Report == 'Saved Report') {
                 root.action_from_saved_report = true
-                Analytics_app.get_saved_reports().then( function(data) {
-                    console.log(data)
-                    data.forEach(function(arrayItem) {
-                        text = arrayItem['Report_Name']
-                        value = arrayItem['Report_Name']            
-                        root.lists.Saved_Report.push({ value: value, text: text }) 
-                    })
-                }).catch(function(error) {
-                    console.log("Encountered an error! [" + error + "]")
-                    alert("Request Failed: System error or you may not have enough privileges")
-                    loading_modal.hide()
-                });
-            }
+                if (root.list_status.Saved_Report == 'empty') {
+                    Analytics_app.get_saved_reports().then( function(data) {
+                        root.lists.Saved_Report = []
+                        data.forEach(function(arrayItem) {
+                            text = arrayItem['Report_Name']
+                            value = arrayItem['Report_Name']            
+                            root.lists.Saved_Report.push({ value: value, text: text }) 
+                        })
+                        root.list_status.Saved_Report = 'populated'
+                    }).catch(function(error) {
+                        console.log("Encountered an error! [" + error + "]")
+                        alert("Request Failed: System error or you may not have enough privileges")
+                        loading_modal.hide()
+                    });
+                }
+            } 
         },
 
         get_tables: function() {
-            var table_data = STARK.get_local_storage_item('Analytics_Data', 'Tables')
+            var analytics_data = STARK.get_local_storage_item('Analytics_Data', 'analytics')
+            var table_data = Object.keys(analytics_data)
             var selected_table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
-            var fetch_from_db = false;
             
-            if(table_data) {
-                root.system_tables = table_data['tables']
-                if(selected_table_data && selected_table_data['checked_tables'].length > 0) {
-                    selected_tables = selected_table_data['checked_tables']
-                    root.checked_tables = selected_tables
-                } else {
-                    root.checked_tables = root.system_tables
-                }
-            }
-            else {
-                loading_modal.show()
-                fetch_from_db = true
-            }
-
-            if(fetch_from_db) {
-                Analytics_app.get_tables().then( function(data) {
-                    
-                    for (let index = 0; index < data.length; index++) {
-                        const element = data[index]['table_name'];
-                        root.temp_checked_tables.push(element)
-                    }
-                    root.system_tables = root.temp_checked_tables
-
-                    if(selected_table_data && selected_table_data['checked_tables'].length > 0) {
-                        selected_tables = selected_table_data['checked_tables']
-                        root.checked_tables = selected_tables
-                    } else {
-                        root.checked_tables = root.system_tables
-                    }
-
-                    var data_to_store = {}
-                    data_to_store['tables'] = root.system_tables
-                    STARK.set_local_storage_item('Analytics_Data', 'Tables', data_to_store)
-
-                    loading_modal.hide()
-                })
-                .catch(function(error) {
-                    console.log("Encountered an error! [" + error + "]")
-                    alert("Request Failed: System error or you may not have enough privileges")
-                    loading_modal.hide()
-                });
+            root.system_tables = table_data
+            if(selected_table_data && selected_table_data['checked_tables'].length > 0) {
+                selected_tables = selected_table_data['checked_tables']
+                root.checked_tables = selected_tables
+                root.multi_select_values.Sum = []
+                root.multi_select_values.Count = []
+                root.Analytics.Group_By = ''
+            } else {
+                root.checked_tables = root.system_tables
             }
         },
 
-        get_table_fields: function(table_list=[]) {
-            final_table_list = root.convert_to_system_name(table_list)
+        get_table_fields_data: function(final_table_list) {
+            var analytics_data = STARK.get_local_storage_item('Analytics_Data', 'analytics')
             
-            var field_data = STARK.get_local_storage_item('Analytics_Data', 'Fields')
-            var selected_table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
-            var selected_table_fields_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
-            var fetch_from_db = false;
-
-            if(field_data) {
-                if (JSON.stringify(selected_table_data['checked_tables']) === JSON.stringify(field_data['tables']) && root.metadata != '') {
-                    root.same_table_selected = true
-                    root.system_fields = field_data['fields']
-                    if(selected_table_fields_data && selected_table_fields_data['checked_fields'].length > 0) {
-                        root.checked_fields = selected_table_fields_data['checked_fields']
-                    } else {
-                        root.checked_fields = root.system_fields
-                    }
-                } else {
-                    loading_modal.show()
-                    STARK.local_storage_delete_key('Analytics_Data', 'Table_Fields_Option')
-                    root.same_table_selected = false
-                    fetch_from_db = true
+            data = []
+            final_table_list.forEach(obj => {
+                const keys = [];
+                if (analytics_data[obj]) {
+                    keys.push(...Object.keys(analytics_data[obj]));
                 }
-            }
-            else {
-                fetch_from_db = true
-                loading_modal.show()
-            }
-
-            if(fetch_from_db) {
-                Analytics_app.get_table_fields(final_table_list).then( function(data) {
-                    
-                    temp_metadata = data.reduce((result, { column_name, data_type }) => {
-                        const key = column_name.replace(/\s+/g, '_'); 
+                console.log(keys)
+                if (analytics_data[obj]) {
+                    keys.forEach(element => {
+                        data.push({
+                            column_name: element.replace('_', ' '),
+                            data_type: analytics_data[obj][element],
+                            table_name: obj,
+                        });
                         
-                        if(data_type == 'varchar') {
-                            data_type = 'string'
-                        } else if (data_type == 'real') {
-                            data_type = 'float'
-                        } else {
-                            data_type = data_type
-                        }
-                        result[key] = { data_type };
-                        return result;
-                    }, {});
-                    root.metadata =  JSON.stringify(temp_metadata)
+                    });
+                }
+            })
+
+            return data
+        },
+
+        get_table_fields: function() {
+            var selected_table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
+            final_table_list = selected_table_data['checked_tables']
+            data = root.get_table_fields_data(final_table_list)
+            
+            var selected_table_fields_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
+
+            temp_metadata = data.reduce((result, { column_name, data_type }) => {
+                const temp_key = column_name.replace(/\s+/g, '_'); 
+                const key = temp_key.replace('ID', 'Id')
+                
+                if(data_type == 'varchar') {
+                    data_type = 'string'
+                } else if (data_type == 'real') {
+                    data_type = 'float'
+                } else {
+                    data_type = data_type
+                }
+                result[key] = { data_type };
+                return result;
+            }, {});
+            root.metadata =  JSON.stringify(temp_metadata)
+            console.log(root.metadata)
+
+            root.table_field = data
                     
-                    root.table_field = data
-                    
-                    temp_system_fields = []
-                    temp_for_metadata  = []
-                    for (let index = 0; index < data.length; index++) {
-                        const element = data[index];
-                        console.log(element)
-                        for_metadata = element['column_name'] + ' | ' + element['data_type']
-                        table_field = element['table_name'] + ' | ' + element['column_name']
-                        rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
-                        
-                        temp_system_fields.push(table_field)
-                        temp_for_metadata.push(for_metadata)
-                    }
-                    console.log(temp_for_metadata)
-                    root.system_fields = temp_system_fields
-
-                    if(selected_table_fields_data && selected_table_fields_data['checked_fields'].length > 0) {
-                        root.checked_fields = selected_table_fields_data['checked_fields']
-                    } else {
-                        root.checked_fields = root.system_fields
-                    }
-
-                    var data_to_store = {}
-                    data_to_store['tables'] = table_list
-                    data_to_store['fields'] = root.system_fields
-                    STARK.set_local_storage_item('Analytics_Data', 'Fields', data_to_store)
-
-                    var data_to_store = {}
-                    data_to_store['metadata'] = root.metadata
-                    STARK.set_local_storage_item('Analytics_Input', 'Metadata', data_to_store)
-
-                    loading_modal.hide()
-                    
-                })
-                .catch(function(error) {
-                    console.log("Encountered an error! [" + error + "]")
-                    alert("Request Failed: System error or you may not have enough privileges")
-                    loading_modal.hide()
-                });
+            temp_system_fields = []
+            temp_for_metadata  = []
+            for (let index = 0; index < data.length; index++) {
+                const element = data[index];
+                for_metadata = element['column_name'] + ' | ' + element['data_type']
+                table_field = element['table_name'] + ' | ' + element['column_name']
+                rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
+                
+                temp_system_fields.push(table_field)
+                temp_for_metadata.push(for_metadata)
             }
+            root.system_fields = temp_system_fields
+
+            if(selected_table_fields_data && selected_table_fields_data['checked_fields'].length > 0) {
+                root.checked_fields = selected_table_fields_data['checked_fields']
+            } else {
+                root.checked_fields = root.system_fields
+            }
+
+            var data_to_store = {}
+            data_to_store['metadata'] = root.metadata
+            STARK.set_local_storage_item('Analytics_Input', 'Metadata', data_to_store)
         },
 
         download_report(file_type = "csv") {
@@ -776,68 +730,46 @@ var root = new Vue({
         },
 
         list_field_options: function (action, table_list) {
-            var list_field_data = STARK.get_local_storage_item('Analytics_Data', 'Table_Fields_Option')
-            var fetch_from_db = false;
-
-            if(list_field_data) {
-                console.log(root.same_table_selected)
-                root.lists[action] = list_field_data['table_fields_option']
-            }
-            else {
-                fetch_from_db = true
-                loading_modal.show()
-                console.log('494')
-            }
-
-            if(fetch_from_db) {
-            
-                if (root.list_status[action] == 'empty') {
-                    root.lists[action] = []
+            var selected_table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
+            final_table_list = selected_table_data['checked_tables']
+            data = root.get_table_fields_data(final_table_list)
+            console.log(data)
+            action.forEach(action_element => {
+                if (root.list_status[action_element] == 'empty') {
+                    root.lists[action_element] = []
                     
-                    final_table_list = root.convert_to_system_name(table_list)
-                    if(action == 'Sum'){
-                        Analytics_app.get_table_fields_int(final_table_list).then( function(data) {
-                            temp_check_fields = []
-                            for (let index = 0; index < data.length; index++) {
-                                const element = data[index];
-                                rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
-                                root.lists[action].push({ value: rel_table_field, text: rel_table_field })
+                    final_table_list = table_list
+                    if(action_element == 'Sum'){
+                        new_data = []
+                        for (let index = 0; index < data.length; index++) {
+                            const element = data[index];
+                            if(element['data_type'] == 'Float' || element['data_type'] == 'Number' || element['data_type'] == 'Integer') {
+                                new_data.push({
+                                    column_name: element['column_name'],
+                                    data_type: element['data_type'],
+                                    table_name: element['table_name'],
+                                });
                             }
-                            root.list_status[action] = 'populated'
-                            
-                            var data_to_store = {}
-                            data_to_store['table_fields_option'] = root.lists[action]
-                            STARK.set_local_storage_item('Analytics_Data', 'Table_Fields_Option', data_to_store)
-                            
-                            loading_modal.hide();
-                        })
-                        .catch(function(error) {
-                            console.log("Encountered an error! [" + error + "]")
-                            alert("Request Failed: System error or you may not have enough privileges")
-                            loading_modal.hide()
-                        });
+                        }
+                        console.log(new_data)
+                        temp_check_fields = []
+                        for (let index = 0; index < new_data.length; index++) {
+                            const element = new_data[index];
+                            rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
+                            root.lists[action_element].push({ value: rel_table_field, text: rel_table_field })
+                        }
+                        root.list_status[action_element] = 'populated'
+                        
                     } else {
-                        Analytics_app.get_table_fields(final_table_list).then( function(data) {
-                            temp_check_fields = []
-                            for (let index = 0; index < data.length; index++) {
-                                const element = data[index];
-                                rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
-                                root.lists[action].push({ value: rel_table_field, text: rel_table_field })
-                            }
-                            root.list_status[action] = 'populated'
-                            var data_to_store = {}
-                            data_to_store['table_fields_option'] = root.lists[action]
-                            STARK.set_local_storage_item('Analytics_Data', 'Table_Fields_Option', data_to_store)
-                            loading_modal.hide();
-                        })
-                        .catch(function(error) {
-                            console.log("Encountered an error! [" + error + "]")
-                            alert("Request Failed: System error or you may not have enough privileges")
-                            loading_modal.hide()
-                        });
+                        for (let index = 0; index < data.length; index++) {
+                            const element = data[index];
+                            rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
+                            root.lists[action_element].push({ value: rel_table_field, text: rel_table_field })
+                        }
+                        root.list_status[action_element] = 'populated'
                     }
                 }
-            }
+            });
         },
 
         many_validation(many_tab) {
@@ -909,7 +841,6 @@ var root = new Vue({
                 }
             }
 
-            console.log(is_valid_form)
             return is_valid_form
         },
 
@@ -942,7 +873,6 @@ var root = new Vue({
             else if(page == '4') {
                 
                 if((root.multi_select_values.Sum.length > 0 || root.multi_select_values.Count.length > 0) && root.Analytics.Group_By == '') {
-                    console.log('dito')
                     root.validation_properties['Group_By']['state'] = false
                     root.validation_properties['Group_By']['feedback'] = "This field is required"
                     root.valid_page = true
@@ -971,7 +901,6 @@ var root = new Vue({
             } 
             else if(page == '6') {
                 if(root.sort_many.length != 0) {
-                    console.log(root.many_validation('Sort'))
                     if(root.many_validation('Sort') == false) {
                         root.showError = true
                         root.valid_page = false
@@ -988,8 +917,6 @@ var root = new Vue({
         },
 
         change_page: function(page_number, action) {
-            console.log(page_number)
-            console.log(action)
 
             if(page_number == '0') { //Choose Report
                 
@@ -1052,7 +979,7 @@ var root = new Vue({
                 data_to_store['checked_fields'] = root.checked_fields
                 STARK.set_local_storage_item('Analytics_Input', 'Fields', data_to_store)
 
-                root.list_field_options('Relationship', root.checked_tables)
+                root.list_field_options(['Relationship'], root.checked_tables)
                 if(action == 'Next') {
                     root.page_2_show = false
                     if(root.checked_tables.length > 1) {
@@ -1064,9 +991,7 @@ var root = new Vue({
                     } else {
                         root.page_3_show = false
                         root.page_4_show = true
-                        root.list_field_options('Sum', root.checked_tables)
-                        root.list_field_options('Count', root.checked_tables)
-                        root.list_field_options('Group_By', root.checked_tables)
+                        root.list_field_options(['Sum', 'Count', 'Group_By'], root.checked_tables)
 
                         if(root.action_from_saved_report) {
                             
@@ -1111,7 +1036,6 @@ var root = new Vue({
                     //FIX ME: Will empty relationships from page 2 even when tables are not change
                     if(root.same_table_selected) {
                         var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
-                        console.log(relationship_data)
                         if(relationship_data) {
                             root.rel_many = relationship_data['relationship']
                         } 
@@ -1175,9 +1099,7 @@ var root = new Vue({
                 root.show_result = false
                 root.validate_tab('4')
                 root.for_next_page = '4'
-                root.list_field_options('Sum', root.checked_tables)
-                root.list_field_options('Count', root.checked_tables)
-                root.list_field_options('Group_By', root.checked_tables)
+                root.list_field_options(['Sum', 'Count', 'Group_By'], root.checked_tables)
                 
             }
             else if(page_number == '5') { //Filters
@@ -1315,14 +1237,11 @@ var root = new Vue({
                     } else {
                         str_tbls =  rel_element['Join_Type'] + " " + table2 + " AS " + table2.replace(/[aeiou]/gi, '') + " ON " + table1.replace(/[aeiou]/gi, '') + "." + table1_field + " = " + table2.replace(/[aeiou]/gi, '') + "." + table2_field
                     }
-                    console.log(str_tbls)
                     where_tbls.push(str_tbls)
                 }
                 str_table = where_tbls.join(" ")
             } else {
                 table = root.convert_to_system_name(data['tables'][0])
-                console.log(table)
-                console.log(typeof(table))
                 str_table = table + " AS " + table.replace(/[aeiou]/gi, '')
                 
             }
@@ -1335,7 +1254,6 @@ var root = new Vue({
 
             sql_sum = data_sum.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                console.log(words)
                 return `SUM(${item}) AS Sum_of_${words[1]}`;
               }).join(', ');
 
@@ -1347,7 +1265,6 @@ var root = new Vue({
             
             sql_count = data_count.map(item => {
                 const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                console.log(words)
                 return `Count(${item}) AS Count_of_${words[1]}`;
               }).join(', ');
 
@@ -1364,21 +1281,17 @@ var root = new Vue({
             }
 
             if(sql_count != "" && sql_sum != "") {
-                console.log('1024')
 
                 str_fields = select_grp_by + sql_sum + ", " + sql_count
             } else if(sql_sum != '') {
-                console.log('1099')
                 str_fields = select_grp_by + sql_sum
             } else if(sql_count != '') {
-                console.log('1102')
                 str_fields = select_grp_by + sql_count
             } else if(sql_sum == '') {
                 if(root.table_field.length == temp_table_fields.length)
                 {
                     str_fields = '*'
                 } else {
-                    console.log('1007')
                     data['tables']        = []
                     for (let i = 0; i < temp_table_fields.length; i++) {
                         const [prefix, suffix] = temp_table_fields[i].split('_|_');
@@ -1412,7 +1325,6 @@ var root = new Vue({
                     arr_where_clause.push(where_clause)
                 }
             }
-            console.log(arr_where_clause.length)
             if(arr_where_clause.length > 0 && root.filter_has_value) {
                 where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
             } else {
@@ -1438,10 +1350,7 @@ var root = new Vue({
             if(arr_sort.length > 0 && root.sort_has_value) {
                 sort = ' ORDER BY ' + arr_sort.join(', ')
             } else {
-                console.log('here')
-                console.log(root.action_from_run_saved_report)
                 if(root.action_from_run_saved_report && arr_sort.length > 0) {
-                    console.log('here')
                     sort = ' ORDER BY ' + arr_sort.join(', ')
                 } else {
                     sort = ''
@@ -1468,7 +1377,7 @@ var root = new Vue({
         convert_to_system_name: function(elem) {
             if(typeof(elem) == 'string'){
                 let words = elem.split(" ");
-                let capitalizedWords = words.map(word => word.charAt(0).toLowerCase() + word.slice(1));
+                let capitalizedWords = words.map(word => word.toLowerCase());
                 let joinedWords = capitalizedWords.join("_");
                 
                 return joinedWords
@@ -1476,7 +1385,7 @@ var root = new Vue({
                 rpt_header = []
                 elem.forEach(element => {
                     let words = element.split(" ");
-                    let capitalizedWords = words.map(word => word.charAt(0).toLowerCase() + word.slice(1));
+                    let capitalizedWords = words.map(word => word.toLowerCase());
                     let joinedWords = capitalizedWords.join("_");
                     rpt_header.push(joinedWords)
                 });

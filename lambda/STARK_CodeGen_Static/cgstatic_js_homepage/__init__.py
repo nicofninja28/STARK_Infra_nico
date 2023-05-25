@@ -11,7 +11,8 @@ def create(data):
             el: "#vue-root",
             data: {{
                 group_collapse_name: 'group-collapse-1',
-                modules: ''
+                modules: '',
+                localStorage_tables: '',
             }},
             methods:{{
                 get_module_list: function () {{
