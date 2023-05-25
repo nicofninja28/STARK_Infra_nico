@@ -458,9 +458,8 @@ def create(data):
                 sk = event.get('queryStringParameters').get('sk','')
                 if sk == "":
                     sk = default_sk
-
+                response = get_by_pk(pk, sk)
                 
-
             elif request_type == "get_metadata":
                 response = get_metadata()
                 

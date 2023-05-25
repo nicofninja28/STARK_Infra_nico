@@ -2,9 +2,6 @@ var root = new Vue({
     el: "#vue-root",
     data: {
         metadata: '',
-        STARK_Analytics_data: {    
-            'STARK_Analytics_data': analytics_data,
-        },
         rel_metadata: {
             'Table_1': {
                 'value': '',
