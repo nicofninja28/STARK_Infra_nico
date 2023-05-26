@@ -1,5 +1,7 @@
 #This takes a user-supplied human-friendly name and converts that to the appropriate 
 #   system-friendly name (e.g., variable name, CF stack name, or S3 bucket name)
+import secrets
+import string
 
 def convert_to_system_name(friendly_name, target='variable'):
 
@@ -81,3 +83,35 @@ def to_cloudformation_logicalname(name):
 
     return system_name
 
+
+def to_az_storage_account_name(name):
+    pass
+
+def to_az_resource_group_name(name):
+    pass
+
+def to_az_api_management_name(name):
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
+
+def to_az_cosmosdb_name(name):
+    pass
+
+def to_az_collection_name(name):
+    pass
+
+def to_az_function_app_name(name):
+    pass
+
+def generate_unique_id(num_of_chars = 8):
+    alphabet = string.ascii_letters + string.digits
+    unique_id = ''.join(secrets.choice(alphabet) for i in range(num_of_chars))
+
+    return unique_id

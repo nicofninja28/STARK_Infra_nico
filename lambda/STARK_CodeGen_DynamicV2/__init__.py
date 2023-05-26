@@ -123,11 +123,11 @@ def lambda_handler(event, context):
         fixtures_source_code   = cg_fixtures.create(data)
         # etl_script_source_code = cg_etl_script.create(data)
 
-        #Step 2: Add source code to our commit list to the project repo
-        # files_to_commit.append({
-        #     'filePath': f"lambda/{entity_varname}/__init__.py",
-        #     'fileContent': source_code.encode()
-        # })
+        # Step 2: Add source code to our commit list to the project repo
+        files_to_commit.append({
+            'filePath': f"lambda/{entity_varname}/__init__.py",
+            'fileContent': source_code.encode()
+        })
 
         # test cases
         files_to_commit.append({
