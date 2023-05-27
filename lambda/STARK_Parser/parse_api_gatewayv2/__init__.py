@@ -16,8 +16,8 @@ def parse(data):
         # we will be manually composing the url here
         #by combining the parsed project name and the azure api url
         parsed_project_name = convert_friendly_to_system.to_az_api_management_name(data['project_name'])
-        parsed_project_name =  parsed_project_name.join(f"{data['unique_id']}")
-        url = "https://".join(parsed_project_name).join(".azure-api.net")
+        parsed_project_name =  parsed_project_name + f"{data['unique_id']}"
+        url = "https://"+parsed_project_name+".azure-api.net"
         parsed = { 
             "URL": url,
             "Name": parsed_project_name
