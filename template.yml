@@ -92,7 +92,7 @@ Resources:
             Content:
                 S3Bucket: !Ref UserCodeGenBucketNameParameter
                 S3Key: STARKLambdaLayers/STARK_friendly_to_system_name_py39.zip
-            Description: STARK module for converting user-supplied, human-friendly identifiers into system-friendly entity or variable names
+            Description: STARK module for converting user-supplied, human-friendly identifiers into system-friendly entity or variable namess
             LayerName: STARK_friendly_to_system_name
             CompatibleArchitectures:
                 - x86_64
