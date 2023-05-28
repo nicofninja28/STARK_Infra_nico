@@ -50,10 +50,6 @@ def lambda_handler(event, context):
     bucket_name     = event.get('ResourceProperties', {}).get('Bucket','')
     project_name    = event.get('ResourceProperties', {}).get('Project','') 
     project_varname = converter.convert_to_system_name(project_name)
-    api_gateway_id  = event.get('ResourceProperties', {}).get('ApiGatewayId','')
-    response = api.get_api(ApiId=api_gateway_id)
-    endpoint = response['ApiEndpoint']
-
     #Bucket for our cloud resources document
     codegen_bucket_name = os.environ['CODEGEN_BUCKET_NAME']
 
@@ -70,6 +66,7 @@ def lambda_handler(event, context):
 
     #Get relevant info from cloud_resources
     models = cloud_resources["Data Model"]
+    endpoint = cloud_resources['API Gateway']['URL']
 
     #Collect list of files to commit to project repository
     files_to_commit = []
