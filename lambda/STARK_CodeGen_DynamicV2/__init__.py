@@ -36,6 +36,8 @@ cg_conftest = importlib.import_module(f"{prepend_dir}cgdynamic_conftest")
 cg_test     = importlib.import_module(f"{prepend_dir}cgdynamic_test_cases")
 cg_fixtures = importlib.import_module(f"{prepend_dir}cgdynamic_test_fixtures")
 
+cg_tfwriter = importlib.import_module(f"{prepend_dir}cgdynamic_terraform_writer")
+
 import convert_friendly_to_system as converter
 import get_relationship as get_rel
 
@@ -272,7 +274,16 @@ def lambda_handler(event, context):
         'filePath': "packager.py",
         'fileContent': source_code.encode()
     })
-   
+    
+    data = {
+        "entities": entities,
+        "project_name": project_varname,
+        "api_name": cloud_resources["API Gateway"]['Name']
+    }
+    
+    tf_script_to_commit = cg_tfwriter.compose_stark_tf_script(data)
+
+    files_to_commit += tf_script_to_commit
     ##################################################
     # Optimization Attempt
     #   Before we commit code to the repo, let's disable the Pipeline's source stage change detection 
