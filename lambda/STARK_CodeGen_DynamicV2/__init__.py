@@ -246,11 +246,11 @@ def lambda_handler(event, context):
     # - packager.py
     data = { 'project_varname': project_varname }
 
-    source_code = cg_build.create(data)
-    files_to_commit.append({
-        'filePath': "buildspec.yml",
-        'fileContent': source_code.encode()
-    })
+    # source_code = cg_build.create(data)
+    # files_to_commit.append({
+    #     'filePath': "buildspec.yml",
+    #     'fileContent': source_code.encode()
+    # })
 
     data = { 'cloud_resources': cloud_resources, 'entities': entities }
     # source_code = cg_sam.create(data)
