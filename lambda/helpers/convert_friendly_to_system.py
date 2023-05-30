@@ -83,12 +83,28 @@ def to_cloudformation_logicalname(name):
 
     return system_name
 
-
+##TODO: Change the whitelist and include trimmer due to char limit.
 def to_az_storage_account_name(name):
-    pass
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
 
 def to_az_resource_group_name(name):
-    pass
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
 
 def to_az_api_management_name(name):
     system_name = ''
@@ -102,13 +118,37 @@ def to_az_api_management_name(name):
     return system_name
 
 def to_az_cosmosdb_name(name):
-    pass
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
 
 def to_az_collection_name(name):
-    pass
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
 
 def to_az_function_app_name(name):
-    pass
+    system_name = ''
+    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+
+    name = name.lower()
+    for char in name:
+        if char in whitelist:
+            system_name += char
+    
+    return system_name
 
 def generate_unique_id(num_of_chars = 8):
     alphabet = string.ascii_letters + string.digits

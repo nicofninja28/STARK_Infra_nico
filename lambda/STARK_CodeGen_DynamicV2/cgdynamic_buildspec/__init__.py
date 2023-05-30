@@ -36,12 +36,8 @@ def create(data):
                 - terraform --version
             build:
                 commands:
-                - BUCKET=$(cat template_configuration.json | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameters']['UserCICDPipelineBucketNameParameter'])")
-                - WEBSITE=$(cat template_configuration.json | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameters']['UserWebsiteBucketNameParameter'])")
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
-                - cp -R lambda lambda_src
-                - pip install pyyaml
-                - python3 ./builder.py
+                - python3 ./packager.py
                 - terraform init
                 - terraform plan
                 - terraform apply --auto-approve

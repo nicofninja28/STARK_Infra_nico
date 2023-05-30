@@ -29,7 +29,8 @@ def compose_stark_tf_script(data):
     # Database
     db_source_code = ""
     db_source_code += tf_writer_cosmosdb_account(data)
-    db_source_code += tf_writer_cosmosdb_tables(data)
+    db_source_code += tf_writer_cosmosdb_business_modules(data)
+    db_source_code += tf_writer_cosmosdb_stark_modules(data)
 
     tf_script.append({
         'filePath': "terraform/database.tf",
@@ -38,6 +39,9 @@ def compose_stark_tf_script(data):
 
     # Functions
     functions_source_code = ""
+    data["type"] = "zip-deploy"
+    functions_source_code += tf_writer_storage_account(data)
+    functions_source_code += tf_writer_storage_account_container(data)
     functions_source_code += tf_writer_function_app(data)
 
     tf_script.append({
@@ -179,7 +183,7 @@ def tf_writer_cosmosdb_account(data):
     
     return textwrap.dedent(source_code)
 
-def tf_writer_cosmosdb_tables(data):
+def tf_writer_cosmosdb_business_modules(data):
     project_name = data["project_name"]
     entities = data["entities"]
     source_code = "##Business Modules"
@@ -199,8 +203,10 @@ def tf_writer_cosmosdb_tables(data):
 
     }}
         """
-    
-    source_code += f"""
+    return textwrap.dedent(source_code)
+
+def tf_writer_cosmosdb_stark_modules(data):    
+    source_code = f"""
 
     ##STARK Modules
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_collection" {{
