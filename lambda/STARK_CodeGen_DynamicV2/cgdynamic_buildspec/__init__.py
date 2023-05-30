@@ -28,19 +28,18 @@ def create(data):
             install:
                 runtime-versions:
                     python: 3.8
-            commands:
-                - curl -s -qL -o terraform_install.zip https://releases.hashicorp.com/terraform/1.4.0/terraform_1.4.0_linux_amd64.zip
-                - unzip terraform_install.zip -d /usr/bin/
-                - chmod +x /usr/bin/terraform
-            finally:
-                - terraform --version
+                commands:
+                    - curl -s -qL -o terraform_install.zip https://releases.hashicorp.com/terraform/1.4.0/terraform_1.4.0_linux_amd64.zip
+                    - unzip terraform_install.zip -d /usr/bin/
+                    - chmod +x /usr/bin/terraform
+                finally:
+                    - terraform --version
             build:
                 commands:
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
                 - python3 ./packager.py
                 - terraform init
                 - terraform plan
-                - terraform apply --auto-approve
 
         artifacts:
             files:
