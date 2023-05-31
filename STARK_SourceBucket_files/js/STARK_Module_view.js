@@ -115,7 +115,8 @@ var root = new Vue({
             'Add': {'permission': 'System Modules|Add', 'allowed': false},
             'Delete': {'permission': 'System Modules|Delete', 'allowed': false},
             'Edit': {'permission': 'System Modules|Edit', 'allowed': false},
-            'Report': {'permission': 'System Modules|Report', 'allowed': false}
+            'Report': {'permission': 'System Modules|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         STARK_report_fields: [],
         listview_table: '',

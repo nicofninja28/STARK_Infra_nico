@@ -71,7 +71,8 @@ var root = new Vue({
             'Add': {'permission': 'User Sessions|Add', 'allowed': false},
             'Delete': {'permission': 'User Sessions|Delete', 'allowed': false},
             'Edit': {'permission': 'User Sessions|Edit', 'allowed': false},
-            'Report': {'permission': 'User Sessions|Report', 'allowed': false}
+            'Report': {'permission': 'User Sessions|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         listview_table: '',
         STARK_report_fields: [],

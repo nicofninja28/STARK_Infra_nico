@@ -82,7 +82,8 @@ var root = new Vue({
             'Add': {'permission': 'Module Groups|Add', 'allowed': false},
             'Delete': {'permission': 'Module Groups|Delete', 'allowed': false},
             'Edit': {'permission': 'Module Groups|Edit', 'allowed': false},
-            'Report': {'permission': 'Module Groups|Report', 'allowed': false}
+            'Report': {'permission': 'Module Groups|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         STARK_report_fields: [],
         listview_table: '',

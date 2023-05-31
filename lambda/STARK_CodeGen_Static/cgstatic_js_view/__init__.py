@@ -182,7 +182,8 @@ def create(data):
                     'Add': {{'permission': '{entity}|Add', 'allowed': false}},
                     'Delete': {{'permission': '{entity}|Delete', 'allowed': false}},
                     'Edit': {{'permission': '{entity}|Edit', 'allowed': false}},
-                    'Report': {{'permission': '{entity}|Report', 'allowed': false}}
+                    'Report': {{'permission': '{entity}|Report', 'allowed': false}},
+                    'Custom_Query': {{'permission': 'Analytics|Custom Report', 'allowed': false}}
                 }},
 
                 listview_table: '',

@@ -10,6 +10,17 @@
     Icon: "images/tag.svg"
     Image_Alt: "STARK_User graphic"
     Priority: "1"
+"Analytics|Custom Report":
+    sk: "STARK|module"
+    Target: "STARK_Analytics_GUI.html"
+    Descriptive_Title: "Analytics GUI"
+    Description: "Analytics GUI"
+    Module_Group: "Analytics"
+    Is_Menu_Item: False
+    Is_Enabled: True
+    Icon: "images/tag.svg"
+    Image_Alt: "STARK_User graphic"
+    Priority: "1"
 
 # Users
 "Users|View":
