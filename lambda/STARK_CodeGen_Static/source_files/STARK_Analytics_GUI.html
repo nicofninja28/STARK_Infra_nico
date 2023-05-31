@@ -561,9 +561,9 @@
                         </b-form-group>
                         
                         <button type="button" class="btn btn-secondary mb-2" onClick="root.change_page(6, 'Back')">Back</button>
-                        <button type="button" class="btn btn-primary mb-2" onClick="root.saveReport()" :disabled="Analytics.Save_Report == 'No'" >Save</button>
-                        <button type="button" class="btn btn-primary float-right mb-2" v-if="Analytics.Choose_Report != 'Query Box'" onClick="root.submit()">Submit</button>
-                        <button type="button" class="btn btn-primary float-right" v-if="Analytics.Choose_Report == 'Query Box'" onClick="root.submit_query_box(root.Analytics.Query_Box)">Submit</button> 
+                        <button type="button" class="btn btn-primary mb-2" onClick="root.saveReport()" v-if="Analytics.Save_Report == 'Yes'" :disabled="Analytics.Save_Report == 'No'" >Save</button>
+                        <button type="button" class="btn btn-primary float-right mb-2" v-if="Analytics.Choose_Report != 'Query Box' && (Analytics.Save_Report == 'No' || Analytics.Save_Report == 'Yes')" onClick="root.submit()">Submit</button>
+                        <button type="button" class="btn btn-primary float-right" v-if="Analytics.Choose_Report == 'Query Box' && (Analytics.Save_Report == 'No' || Analytics.Save_Report == 'Yes')" onClick="root.submit_query_box(root.Analytics.Query_Box)">Submit</button> 
                         </form>
                     </div>
                 </div>
