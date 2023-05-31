@@ -173,4 +173,4 @@ def generate_unique_id(num_of_chars = 8):
     alphabet = string.ascii_letters + string.digits
     unique_id = ''.join(secrets.choice(alphabet) for i in range(num_of_chars))
 
-    return unique_id
+    return unique_id.lower()
