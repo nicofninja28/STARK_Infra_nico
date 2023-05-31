@@ -33,7 +33,6 @@ def create(data):
                 - aws s3 sync static s3://$WEBSITE --delete --acl public-read
                 - aws s3 sync lambda/packaged_layers s3://$BUCKET/{project_varname}/STARKLambdaLayers --delete --exclude="*" --include="*.zip"
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
-                - echo "Hello, World!" | aws s3 cp - s3://$BUCKET/{project_varname}/default_password.txt
 
         artifacts:
             files:
