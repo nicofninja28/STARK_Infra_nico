@@ -30,6 +30,7 @@ def tf_writer_azure_config(data):
 
     
     """
+    return textwrap.dedent(source_code)
 
 def tf_writer_cosmosdb_account(data):
     project_name = converter.convert_to_system_name(data["project_name"], "az-cosmos-db") 
