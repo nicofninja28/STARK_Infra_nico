@@ -19,7 +19,6 @@ def compose_stark_tf_script(data):
     data["type"] = "static"
     storage_source_code = ""
     storage_source_code += tf_writer_storage_account(data)
-    storage_source_code += tf_writer_storage_account_container(data)
 
     tf_script.append({
         'filePath': "terraform/static_site_hosting.tf",
@@ -104,7 +103,7 @@ def tf_writer_storage_account(data):
     project_name = data["project_name"]
     type = data["type"] ##zip deployment for function or for static website
 
-    resource_name = f"{project_name}-static-site" if type == 'static' else f"{project_name}-zip-deploy"
+    resource_name = converter.convert_to_system_name(project_name, 'az-storage-account')
     source_code = f"""
     resource "azurerm_storage_account" "{resource_name}" {{
         name                     = "{resource_name}"
@@ -116,11 +115,35 @@ def tf_writer_storage_account(data):
 
     if type == "static":
         source_code += f"""
-        
-            static_website {{
-                index_document     = "index.html"
-                error_404_document = "error.html"
-            }}"""
+        #STATIC WEBSITE SETTINGS
+        static_website {{
+            index_document     = "index.html"
+            error_404_document = "error.html"
+        }}
+
+        locals {{
+            mime_types = {{
+                "css"  = "text/css"
+                "html" = "text/html"
+                "ico"  = "image/vnd.microsoft.icon"
+                "js"   = "application/javascript"
+                "json" = "application/json"
+                "map"  = "application/json"
+                "png"  = "image/png"
+                "svg"  = "image/svg+xml"
+                "txt"  = "text/plain"
+            }}
+        }}
+
+        resource "azurerm_storage_blob" "static_blobs" {{
+            for_each        = fileset("../static", "**/*.*")
+            name                   = "${{each.value}}"
+            type                   = "Block"
+            source                 = "../static/${{each.value}}"
+            storage_account_name   = azurerm_storage_account.{resource_name}.name
+            storage_container_name = "$web"
+            content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
+        }}"""
     
     source_code += f"""
     }}
@@ -133,7 +156,7 @@ def tf_writer_storage_account_container(data):
     project_name = data["project_name"]
     type = data["type"] ##zip deployment for function or for static website
 
-    storage_account_name = f"{project_name}-static-site" if type == 'static' else f"{project_name}-zip-deploy"
+    storage_account_name = converter.convert_to_system_name(project_name, 'az-storage-account')
     source_code = f"""
     resource "azurerm_storage_container" "container" {{
         name                  = "{storage_account_name}-container"
