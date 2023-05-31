@@ -115,7 +115,7 @@ def create_get_mdb_connection():
 
     # Save the modified data back to the same file
     with open('cgdynamic_payload.json', 'w') as file:
-    json.dump(data, file)
+        json.dump(data, file)
     """
 
     return textwrap.dedent(source_code)
