@@ -51,6 +51,7 @@ def create_handler(event, context):
         import bootstrap_buildspec as boot_build
     else:
         import bootstrap_az_buildspec as boot_build
+        import bootstrap_az_initial_resource as boot_initial_resource
 
     models   = cloud_resources["Data Model"]
     entities = []
@@ -91,39 +92,59 @@ def create_handler(event, context):
     })  
 
     ##FIXME: json payloads for cgdynamic, cgstatic, and prelaunch v2. revisit later if still needs optimization
+    data = {"project_name": project_name}
     
-    source_code = f"""\
-    {{
-        "ResourceProperties": {{
-            "Project": "{project_name}",
-            "DDBTable": "willbechangedtomongodb",
-            "CICDBucket": "{cicd_bucket}",
-            "Bucket": "TestBucket",
-            "RepoName": "{repo_name}"
-        }}
-    }}"""
-
+    source_code = boot_initial_resource.tf_writer_azure_config(data)
     files_to_commit.append({
-        'filePath': "cgdynamic_payload.json",
+        'filePath': "terraform/main.tf",
+        'fileContent': source_code.encode()
+    })
+
+    source_code = boot_initial_resource.tf_writer_cosmosdb_account(data)
+    files_to_commit.append({
+        'filePath': "terraform/database.tf",
         'fileContent': source_code.encode()
     }) 
 
-    source_code = f"""\
-    {{
-        "ResourceProperties": {{
-            "Project": "{project_name}",
-            "DDBTable": "willbechangedtomongodb",
-            "CICDBucket": "{cicd_bucket}",
-            "Bucket": "TestBucket",
-            "RepoName": "{repo_name}",
-            "ApiGatewayId": "tobeadded"
-        }}
-    }}"""
-
+    source_code = boot_initial_resource.create_get_mdb_connection(data)
     files_to_commit.append({
-        'filePath': "cgstatic_payload.json",
+        'filePath': "get_mdb_connection.py",
         'fileContent': source_code.encode()
     }) 
+
+    if cloud_provider != 'AWS':
+        source_code = f"""\
+        {{
+            "ResourceProperties": {{
+                "Project": "{project_name}",
+                "DDBTable": "willbechangedtomongodb",
+                "CICDBucket": "{cicd_bucket}",
+                "Bucket": "TestBucket",
+                "RepoName": "{repo_name}"
+            }}
+        }}"""
+
+        files_to_commit.append({
+            'filePath': "cgdynamic_payload.json",
+            'fileContent': source_code.encode()
+        }) 
+
+        source_code = f"""\
+        {{
+            "ResourceProperties": {{
+                "Project": "{project_name}",
+                "DDBTable": "willbechangedtomongodb",
+                "CICDBucket": "{cicd_bucket}",
+                "Bucket": "TestBucket",
+                "RepoName": "{repo_name}",
+                "ApiGatewayId": "tobeadded"
+            }}
+        }}"""
+
+        files_to_commit.append({
+            'filePath': "cgstatic_payload.json",
+            'fileContent': source_code.encode()
+        }) 
 
 
     ############################################

@@ -13,6 +13,10 @@ def convert_to_system_name(friendly_name, target='variable'):
         system_name = to_cloudformation_stack(preprocessed_name)
     elif target == 'cf-resource':
         system_name = to_cloudformation_logicalname(preprocessed_name)
+    elif target == 'az-storage-account':
+        system_name = to_az_storage_account_name(preprocessed_name)
+    elif target == 'az-cosmos-db':
+        system_name = to_az_cosmosdb_name(preprocessed_name)
     else:
         system_name = to_variable(preprocessed_name)
 
@@ -86,13 +90,20 @@ def to_cloudformation_logicalname(name):
 ##TODO: Change the whitelist and include trimmer due to char limit.
 def to_az_storage_account_name(name):
     system_name = ''
-    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
-
+    whitelist = 'abcdefghijklmnopqrstuvwxyz0123456789'
     name = name.lower()
     for char in name:
         if char in whitelist:
             system_name += char
     
+    #Follow storage account name length rules
+    if len(system_name) > 24:
+        ## trim up to 16th character so that unique_id can be appended
+        system_name = system_name[0:15]
+    
+    #This covers automatically the lower limit of characters allowed
+    system_name += generate_unique_id()
+
     return system_name
 
 def to_az_resource_group_name(name):
@@ -119,13 +130,21 @@ def to_az_api_management_name(name):
 
 def to_az_cosmosdb_name(name):
     system_name = ''
-    whitelist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+    whitelist = 'abcdefghijklmnopqrstuvwxyz-0123456789'
 
     name = name.lower()
     for char in name:
         if char in whitelist:
             system_name += char
+
+    #Follow cosmosdb account name length rules
+    if len(system_name) > 50:
+        ## trim up to 42nd character so that unique_id can be appended
+        system_name = system_name[0:41]
     
+    #This covers automatically the lower limit of characters allowed
+    system_name += generate_unique_id()
+
     return system_name
 
 def to_az_collection_name(name):

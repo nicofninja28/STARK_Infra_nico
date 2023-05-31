@@ -19,7 +19,6 @@ def compose_stark_tf_script(data):
     data["type"] = "static"
     storage_source_code = ""
     storage_source_code += tf_writer_storage_account(data)
-    storage_source_code += tf_writer_storage_account_container(data)
 
     tf_script.append({
         'filePath': "terraform/static_site_hosting.tf",
@@ -104,7 +103,7 @@ def tf_writer_storage_account(data):
     project_name = data["project_name"]
     type = data["type"] ##zip deployment for function or for static website
 
-    resource_name = f"{project_name}-static-site" if type == 'static' else f"{project_name}-zip-deploy"
+    resource_name = converter.convert_to_system_name(project_name, 'az-storage-account')
     source_code = f"""
     resource "azurerm_storage_account" "{resource_name}" {{
         name                     = "{resource_name}"
@@ -116,11 +115,35 @@ def tf_writer_storage_account(data):
 
     if type == "static":
         source_code += f"""
-        
-            static_website {{
-                index_document     = "index.html"
-                error_404_document = "error.html"
-            }}"""
+        #STATIC WEBSITE SETTINGS
+        static_website {{
+            index_document     = "index.html"
+            error_404_document = "error.html"
+        }}
+
+        locals {{
+            mime_types = {{
+                "css"  = "text/css"
+                "html" = "text/html"
+                "ico"  = "image/vnd.microsoft.icon"
+                "js"   = "application/javascript"
+                "json" = "application/json"
+                "map"  = "application/json"
+                "png"  = "image/png"
+                "svg"  = "image/svg+xml"
+                "txt"  = "text/plain"
+            }}
+        }}
+
+        resource "azurerm_storage_blob" "static_blobs" {{
+            for_each        = fileset("../static", "**/*.*")
+            name                   = "${{each.value}}"
+            type                   = "Block"
+            source                 = "../static/${{each.value}}"
+            storage_account_name   = azurerm_storage_account.{resource_name}.name
+            storage_container_name = "$web"
+            content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
+        }}"""
     
     source_code += f"""
     }}
@@ -133,7 +156,7 @@ def tf_writer_storage_account_container(data):
     project_name = data["project_name"]
     type = data["type"] ##zip deployment for function or for static website
 
-    storage_account_name = f"{project_name}-static-site" if type == 'static' else f"{project_name}-zip-deploy"
+    storage_account_name = converter.convert_to_system_name(project_name, 'az-storage-account')
     source_code = f"""
     resource "azurerm_storage_container" "container" {{
         name                  = "{storage_account_name}-container"
@@ -146,10 +169,10 @@ def tf_writer_storage_account_container(data):
     return textwrap.dedent(source_code)
 
 def tf_writer_cosmosdb_account(data):
-    project_name = data["project_name"]
+    project_name = converter.convert_to_system_name(data["project_name"], "az-cosmos-db") 
     source_code = f"""
-    resource "azurerm_cosmosdb_account" "mongodb_account" {{
-        name                 = "stark-{project_name}-mdb"
+    resource "azurerm_cosmosdb_account" "stark_storage_account" {{
+        name                 = "{project_name}"
         location             = var.rglocation
         resource_group_name  = var.rgname
         offer_type           = "Standard"
@@ -174,9 +197,9 @@ def tf_writer_cosmosdb_account(data):
     }}
 
     resource "azurerm_cosmosdb_mongo_database" "db_name" {{
-    name                = "{project_name}-db"
+    name                = "{project_name}-mongodb"
     resource_group_name = var.rgname
-    account_name        = azurerm_cosmosdb_account.mongodb_account.name
+    account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     }}
     
     """
@@ -190,10 +213,10 @@ def tf_writer_cosmosdb_business_modules(data):
     for entity in entities: 
         entity_varname = converter.convert_to_system_name(entity) 
         source_code += f"""
-    resource "azurerm_cosmosdb_mongo_collection" "stark_user_collection" {{
+    resource "azurerm_cosmosdb_mongo_collection" "stark_{entity_varname}_collection" {{
         name                = "{entity_varname}"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -212,7 +235,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_collection" {{
         name                = "STARK_User"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -225,7 +248,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_roles_collection" {{
         name                = "STARK_User_Roles"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -238,7 +261,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_modules_collection" {{
         name                = "STARK_Modules"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -251,7 +274,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_module_groups_collection" {{
         name                = "STARK_Module_Groups"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -264,7 +287,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_permissions_collection" {{
         name                = "STARK_User_Permissions"
         resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.mongodb_account.name
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{
@@ -277,7 +300,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_sessions_collection" {{
     name                = "STARK_User_Sessions"
     resource_group_name = var.rgname
-    account_name        = azurerm_cosmosdb_account.mongodb_account.name
+    account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
         index {{

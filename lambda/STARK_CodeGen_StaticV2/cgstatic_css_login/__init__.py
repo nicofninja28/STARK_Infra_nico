@@ -7,8 +7,11 @@ import textwrap
 def create(data):
 
     source_code = f"""\
+    .blank_placeholder {{
+        /* Yes, currently empty. Login page is has no custom design for the moment. */
+    }}
     """
-    #Yes, currently empty. Login page is has no custom design for the moment.
+    
 
 
     return textwrap.dedent(source_code)

@@ -47,11 +47,23 @@ def create(data):
             install:
                 runtime-versions:
                     python: 3.8
+                commands:
+                    - curl -s -qL -o terraform_install.zip https://releases.hashicorp.com/terraform/1.4.0/terraform_1.4.0_linux_amd64.zip
+                    - unzip terraform_install.zip -d /usr/bin/
+                    - chmod +x /usr/bin/terraform
+                finally:
+                    - terraform --version
             build:
                 commands:
                 - BUCKET={cicd_bucket}
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
+                - terraform init
+                - terraform apply --auto-approve
+                - python get_mdb_connection.py
+                - git add terraform
+                - git commit -m "Commit for initial state of terraform resource"
+                - git push
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
                 - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
 

@@ -9,8 +9,11 @@ def create():
     source_code = f"""\
     import os
     import sys
-
+    import json
     import yaml
+    
+    STARK_folder = os.getcwd() + '/lambda/helpers'
+    sys.path = [STARK_folder] + sys.path
     import convert_friendly_to_system as converter
 
     data = {{
