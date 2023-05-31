@@ -66,6 +66,15 @@ def tf_writer_cosmosdb_account(data):
     account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     }}
     
+    variable "rgname" {{
+        type = string
+        default = "resource_group_test2"
+    }}
+
+    variable "rglocation" {{
+        type = string 
+        default = "Southeast Asia"
+    }}
 
     output "mongodb_connection_string" {{
         sensitive = true
