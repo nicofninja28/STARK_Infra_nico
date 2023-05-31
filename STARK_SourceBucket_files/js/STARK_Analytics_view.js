@@ -88,7 +88,8 @@ var root = new Vue({
         },
         Save_Report_Settings: {
             'Report_Name': '',
-            'Report_Settings': ''
+            'Report_Settings': '',
+            'Is_Custom_Report': ''
         },
         lists: {
             'Item': [],
@@ -340,8 +341,10 @@ var root = new Vue({
             }
             
             if(root.Analytics.Choose_Report == 'Query Box') {
+                root.Save_Report_Settings['Is_Custom_Report'] = 'Yes'
                 root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Box
             } else {
+                root.Save_Report_Settings['Is_Custom_Report'] = 'No'
                 root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
             }
             let payload = { Analytics_Report: root.Save_Report_Settings }

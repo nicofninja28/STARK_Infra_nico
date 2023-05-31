@@ -18,6 +18,7 @@ def create(data):
     import importlib
     import boto3
     import json
+    import base64
     
     import stark_core
     from stark_core import data_abstraction
@@ -56,7 +57,12 @@ def create(data):
             
             data    = {{}}
             if payload != "":
-                data['Report_Name'] = payload.get('Report_Name', '')
+                if(payload.get('Is_Custom_Report','') == 'Yes'):
+                    report_name = '[Custom] ' + payload.get('Report_Name', '')
+                else:
+                    report_name = payload.get('Report_Name', '')
+
+                data['Report_Name'] = report_name
                 data['Report_Settings'] = payload.get('Report_Settings','')
                 
             if method == 'POST':
@@ -214,6 +220,34 @@ def create(data):
             items.append(item)
 
         return items
+
+    def get_query_metadata(analytics_query):
+        print(analytics_query)
+        response = athena.start_query_execution(
+            QueryString=analytics_query, 
+            QueryExecutionContext={{'Database': database}}, 
+            ResultConfiguration={{'OutputLocation': 's3://{s3_athena_bucket_name}/result'}}
+        )
+
+        # get the query execution ID
+        query_execution_id = response['QueryExecutionId']
+
+        # wait for the query to complete
+        while True:
+            query_status = athena.get_query_execution(QueryExecutionId=query_execution_id)
+            status = query_status['QueryExecution']['Status']['State']
+            if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
+                break
+
+        # get the query results
+        query_results = athena.get_query_results(QueryExecutionId=query_execution_id)
+
+        # extract the column names from the results
+        column_metadata = []
+        for column_info in query_results['ResultSet']['ResultSetMetadata']['ColumnInfo']:
+            column_metadata.append({{'column_name' : column_info['Name'], 'data_type' :column_info['Type']}})
+        
+        return column_metadata
 
     def get_query_result(analytics_query):
         print(analytics_query)
