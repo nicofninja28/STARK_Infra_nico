@@ -35,6 +35,7 @@ def tf_writer_azure_config(data):
 def tf_writer_cosmosdb_account(data):
     project_name = converter.convert_to_system_name(data["project_name"], "az-cosmos-db") 
     source_code = f"""
+
     resource "azurerm_cosmosdb_account" "stark_storage_account" {{
         name                 = "{project_name}"
         location             = var.rglocation
@@ -79,7 +80,7 @@ def tf_writer_cosmosdb_account(data):
     output "mongodb_connection_string" {{
         sensitive = true
         description = "Connection string for the MongoDB instance"
-        value       = azurerm_cosmosdb_account.mongodb_account.connection_strings[0]
+        value       = azurerm_cosmosdb_account.stark_storage_account.connection_strings[0]
     }}
 
 
