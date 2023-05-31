@@ -177,6 +177,7 @@ var root = new Vue({
         from_run_report: false,
         from_load_report: false,
         from_query_box: false,
+        from_new_report: false,
         table_field: [],
         disableRelationship: true,
         Relationship: {
@@ -559,6 +560,7 @@ var root = new Vue({
                         root.set_local_storage_from_setting(report_setting)
                         root.from_load_report = true
                         root.from_run_report = false
+                        root.from_new_report = false
                         root.change_page('1', 'Next')
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
@@ -594,6 +596,7 @@ var root = new Vue({
                         root.from_run_report = true
                         root.from_load_report = false
                         root.from_query_box = false
+                        root.from_new_report = false
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -636,9 +639,9 @@ var root = new Vue({
                         loading_modal.hide()
                     });
                 }
-            } 
-            
-            if(root.Analytics.Choose_Report == 'Query Box') {
+            } else if(root.Analytics.Choose_Report == 'New Report') {
+                root.from_new_report = true
+            } else if(root.Analytics.Choose_Report == 'Query Box') {
                 root.from_query_box = true
             }
         },
@@ -1238,7 +1241,7 @@ var root = new Vue({
                 
                 if(action == 'Back') {
                     root.list_status.Relationship = 'empty'
-                    if(root.from_run_report && !root.from_load_report || root.from_query_box) {
+                    if(root.from_run_report && !root.from_load_report &&  !root.from_new_report || root.from_query_box ) {
                         root.page_6_show = false
                         root.page_0_show = true
                     } else  {
@@ -1256,10 +1259,10 @@ var root = new Vue({
                 root.show_result = false
                 
                 if(action == 'Back') {
-                    if(root.from_run_report && !root.from_load_report && !root.from_query_box) {
+                    if(root.from_run_report && !root.from_load_report && !root.from_query_box && !root.from_new_report) {
                         root.page_7_show = false
                         root.page_0_show = true
-                    } else if(!root.from_run_report && !root.from_load_report && !root.from_query_box) {
+                    } else if(!root.from_run_report && !root.from_load_report && !root.from_query_box ) {
                         root.page_7_show = true
                     } else {
                         root.page_7_show = true
