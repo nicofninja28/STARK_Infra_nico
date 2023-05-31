@@ -65,51 +65,23 @@ def create(data):
                 dump_csv()
         else:
             
-            if request_type == 'get_tables':
-                query = "SELECT table_name FROM information_schema.tables WHERE table_schema = '" + database + "'"
-                temp_response = get_query_result(query)
-
-                formatted_data = []
-                for d in temp_response:
-                    formatted_dict = {{}}
-                    formatted_dict['table_name'] = d['table_name'].title().replace('_', ' ')
-                    formatted_data.append(formatted_dict)
-
-                response = formatted_data
-            elif request_type == 'get_table_fields':
-                tables = event.get('queryStringParameters').get('tables','')
-                table_list = "('{{}}')".format("','".join(tables.split(',')))
-                query = "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = '" + database + "' AND table_name IN " + table_list
-                temp_response = get_query_result(query)
-                formatted_data = []
-                for d in temp_response:
-                    formatted_dict = {{}}
-                    formatted_dict['table_name'] = d['table_name'].title().replace('_', ' ')
-                    formatted_dict['column_name'] = d['column_name'].title().replace('_', ' ')
-                    formatted_dict['data_type'] = d['data_type']
-                    formatted_data.append(formatted_dict)
-                response = formatted_data
-
-            elif request_type == 'get_table_fields_int':
-                tables = event.get('queryStringParameters').get('tables','')
-                table_list = "('{{}}')".format("','".join(tables.split(',')))
-                query = "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = '" + database + "' AND table_name IN " + table_list + " AND data_type in ('real', 'integer')"
-                temp_response = get_query_result(query)
-
-                formatted_data = []
-                for d in temp_response:
-                    formatted_dict = {{}}
-                    formatted_dict['table_name'] = d['table_name'].title().replace('_', ' ')
-                    formatted_dict['column_name'] = d['column_name'].title().replace('_', ' ')
-                    formatted_data.append(formatted_dict)
-                
-                response = formatted_data
-
-            elif request_type == 'detail':
+            if request_type == 'detail':
                 query = event.get('queryStringParameters').get('Query','')
-                metadata = eval(event.get('queryStringParameters').get('Metadata',''))
-
+                
+                temp_metadata = event.get('queryStringParameters').get('Metadata','')
                 temp_response = get_query_result(query)
+                
+                if(temp_metadata):
+                    metadata = eval(event.get('queryStringParameters').get('Metadata',''))
+                else:
+                    tmp_metadata = get_query_metadata(query)
+                    metadata = {{
+                        item["column_name"].title(): {{'data_type': 'String' if item["data_type"] == 'varchar' 
+                                                    else 'Float' if item["data_type"] == 'real'
+                                                    else item["data_type"].capitalize()}}
+                        for item in tmp_metadata
+                    }}
+
                 if(temp_response):
                     report_list = []
                     for d in temp_response:

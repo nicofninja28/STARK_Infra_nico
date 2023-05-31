@@ -56,6 +56,7 @@ var root = new Vue({
                 'data_type': 'String'
             },
         },
+        tables: '',
         visibility: 'hidden',
         next_token: '',
         next_disabled: true,
@@ -82,7 +83,8 @@ var root = new Vue({
             'Group_By': '',
             'STARK_uploaded_s3_keys':{},
             'Save_Report': '',
-            'Saved_Report': ''
+            'Saved_Report': '',
+            'Query_Box': ''
         },
         Save_Report_Settings: {
             'Report_Name': '',
@@ -126,6 +128,11 @@ var root = new Vue({
                 { value: 'New Report', text: 'New Report' },
                 { value: 'Saved Report', text: 'Saved Report' },
             ],
+            'Report_Type_with_Query_Box': [
+                { value: 'New Report', text: 'New Report' },
+                { value: 'Saved Report', text: 'Saved Report' },
+                { value: 'Query Box', text: 'Query Box' },
+            ],
             'Saved_Report': [
 
             ]
@@ -168,6 +175,7 @@ var root = new Vue({
         show_report_name_input: false,
         from_run_report: false,
         from_load_report: false,
+        from_query_box: false,
         table_field: [],
         disableRelationship: true,
         Relationship: {
@@ -211,7 +219,19 @@ var root = new Vue({
         same_table_selected: false,
         action_from_saved_report: false,
         showSuccessSaveReport: false,
-        action_from_run_saved_report: false
+        action_from_run_saved_report: false,
+        is_custom_report: false,
+        auth_config: { 
+
+        },
+        auth_list: {
+            'View': {'permission': 'Analytics|View', 'allowed': false},
+            'Add': {'permission': 'Analytics|Add', 'allowed': false},
+            'Delete': {'permission': 'Analytics|Delete', 'allowed': false},
+            'Edit': {'permission': 'Analytics|Edit', 'allowed': false},
+            'Report': {'permission': 'Analytics|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
+        },
     },
     methods: {
         
@@ -319,7 +339,11 @@ var root = new Vue({
                 data['metadata']            = root.metadata
             }
             
-            root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
+            if(root.Analytics.Choose_Report == 'Query Box') {
+                root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Box
+            } else {
+                root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
+            }
             let payload = { Analytics_Report: root.Save_Report_Settings }
 
             Analytics_app.add(payload).then( function(data) {
@@ -337,79 +361,77 @@ var root = new Vue({
         },
 
         submit: function(data) {
-            if(root.Analytics.Choose_Report == 'Query Box') {
-                query = root.Analytics.Query
-            } else {
-                var data_to_store = {}
-                data_to_store['sort'] = root.sort_many
-                STARK.set_local_storage_item('Analytics_Input', 'Sort', data_to_store)
+            
+            var data_to_store = {}
+            data_to_store['sort'] = root.sort_many
+            STARK.set_local_storage_item('Analytics_Input', 'Sort', data_to_store)
 
-                var table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
-                var field_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
-                var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
-                var sum_data = STARK.get_local_storage_item('Analytics_Input', 'Sum')
-                var count_data = STARK.get_local_storage_item('Analytics_Input', 'Count')
-                var group_by_data = STARK.get_local_storage_item('Analytics_Input', 'Group_by')
-                var filter_data = STARK.get_local_storage_item('Analytics_Input', 'Filters')
-                var sort_data = STARK.get_local_storage_item('Analytics_Input', 'Sort')
+            var table_data = STARK.get_local_storage_item('Analytics_Input', 'Tables')
+            var field_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
+            var relationship_data = STARK.get_local_storage_item('Analytics_Input', 'Relationship')
+            var sum_data = STARK.get_local_storage_item('Analytics_Input', 'Sum')
+            var count_data = STARK.get_local_storage_item('Analytics_Input', 'Count')
+            var group_by_data = STARK.get_local_storage_item('Analytics_Input', 'Group_by')
+            var filter_data = STARK.get_local_storage_item('Analytics_Input', 'Filters')
+            var sort_data = STARK.get_local_storage_item('Analytics_Input', 'Sort')
 
-                if(!data){
-                    data = {}
-                    if(table_data) {
-                        data['tables']          = table_data['checked_tables']
-                    } else {
-                        data['tables']          = root.checked_tables
-                    }
-
-                    if(field_data) {
-                        data['fields']          = field_data['checked_fields']
-                    } else {
-                        data['fields']          = root.checked_fields
-                    }
-
-                    if(relationship_data) {
-                        data['relationships']   = relationship_data['relationship']
-                    } else {
-                        data['relationships']   = root.rel_many
-                    }
-
-                    if(sum_data) {
-                        data['sum']             = sum_data['sum']
-                    } else {
-                        data['sum']             = root.multi_select_values.Sum
-                    }
-
-                    if(count_data) {
-                        data['count']           = count_data['count']
-                    } else {
-                        data['count']           = root.multi_select_values.Count
-                    }
-
-                    if(group_by_data) {
-                        data['group_by']        = group_by_data['group_by']
-                    } else {
-                        data['group_by']        = root.Analytics.Group_By
-                    }
-
-                    if(filter_data) {
-                        data['filters']         = filter_data['filters']
-                    } else {
-                        data['filters']         = root.filter_many
-                    }
-                    
-                    if(sort_data) {
-                        data['sort']            = sort_data['sort']
-                    } else {
-                        data['sort']            = root.sort_many
-                    }
-                    metadata = root.metadata
+            if(!data){
+                data = {}
+                if(table_data) {
+                    data['tables']          = table_data['checked_tables']
                 } else {
-                    metadata = data['metadata']
+                    data['tables']          = root.checked_tables
+                }
+
+                if(field_data) {
+                    data['fields']          = field_data['checked_fields']
+                } else {
+                    data['fields']          = root.checked_fields
+                }
+
+                if(relationship_data) {
+                    data['relationships']   = relationship_data['relationship']
+                } else {
+                    data['relationships']   = root.rel_many
+                }
+
+                if(sum_data) {
+                    data['sum']             = sum_data['sum']
+                } else {
+                    data['sum']             = root.multi_select_values.Sum
+                }
+
+                if(count_data) {
+                    data['count']           = count_data['count']
+                } else {
+                    data['count']           = root.multi_select_values.Count
+                }
+
+                if(group_by_data) {
+                    data['group_by']        = group_by_data['group_by']
+                } else {
+                    data['group_by']        = root.Analytics.Group_By
+                }
+
+                if(filter_data) {
+                    data['filters']         = filter_data['filters']
+                } else {
+                    data['filters']         = root.filter_many
                 }
                 
-                root.compose_query(data)
-                query = root.Analytics.Query
+                if(sort_data) {
+                    data['sort']            = sort_data['sort']
+                } else {
+                    data['sort']            = root.sort_many
+                }
+                metadata = root.metadata
+            } else {
+                metadata = data['metadata']
             }
+            
+            root.compose_query(data)
+            query = root.Analytics.Query
+            
 
             if(query != '') {
                 loading_modal.show();
@@ -435,6 +457,44 @@ var root = new Vue({
                     root.page_5_show = false
                     root.page_6_show = false
                     root.page_7_show = false
+                    root.show_result = true
+                    loading_modal.hide();
+                })
+                .catch(function(error) {
+                    console.log("Encountered an error! [" + error + "]")
+                    alert("Request Failed: System error or you may not have enough privileges")
+                    loading_modal.hide()
+                });
+            }
+        },
+
+        submit_query_box: function(query) {
+            root.from_query_box = true
+            if(query != '') {
+                loading_modal.show();
+                metadata = ''
+                Analytics_app.get_result(query, metadata).then( function(data) {
+
+                    if(data.length > 0)
+                    {
+                        root.report_result = data[0];
+                        root.temp_report_header = Object.keys(data[0][0])
+                        root.report_header = root.convert_to_system_display(root.temp_report_header)
+                        root.temp_csv_link = data[1];
+                        root.temp_pdf_link = data[2];
+                        console.log("VIEW: Retreived module data.")
+                    } else {
+                        root.report_result = []
+                        root.temp_report_header = []
+                    }
+                    root.page_1_show = false
+                    root.page_2_show = false
+                    root.page_3_show = false
+                    root.page_4_show = false
+                    root.page_5_show = false
+                    root.page_6_show = false
+                    root.page_7_show = false
+                    root.page_0_show = false
                     root.show_result = true
                     loading_modal.hide();
                 })
@@ -516,11 +576,21 @@ var root = new Vue({
                     report_name = root.Analytics.Saved_Report
                     
                     Analytics_app.get_saved_report_settings(report_name).then( function(data) {
-                        report_setting = JSON.parse(data[0]['Report_Settings'])
-                        root.submit(report_setting)
+                        console.log(data)
+                        if(root.Analytics.Saved_Report.includes('[Custom]')) {
+                            report_setting = data[0]['Report_Settings']
+                            console.log(report_setting)
+                            root.submit_query_box(report_setting)
+                        } else {
+                            report_setting = JSON.parse(data[0]['Report_Settings'])
+                            console.log(report_setting)
+                            root.submit(report_setting)
+                        }
+                        
                         root.page_0_show = false
                         root.from_run_report = true
                         root.from_load_report = false
+                        root.from_query_box = false
                     }).catch(function(error) {
                         console.log("Encountered an error! [" + error + "]")
                         alert("Request Failed: System error or you may not have enough privileges")
@@ -530,11 +600,20 @@ var root = new Vue({
             }
         },
 
+        onSavedReport: function() {
+            if(root.Analytics.Saved_Report.includes('[Custom]')) {
+                root.is_custom_report = true
+            } else {
+                root.is_custom_report = false
+            }
+        },
+
         onReport_Type: function() {
             // Analytics_app.test_dump().then( function(data) {})
             if(root.Analytics.Choose_Report != ''){
                 root.delete_local_storage()
                 root.action_from_saved_report = false
+                root.from_query_box = false
             }
 
             if(root.Analytics.Choose_Report == 'Saved Report') {
@@ -555,6 +634,10 @@ var root = new Vue({
                     });
                 }
             } 
+            
+            if(root.Analytics.Choose_Report == 'Query Box') {
+                root.from_query_box = true
+            }
         },
 
         get_tables: function() {
@@ -607,8 +690,9 @@ var root = new Vue({
             var selected_table_fields_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
 
             temp_metadata = data.reduce((result, { column_name, data_type }) => {
-                const temp_key = column_name.replace(/\s+/g, '_'); 
-                const key = temp_key.replace('ID', 'Id')
+                const temp_key = root.convert_to_system_display(column_name).replace(/ /g, '_')
+                const temp_id_key = temp_key.replace('_ID', '_Id')
+                const key = temp_id_key.replace('_in_', '_In_')
                 
                 if(data_type == 'varchar') {
                     data_type = 'string'
@@ -629,12 +713,10 @@ var root = new Vue({
             temp_for_metadata  = []
             for (let index = 0; index < data.length; index++) {
                 const element = data[index];
-                for_metadata = element['column_name'] + ' | ' + element['data_type']
-                table_field = element['table_name'] + ' | ' + element['column_name']
+                table_field = element['table_name'] + ' | ' + element['column_name'].replace(/_/g, ' ')
                 rel_table_field = root.convert_to_system_name(element['table_name']) + '.' + root.convert_to_system_name(element['column_name'])
                 
                 temp_system_fields.push(table_field)
-                temp_for_metadata.push(for_metadata)
             }
             root.system_fields = temp_system_fields
 
@@ -1153,9 +1235,15 @@ var root = new Vue({
                 
                 if(action == 'Back') {
                     root.list_status.Relationship = 'empty'
+                    if(root.from_run_report && !root.from_load_report || root.from_query_box) {
+                        root.page_6_show = false
+                        root.page_0_show = true
+                    } else  {
+                        root.page_6_show = true
+                    }
                 }
             }
-            else if(page_number == '7') { //Sort
+            else if(page_number == '7') { //Save Report
                 
                 root.page_2_show = false
                 root.page_3_show = false
@@ -1165,9 +1253,11 @@ var root = new Vue({
                 root.show_result = false
                 
                 if(action == 'Back') {
-                    if(root.from_run_report && !root.from_load_report) {
+                    if(root.from_run_report && !root.from_load_report && !root.from_query_box) {
                         root.page_7_show = false
                         root.page_0_show = true
+                    } else if(!root.from_run_report && !root.from_load_report && !root.from_query_box) {
+                        root.page_7_show = true
                     } else {
                         root.page_7_show = true
                     }
@@ -1175,6 +1265,7 @@ var root = new Vue({
                     root.list_status.Relationship = 'empty'
                 } else {
                     root.page_7_show = true
+                    root.page_0_show = false
                 }
             }
         },
@@ -1362,16 +1453,24 @@ var root = new Vue({
             root.Analytics.Query = query
         },
         
-        convert_to_system_display: function(arr) {
-            rpt_header = []
-            arr.forEach(element => {
-                let words = element.split("_");
+        convert_to_system_display: function(elem) {
+            if(typeof(elem) == 'string'){
+                let words = elem.split("_");
                 let capitalizedWords = words.map(word => word.charAt(0).toUpperCase() + word.slice(1));
                 let joinedWords = capitalizedWords.join(" ");
                 let finalStr = joinedWords.replace(/_/g, "");
-                rpt_header.push(finalStr)
-            });
-            return rpt_header
+                return finalStr
+            } else {
+                rpt_header = []
+                elem.forEach(element => {
+                    let words = element.split("_");
+                    let capitalizedWords = words.map(word => word.charAt(0).toUpperCase() + word.slice(1));
+                    let joinedWords = capitalizedWords.join(" ");
+                    let finalStr = joinedWords.replace(/_/g, "");
+                    rpt_header.push(finalStr)
+                });
+                return rpt_header
+            }
         },
 
         convert_to_system_name: function(elem) {
@@ -1392,6 +1491,11 @@ var root = new Vue({
                 return rpt_header
             }
             
+        },
+
+        set_local_storage_data() {
+            tables = STARK.get_local_storage_item('Analytics_Table', 'tables')
+            sidebar.get_metadata(tables)
         },
 
         delete_local_storage() {
@@ -1459,3 +1563,4 @@ var root = new Vue({
 })
 // root.get_tables()
 root.add_row('Filter')
+root.set_local_storage_data()

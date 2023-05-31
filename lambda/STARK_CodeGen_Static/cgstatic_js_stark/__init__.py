@@ -54,7 +54,8 @@ def create(data):
                                         'Permissions': 360,
                                         'Listviews': 10,
                                         'Analytics_Input': 360,
-                                        'Analytics_Data': 360
+                                        'Analytics_Data': 360,
+                                        'Analytics_Table': 360
                                     }}, 
 
             request: function(method, fetchURL, payload='') {{
@@ -182,7 +183,10 @@ def create(data):
                                 root.auth_list.Delete.permission, 
                                 root.auth_list.Add.permission, 
                                 root.auth_list.View.permission
-                            ]
+                            ],
+                    'Custom_Query': [
+                        root.auth_list.Custom_Query.permission
+                    ]
                 }}
             }},
 

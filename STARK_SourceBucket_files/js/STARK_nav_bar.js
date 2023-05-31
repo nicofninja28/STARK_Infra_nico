@@ -46,7 +46,7 @@ var sidebar = new Vue({
                 console.log(sidebar.modules)
 
                 //For Analytics_Data localStorage setting
-                sidebar.get_metadata(data['report_items'])
+                STARK.set_local_storage_item('Analytics_Table', 'tables', data['report_items'])
                 
                 console.log("DONE! Retrieved list of modules.")
                 spinner.hide();
@@ -57,6 +57,7 @@ var sidebar = new Vue({
         },
 
         get_metadata: function(tables) {
+            loading_modal.show()
             analytics_data = {};
             tables.forEach(element => {
                 
@@ -87,6 +88,7 @@ var sidebar = new Vue({
                             }
                         }
                         STARK.set_local_storage_item('Analytics_Data', 'analytics', analytics_data)
+                        loading_modal.hide()
                     })
                 })
                 
