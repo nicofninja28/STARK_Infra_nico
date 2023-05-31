@@ -104,7 +104,7 @@ def create_get_mdb_connection():
     data['DBConnection'] = mongodb_connection_string
 
     # Save the modified data back to the same file
-    with open('data.json', 'w') as file:
+    with open('cgdynamic_payload.json', 'w') as file:
     json.dump(data, file)
     """
 
