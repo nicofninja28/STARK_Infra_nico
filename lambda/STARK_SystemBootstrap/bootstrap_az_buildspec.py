@@ -58,8 +58,10 @@ def create(data):
                 - BUCKET={cicd_bucket}
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
+                - cd terraform
                 - terraform init
                 - terraform apply --auto-approve
+                - cd ..
                 - python get_mdb_connection.py
                 - git add terraform
                 - git commit -m "Commit for initial state of terraform resource"
