@@ -111,6 +111,7 @@ def lambda_handler(event, context):
                 ManagedPolicyArns:
                     - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
                     - 'arn:aws:iam::aws:policy/AWSLambda_FullAccess'
+                    - 'arn:aws:iam::aws:policy/AWSCodeCommitFullAccess'
                 Policies:
                     - 
                         PolicyName: PolicyForSTARKProjectCodeBuildServiceRole

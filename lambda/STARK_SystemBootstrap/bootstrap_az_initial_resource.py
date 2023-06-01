@@ -77,6 +77,11 @@ def tf_writer_cosmosdb_account(data):
         default = "Southeast Asia"
     }}
 
+    output "mongodb_database_name" {{
+        description = "Database name of the MongoDB instance"
+        value       = azurerm_cosmosdb_account.stark_storage_account.name
+    }}
+
     output "mongodb_connection_string" {{
         sensitive = true
         description = "Connection string for the MongoDB instance"
@@ -99,16 +104,24 @@ def create_get_mdb_connection():
 
     git  = boto3.client('codecommit')
     def get_terraform_output():
+        output_dict = {{}}
         # Run the `terraform output` command and capture the output
         output = subprocess.check_output(["terraform", "output", "mongodb_connection_string"])
-
         # Decode the output from bytes to string
         output_str = output.decode("utf-8").strip()
+        output_dict['connection_string'] = output_str
+        
+        output = subprocess.check_output(["terraform", "output", "mongodb_database_name"])
+        # Decode the output from bytes to string
+        output_str = output.decode("utf-8").strip()
+        output_dict['database_name'] = output_str
 
-        return output_str
+        return output_dict
 
     # Call the function to get the Terraform output
-    mongodb_connection_string = get_terraform_output()
+    tf_output = get_terraform_output()
+    mongodb_database_name     = tf_output['database_name']
+    mongodb_connection_string = tf_output['connection_string']
 
     # Open the JSON file
     with open('cgdynamic_payload.json', 'r') as file:
@@ -116,7 +129,10 @@ def create_get_mdb_connection():
 
     # Modify the content by adding a new attribute
     data['ResourceProperties']['DBConnection'] = mongodb_connection_string
+    data['ResourceProperties']['DDBTable'] = mongodb_database_name
+
     repo_name = data['ResourceProperties']["RepoName"]
+    
     # Save the modified data back to the same file
     with open('cgdynamic_payload.json', 'w') as file:
         json.dump(data, file)
