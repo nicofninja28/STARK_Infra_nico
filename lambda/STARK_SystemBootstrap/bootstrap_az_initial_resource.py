@@ -132,17 +132,15 @@ def create_get_mdb_connection():
 
     # Collect files to commit
     for file_path in file_paths:
-        print(file_path)
-        with open(file_path, 'rb') as file:
-            raw_data = file.read()
-            result = chardet.detect(raw_data)
-            print(result['encoding'])
-            file_content = raw_data.decode(result['encoding'])
-
-            files_to_commit.append({{
-                'filePath': f"terraform/{{os.path.basename(file_path)}}",
-                'fileContent': file_content
-            }})
+        filename = os.path.basename(file_path)
+        tf_script_and_state_files = ['main.tf', 'database.tf', 'terraform.tfstate', '.terraform.lock.hcl', 'terraform.tfstate.backup']
+        if filename in tf_script_and_state_files:
+            with open(file_path, 'r') as file:
+                file_content = file.read()
+                files_to_commit.append({{
+                    'filePath': f"terraform/{{filename}}",
+                    'fileContent': file_content
+                }})
 
     ##################################################
     #Commit files to the project repo
