@@ -206,7 +206,6 @@ def create(data):
                 ManagedPolicyArns:
                     - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
                     - 'arn:aws:iam::aws:policy/AWSLambda_FullAccess'
-                    - 'arn:aws:iam::aws:policy/AWSCodeCommitFullAccess'
                 Policies:
                     - 
                         PolicyName: PolicyForSTARKProjectCodeBuildServiceRole
