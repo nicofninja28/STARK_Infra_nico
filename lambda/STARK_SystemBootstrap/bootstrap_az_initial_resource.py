@@ -93,14 +93,17 @@ def create_get_mdb_connection():
     source_code = f"""\
     import subprocess
     import json
+    import boto3
+    import os
 
+    git  = boto3.client('codecommit')
     def get_terraform_output():
         # Run the `terraform output` command and capture the output
         output = subprocess.check_output(["terraform", "output", "mongodb_connection_string"])
-        
+
         # Decode the output from bytes to string
         output_str = output.decode("utf-8").strip()
-        
+
         return output_str
 
     # Call the function to get the Terraform output
@@ -111,11 +114,67 @@ def create_get_mdb_connection():
         data = json.load(file)
 
     # Modify the content by adding a new attribute
-    data['DBConnection'] = mongodb_connection_string
-
+    data['ResourceProperties']['DBConnection'] = mongodb_connection_string
+    repo_name = data['ResourceProperties']["RepoName"]
     # Save the modified data back to the same file
     with open('cgdynamic_payload.json', 'w') as file:
         json.dump(data, file)
+
+    files_to_commit = []
+    directory_path = "./terraform"
+    # Traverse the directory and collect file paths
+    file_paths = []
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_paths.append(file_path)
+
+    # Collect files to commit
+    for file_path in file_paths:
+        with open(file_path, 'r') as file:
+            file_content = file.read()
+
+            files_to_commit.append({{
+                'filePath': f"terraform/{{os.path.basename(file_path)}}",
+                'fileContent': file_content
+            }})
+
+    ##################################################
+    #Commit files to the project repo
+    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
+    #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
+    ctr                 = 0
+    key                 = 0
+    chunked_commit_list = {{}}
+    for item in files_to_commit:
+        if ctr == 100:
+            key = key + 1
+            ctr = 0
+        ctr = ctr + 1
+        if chunked_commit_list.get(key, '') == '':
+            chunked_commit_list[key] = []
+        chunked_commit_list[key].append(item)
+
+    ctr         = 0
+    batch_count = key + 1
+    for commit_batch in chunked_commit_list:
+        ctr = ctr + 1
+
+        response = git.get_branch(
+            repositoryName=repo_name,
+            branchName='master'        
+        )
+        commit_id = response['branch']['commitId']
+
+        response = git.create_commit(
+            repositoryName=repo_name,
+            branchName='master',
+            parentCommitId=commit_id,
+            authorName='STARK::SystemBootstrap',
+            email='STARK@fakedomainstark.com',
+            commitMessage=f'Initial commit of terraform config (commit {{ctr}} of {{batch_count}})',
+            putFiles=files_to_commit
+        )
     """
 
     return textwrap.dedent(source_code)

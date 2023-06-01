@@ -63,9 +63,6 @@ def create(data):
                 - terraform apply --auto-approve
                 - cd ..
                 - python get_mdb_connection.py
-                - git add terraform
-                - git commit -m "Commit for initial state of terraform resource"
-                - git push
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
                 - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
 
