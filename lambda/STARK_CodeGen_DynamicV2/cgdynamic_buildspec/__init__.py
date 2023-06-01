@@ -38,8 +38,10 @@ def create(data):
                 commands:
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
                 - python3 ./packager.py
+                - cd terraform
                 - terraform init
-                - terraform plan
+                - terraform apply --auto-approve
+                - python ../get_mdb_connection.py
 
         artifacts:
             files:
