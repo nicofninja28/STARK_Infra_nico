@@ -28,7 +28,7 @@ def compose_stark_tf_script(data):
     })
     stark_modules_collection = tf_writer_cosmosdb_stark_modules(data)
     tf_script.append({
-        'filePath': "terraform/business_modules_collection.tf",
+        'filePath': "terraform/stark_modules_collection.tf",
         'fileContent': stark_modules_collection.encode()
     })
 
