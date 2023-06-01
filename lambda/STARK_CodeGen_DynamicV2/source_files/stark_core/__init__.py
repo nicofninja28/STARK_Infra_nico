@@ -10,7 +10,7 @@ ddb_table   = "[[STARK_DDB_TABLE_NAME]]"
 test_region = 'eu-west-2'
 page_limit  = 100
 
-client            = MongoClient("mongodb://stark-cosmos-mdb:m9nsqjPy2vAu7IKBaNUV55PWT9VZDWO9ldTXR0pFgPXKaJUvz42N9lSFLNW1yPYUPO2Vkf6f7f0CACDbtRxlDg==@stark-cosmos-mdb.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@stark-cosmos-mdb@")
+client            = MongoClient("[[COSMOSDB_CONNECTION_STRING]]")
 mdb_database      = client["tf-database-test"]
 
 TTL_for_deleted_records_in_days = 120
