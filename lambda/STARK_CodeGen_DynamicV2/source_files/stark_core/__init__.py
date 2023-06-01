@@ -5,13 +5,11 @@ import stark_core.logging as log
 from pymongo import MongoClient
 region_name = os.environ['AWS_REGION']
 
-##DynamoDB related config
-ddb_table   = "[[STARK_DDB_TABLE_NAME]]"
 test_region = 'eu-west-2'
 page_limit  = 100
-
+##Cosmos DB Configuration
 client            = MongoClient("[[COSMOSDB_CONNECTION_STRING]]")
-mdb_database      = client["tf-database-test"]
+mdb_database      = client[[["STARK_MDB_TABLE_NAME"]]]
 
 TTL_for_deleted_records_in_days = 120
 

@@ -33,6 +33,7 @@ def create(data):
 
     cgdynamic_writer_arn = config["CGDynamicV2_ARN"]
     cgstatic_writer_arn  = config["CGStaticV2_ARN"]
+    system_prelaunch_arn = config["PrelaunchV2_ARN"]
 
     source_code = f"""\
         version: 0.2
@@ -65,6 +66,7 @@ def create(data):
                 - cd ..
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
                 - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
+                - aws lambda invoke --function-name {system_prelaunch_arn} --payload file://cgdynamic_payload.json response.json
 
         artifacts:
             files:

@@ -229,7 +229,7 @@ def lambda_handler(event, context):
     for root, subdirs, files in os.walk('source_files'):
         for source_file in files:
             with open(os.path.join(root, source_file)) as f:
-                source_code = f.read().replace("[[STARK_DDB_TABLE_NAME]]", ddb_table_name)
+                source_code = f.read().replace("[[STARK_MDB_TABLE_NAME]]", ddb_table_name)
                 source_code = source_code.replace("[[COSMOSDB_CONNECTION_STRING]]", cosmosdb_primary_connection_string)
                 source_code = source_code.replace("[[STARK_WEB_BUCKET]]", website_bucket)
                 source_code = source_code.replace("[[STARK_RAW_BUCKET]]", s3_analytics_raw_bucket_name)
