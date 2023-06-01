@@ -9,12 +9,6 @@ import textwrap
 
 def compose_stark_tf_script(data):
     tf_script = []
-
-    tf_script.append({
-        'filePath': "terraform/main.tf",
-        'fileContent': tf_writer_azure_config(data).encode()
-    })
-
     # Static Site Hosting
     data["type"] = "static"
     storage_source_code = ""
@@ -25,15 +19,17 @@ def compose_stark_tf_script(data):
         'fileContent': storage_source_code.encode()
     })
 
-    # Database
-    db_source_code = ""
-    db_source_code += tf_writer_cosmosdb_account(data)
-    db_source_code += tf_writer_cosmosdb_business_modules(data)
-    db_source_code += tf_writer_cosmosdb_stark_modules(data)
+    # MongoDB Collections
+    business_modules_collection = tf_writer_cosmosdb_business_modules(data)
 
     tf_script.append({
-        'filePath': "terraform/database.tf",
-        'fileContent': db_source_code.encode()
+        'filePath': "terraform/business_modules_collection.tf",
+        'fileContent': business_modules_collection.encode()
+    })
+    stark_modules_collection = tf_writer_cosmosdb_stark_modules(data)
+    tf_script.append({
+        'filePath': "terraform/business_modules_collection.tf",
+        'fileContent': stark_modules_collection.encode()
     })
 
     # Functions
