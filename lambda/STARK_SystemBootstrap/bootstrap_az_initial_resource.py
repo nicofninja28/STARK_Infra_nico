@@ -106,7 +106,6 @@ def create_get_mdb_connection():
     def get_terraform_output():
         output_dict = {{}}
         # Run the `terraform output` command and capture the output
-        os.system(f"cd terraform")
         output = subprocess.check_output(["terraform", "output", "mongodb_connection_string"])
         # Decode the output from bytes to string
         output_str = output.decode("utf-8").strip()
@@ -129,8 +128,8 @@ def create_get_mdb_connection():
         data = json.load(file)
 
     # Modify the content by adding a new attribute
-    data['ResourceProperties']['DBConnection'] = mongodb_connection_string
-    data['ResourceProperties']['DDBTable'] = mongodb_database_name
+    data['ResourceProperties']['DBConnection'] = mongodb_connection_string.strip('"')
+    data['ResourceProperties']['DDBTable'] = mongodb_database_name.strip('"')
 
     repo_name = data['ResourceProperties']["RepoName"]
     
