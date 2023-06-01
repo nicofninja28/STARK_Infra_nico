@@ -116,30 +116,31 @@ def tf_writer_storage_account(data):
             index_document     = "index.html"
             error_404_document = "error.html"
         }}
+    }}
 
-        locals {{
-            mime_types = {{
-                "css"  = "text/css"
-                "html" = "text/html"
-                "ico"  = "image/vnd.microsoft.icon"
-                "js"   = "application/javascript"
-                "json" = "application/json"
-                "map"  = "application/json"
-                "png"  = "image/png"
-                "svg"  = "image/svg+xml"
-                "txt"  = "text/plain"
-            }}
+    locals {{
+        mime_types = {{
+            "css"  = "text/css"
+            "html" = "text/html"
+            "ico"  = "image/vnd.microsoft.icon"
+            "js"   = "application/javascript"
+            "json" = "application/json"
+            "map"  = "application/json"
+            "png"  = "image/png"
+            "svg"  = "image/svg+xml"
+            "txt"  = "text/plain"
         }}
+    }}
 
-        resource "azurerm_storage_blob" "static_blobs" {{
-            for_each        = fileset("../static", "**/*.*")
-            name                   = "${{each.value}}"
-            type                   = "Block"
-            source                 = "../static/${{each.value}}"
-            storage_account_name   = azurerm_storage_account.{resource_name}.name
-            storage_container_name = "$web"
-            content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
-        }}"""
+    resource "azurerm_storage_blob" "static_blobs" {{
+        for_each        = fileset("../static", "**/*.*")
+        name                   = "${{each.value}}"
+        type                   = "Block"
+        source                 = "../static/${{each.value}}"
+        storage_account_name   = azurerm_storage_account.{resource_name}.name
+        storage_container_name = "$web"
+        content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
+    }}"""
     
     source_code += f"""
     }}
