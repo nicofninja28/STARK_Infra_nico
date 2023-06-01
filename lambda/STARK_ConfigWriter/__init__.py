@@ -33,6 +33,7 @@ def make_config_file(event, _):
     cicd_bucket_name     = os.environ['CICD_BUCKET_NAME']
     bootstrapper_arn     = os.environ['SYSTEM_BOOTSTRAP_ARN']
     prelaunch_arn        = os.environ['SYSTEM_PRELAUNCH_ARN']
+    prelaunchv2_arn        = os.environ['SYSTEM_PRELAUNCHV2_ARN']
 
     source_code = f"""\
         API_Gateway_ID: '{api_gateway_id}'
@@ -47,6 +48,7 @@ def make_config_file(event, _):
         Cleaner_ARN: '{cleaner_arn}'
         CodeGen_Bucket_Name: '{codegen_bucket_name}'
         Prelaunch_ARN: '{prelaunch_arn}'
+        PrelaunchV2_ARN: '{prelaunchv2_arn}'
         """
 
     source_code = textwrap.dedent(source_code)
