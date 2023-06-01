@@ -95,6 +95,7 @@ def create_get_mdb_connection():
     import json
     import boto3
     import os
+    import chardet
 
     git  = boto3.client('codecommit')
     def get_terraform_output():
@@ -131,8 +132,12 @@ def create_get_mdb_connection():
 
     # Collect files to commit
     for file_path in file_paths:
-        with open(file_path, 'r') as file:
-            file_content = file.read()
+        print(file_path)
+        with open(file_path, 'rb') as file:
+            raw_data = file.read()
+            result = chardet.detect(raw_data)
+            print(result['encoding'])
+            file_content = raw_data.decode(result['encoding'])
 
             files_to_commit.append({{
                 'filePath': f"terraform/{{os.path.basename(file_path)}}",
