@@ -61,8 +61,7 @@ def create(data):
                 - cd terraform
                 - terraform init
                 - terraform apply --auto-approve
-                - cd ..
-                - python get_mdb_connection.py
+                - python ../get_mdb_connection.py
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
                 - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
 

@@ -106,6 +106,7 @@ def create_get_mdb_connection():
     def get_terraform_output():
         output_dict = {{}}
         # Run the `terraform output` command and capture the output
+        os.system(f"cd terraform")
         output = subprocess.check_output(["terraform", "output", "mongodb_connection_string"])
         # Decode the output from bytes to string
         output_str = output.decode("utf-8").strip()
@@ -124,7 +125,7 @@ def create_get_mdb_connection():
     mongodb_connection_string = tf_output['connection_string']
 
     # Open the JSON file
-    with open('cgdynamic_payload.json', 'r') as file:
+    with open('../cgdynamic_payload.json', 'r') as file:
         data = json.load(file)
 
     # Modify the content by adding a new attribute
@@ -134,11 +135,11 @@ def create_get_mdb_connection():
     repo_name = data['ResourceProperties']["RepoName"]
     
     # Save the modified data back to the same file
-    with open('cgdynamic_payload.json', 'w') as file:
+    with open('../cgdynamic_payload.json', 'w') as file:
         json.dump(data, file)
 
     files_to_commit = []
-    directory_path = "./terraform"
+    directory_path = "."
     # Traverse the directory and collect file paths
     file_paths = []
     for root, dirs, files in os.walk(directory_path):
