@@ -20,20 +20,18 @@ def create(data, breadcrumb):
     source_code = f"""\
         <body>
         <div id="mySidenav" class="sidenav">
-            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            <a href="javascript:void(0)" class="sidenav-close-btn" onclick="closeNav()">&times;</a>
             <template v-for="(group, index) in modules" id="nav-groups-template">
                 <h4>
                     <a v-b-toggle class="text-decoration-none" :href="'#nav-group-collapse-'+index" @click.prevent>
-                        <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span>
-                        <span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
                         <span class="align-bottom">{{{{ group.group_name }}}}</span>
                     </a>
                 </h4>
                 <b-collapse :id="'nav-group-collapse-'+index" visible class="mt-0 mb-2 pl-2">
-                    <div class="dropdown-container">
+                    <div class="menu-group-container">
                         <template v-for="module in group.modules" id="nav-modules-template">
-                            <div class="dropdown-btn" :onclick="'window.location.href=\\''  + module.href + '\\''">
-                                <a href="#"><img class="filter-fill-svg" :src="module.image" alt="Card image cap" height="25rem"> {{{{module.title}}}} </a>
+                            <div class="sidenav-menu-item" :onclick="'window.location.href=\''  + module.href + '\''">
+                                <a href="#"><img class="filter-fill-svg menu-item-icon" :src="module.image" alt="menu item icon"> {{{{module.title}}}} </a>
                             </div>
                         </template>
                     </div>

@@ -2,8 +2,7 @@ var sidebar = new Vue({
     el: "#mySidenav",
     data: {
         group_collapse_name: 'nav-group-collapse-1',
-        modules: '',
-        localStorage_tables: ''
+        modules: ''
     },
     methods:{
         get_module_list: function () {
@@ -44,63 +43,13 @@ var sidebar = new Vue({
                 root.modules = grouped_modules
                 STARK.set_local_storage_item('Permissions', 'modules', grouped_modules)
                 console.log(sidebar.modules)
-
-                //For Analytics_Data localStorage setting
-                STARK.set_local_storage_item('Analytics_Table', 'tables', data['report_items'])
-                
                 console.log("DONE! Retrieved list of modules.")
                 spinner.hide();
             })                    
             .catch(function(error) {
                 console.log("Encountered an error! [" + error + "]");
             });
-        },
-
-        get_metadata: function(tables) {
-            loading_modal.show()
-            analytics_data = {};
-            tables.forEach(element => {
-                
-                table = element.replace(' ', '_') + "_url"
-                fetchUrl = STARK[table] + '?rt=get_metadata'
-                analytics_data[element] = {};
-                STARK.request('GET', fetchUrl)
-                .then( function(data) {
-                    dataTypeMapping = {};
-                    
-                    sidebar.get_relationship(element).then( function(rel_data) {
-                        if(rel_data['belongs_to'] && !rel_data['has_many'] && !rel_data['has_one']) {
-                            rel_data['belongs_to'].forEach(rel_element => {
-                                
-                                if(rel_element['rel_type'] == 'has_many') {
-                                    field = rel_element['pk_field']
-                                    data[field] = {data_type: 'string'};
-                                }
-                            });
-                        }
-
-                        new_data = data
-                        for (key in new_data) {
-                            fields = {}
-                            if (data.hasOwnProperty(key)) {
-                                const dataType = data[key].data_type
-                                analytics_data[element][key] = dataType.charAt(0).toUpperCase() + dataType.slice(1)
-                            }
-                        }
-                        STARK.set_local_storage_item('Analytics_Data', 'analytics', analytics_data)
-                        loading_modal.hide()
-                    })
-                })
-                
-            });
-            
-        },
-
-        get_relationship: function(table) {
-            table_url = table.replace(' ', '_') + "_url"
-            fetchUrl = STARK[table_url] + '?rt=get_relationship'
-            return STARK.request('GET', fetchUrl)
-        },
+        }
     }
 })
 
@@ -115,10 +64,13 @@ else {
 
 function openNav() {
     // document.getElementById("mySidenav").style.width = "250px";
-    document.getElementById("mySidenav").style.minWidth = "20%";
-    document.getElementById("mySidenav").style.maxWidth = "40%";
-    document.getElementById("vue-root").style.marginLeft = "20%";
+    document.getElementById("mySidenav").style.minWidth = "250px";
+    document.getElementById("mySidenav").style.maxWidth = "400px";
+    document.getElementById("vue-root").style.marginLeft = "250px";
     document.getElementById("main-burger-menu").style.display = "none";
+
+    //Make main body div shrink to fit in remaining screen space
+    handleResize();
 }
     
 function closeNav() {
@@ -127,4 +79,19 @@ function closeNav() {
     document.getElementById("mySidenav").style.maxWidth = "0";
     document.getElementById("vue-root").style.marginLeft= "0";
     document.getElementById("main-burger-menu").style.display = "inline";
+
+    //Make main body div stretchable again
+    document.getElementById("vue-root").style.width = "100%";
+
 }
+
+function handleResize() {
+    console.log("Width: " + document.getElementById("mySidenav").style.minWidth)
+    if (document.getElementById("mySidenav").style.minWidth == "250px")  {
+        const screenWidth = window.innerWidth;
+        const adjustedWidth = screenWidth - 250;
+        document.getElementById("vue-root").style.width = adjustedWidth + "px";
+    }
+}
+
+window.addEventListener('resize', handleResize);

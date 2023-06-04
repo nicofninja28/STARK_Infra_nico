@@ -256,9 +256,9 @@ Resources:
                                 Version: '1'
                             Configuration:
                                 ActionMode: CHANGE_SET_REPLACE
-                                StackName: !Join [ "", ["stark-cicd-pipeline-", !Ref GeneratedServicesNameParameter] ]
+                                StackName: !Join [ "", ["stark-dev-", !Ref GeneratedServicesNameParameter] ]
                                 Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-                                ChangeSetName: !Join [ "", ["stark-cicd-pipeline-changeset-", !Ref GeneratedServicesNameParameter] ]
+                                ChangeSetName: !Join [ "", ["stark-dev-changeset-", !Ref GeneratedServicesNameParameter] ]
                                 TemplatePath: "BuildArtifact::outputtemplate.yml"
                                 TemplateConfiguration: "BuildArtifact::template_configuration.json"
                                 RoleArn: !GetAtt STARKCodePipelineDeployServiceRole.Arn
@@ -275,9 +275,9 @@ Resources:
                                 Version: '1'
                             Configuration:
                                 ActionMode: CHANGE_SET_EXECUTE
-                                StackName: !Join [ "", ["stark-cicd-pipeline-", !Ref GeneratedServicesNameParameter] ]
+                                StackName: !Join [ "", ["stark-dev-", !Ref GeneratedServicesNameParameter] ]
                                 Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
-                                ChangeSetName: !Join [ "", ["stark-cicd-pipeline-changeset-", !Ref GeneratedServicesNameParameter] ]
+                                ChangeSetName: !Join [ "", ["stark-dev-changeset-", !Ref GeneratedServicesNameParameter] ]
                             InputArtifacts:
                                 - Name: BuildArtifact
                             OutputArtifacts: []
