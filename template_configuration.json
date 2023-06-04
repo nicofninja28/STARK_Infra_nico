@@ -1,7 +1,7 @@
 {
   "Parameters" : {
-    "UserCICDPipelineBucketNameParameter" : "x",
-    "UserCodeGenBucketNameParameter" : "x",
-    "UserWebsiteBucketNameParameter" : "x"
+    "UserCICDPipelineBucketNameParameter" : "",
+    "UserCodeGenBucketNameParameter" : "",
+    "UserWebsiteBucketNameParameter" : ""
   }
 }
