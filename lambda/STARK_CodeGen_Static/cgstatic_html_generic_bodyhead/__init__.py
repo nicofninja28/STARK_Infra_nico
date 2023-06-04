@@ -30,7 +30,7 @@ def create(data, breadcrumb):
                 <b-collapse :id="'nav-group-collapse-'+index" visible class="mt-0 mb-2 pl-2">
                     <div class="menu-group-container">
                         <template v-for="module in group.modules" id="nav-modules-template">
-                            <div class="sidenav-menu-item" :onclick="'window.location.href=\''  + module.href + '\''">
+                            <div class="sidenav-menu-item" :onclick="'window.location.href=\\''  + module.href + '\\''">
                                 <a href="#"><img class="filter-fill-svg menu-item-icon" :src="module.image" alt="menu item icon"> {{{{module.title}}}} </a>
                             </div>
                         </template>
