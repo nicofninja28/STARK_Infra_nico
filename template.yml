@@ -86,13 +86,29 @@ Resources:
                 - python3.7
                 - python3.8
                 - python3.9
+    PymongoLayer:
+        Type: AWS::Lambda::LayerVersion
+        Properties:
+            Content:
+                S3Bucket: !Ref UserCodeGenBucketNameParameter
+                S3Key: STARKLambdaLayers/pymongo_py39.zip
+            Description: Pymongo module for Python 3.x
+            LayerName: STARK_Pymongo
+            CompatibleArchitectures:
+                - x86_64
+                - arm64
+            CompatibleRuntimes:
+                - python3.6
+                - python3.7
+                - python3.8
+                - python3.9
     STARKFriendlyToSystemNamesLayer:
         Type: AWS::Lambda::LayerVersion
         Properties:
             Content:
                 S3Bucket: !Ref UserCodeGenBucketNameParameter
                 S3Key: STARKLambdaLayers/STARK_friendly_to_system_name_py39.zip
-            Description: STARK module for converting user-supplied, human-friendly identifiers into system-friendly entity or variable names
+            Description: STARK module for converting user-supplied, human-friendly identifiers into system-friendly entity or variable namess
             LayerName: STARK_friendly_to_system_name
             CompatibleArchitectures:
                 - x86_64
@@ -431,11 +447,11 @@ Resources:
                 - AmazonDynamoDBFullAccess
                 - AmazonS3FullAccess
             Layers:
-                - !Ref CFCustomResourceHelperLayer
                 - !Ref PyYamlLayer
                 - !Ref STARKFriendlyToSystemNamesLayer
                 - !Ref STARKSuggestGraphicLayer
                 - !Ref STARKGetRelationshipLayer
+                - !Ref PymongoLayer
             Architectures:
                 - arm64
             MemorySize: 1760
