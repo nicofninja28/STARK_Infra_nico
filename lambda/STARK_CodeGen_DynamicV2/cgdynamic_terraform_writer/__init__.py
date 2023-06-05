@@ -141,8 +141,8 @@ def tf_writer_storage_account(data):
         storage_container_name = "$web"
         content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
     }}"""
-    
-    source_code += f"""
+    else:
+        source_code += f"""
     }}
     
     """
