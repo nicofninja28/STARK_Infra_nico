@@ -56,6 +56,10 @@ def create():
         
         if destination_varname not in ["stark_sysmodules", "STARK_Analytics"]:
             os.system(f"cp function.json functions_package/{{destination_varname}}/function.json")
+    
+    #FIXME: Temporary code to automatically add the requirements.txt
+    #must be dynamically generated depending on the third-party libraries needed        
+    os.system(f"echo pymongo==3.12.0 > functions_package/requirements.txt")
     """
     return textwrap.dedent(source_code)
 

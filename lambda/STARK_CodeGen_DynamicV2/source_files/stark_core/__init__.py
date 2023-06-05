@@ -9,7 +9,7 @@ test_region = 'eu-west-2'
 page_limit  = 100
 ##Cosmos DB Configuration
 client            = MongoClient("[[COSMOSDB_CONNECTION_STRING]]")
-mdb_database      = client[[["STARK_MDB_TABLE_NAME"]]]
+mdb_database      = client["[[STARK_MDB_TABLE_NAME]]"]
 
 TTL_for_deleted_records_in_days = 120
 

@@ -62,9 +62,9 @@ def tf_writer_cosmosdb_account(data):
     }}
 
     resource "azurerm_cosmosdb_mongo_database" "db_name" {{
-    name                = "{project_name}-mongodb"
-    resource_group_name = var.rgname
-    account_name        = azurerm_cosmosdb_account.stark_storage_account.name
+        name                = "{project_name}-mongodb"
+        resource_group_name = var.rgname
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     }}
     
     variable "rgname" {{
