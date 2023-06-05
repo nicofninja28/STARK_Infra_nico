@@ -21,9 +21,10 @@ s3  = boto3.client('s3')
 def lambda_handler(event, context):
     project_name    = event.get('ResourceProperties', {}).get('Project','')    
     ddb_table_name  = event.get('ResourceProperties', {}).get('DDBTable','')
+    db_connection   = event.get('ResourceProperties', {}).get('DBConnection','')
     project_varname = converter.convert_to_system_name(project_name)
-    client            = MongoClient(ddb_table_name)
-    mdb_database      = client[project_name]
+    client            = MongoClient(db_connection)
+    mdb_database      = client[ddb_table_name]
     
     #Access Keys
     # WebBucket_AccessKeyID     = event.get('ResourceProperties', {}).get('WebBucket_AccessKeyID','')
