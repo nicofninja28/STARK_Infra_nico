@@ -1,5 +1,5 @@
 Customer:
-    pk: Customer IDssssssssssss
+    pk: Customer ID
     sequence:
       current_counter: 1
       prefix: C-
