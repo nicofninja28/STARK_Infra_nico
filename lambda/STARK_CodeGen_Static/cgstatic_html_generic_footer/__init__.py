@@ -8,8 +8,8 @@ import textwrap
 def create():
 
     source_code = f"""\
-    <body>
-    </html>
+        </body>
+        </html>
     """
 
     return source_code
