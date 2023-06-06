@@ -181,9 +181,9 @@ def create_handler(event, context):
         with open(dir + os.sep + html_file) as f:
             #replace all occurences of "[[STARK_PROJECT_NAME]]" with project_name
             source_code = f.read().replace("[[STARK_PROJECT_NAME]]", project_name)
-            source_code = source_code.read().replace("[[NAVBAR]]", cg_navbar.create())
-            source_code = source_code.read().replace("[[LOADING MODAL]]", cg_loadmod.create())
-            source_code = source_code.read().replace("[[FOOTER]]", cg_footer.create())
+            source_code = source_code.replace("[[NAVBAR]]", cg_navbar.create())
+            source_code = source_code.replace("[[LOADING MODAL]]", cg_loadmod.create())
+            source_code = source_code.replace("[[FOOTER]]", cg_footer.create())
             add_to_commit(source_code=source_code, key=html_file, files_to_commit=files_to_commit, file_path='static')
 
     ##################################################################
