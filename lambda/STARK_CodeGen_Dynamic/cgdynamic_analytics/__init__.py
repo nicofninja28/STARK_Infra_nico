@@ -58,7 +58,7 @@ def create(data):
             data    = {{}}
             if payload != "":
                 if(payload.get('Is_Custom_Report','') == 'Yes'):
-                    report_name = '[Custom] ' + payload.get('Report_Name', '')
+                    report_name = payload.get('Report_Name', '') + ' - [Custom]'
                 else:
                     report_name = payload.get('Report_Name', '')
 
@@ -72,7 +72,12 @@ def create(data):
         else:
             
             if request_type == 'detail':
-                query = event.get('queryStringParameters').get('Query','')
+                is_custom_report = event.get('queryStringParameters').get('is_custom_report','')
+                if(is_custom_report == 'Yes'):
+                    query = event.get('queryStringParameters').get('Query','')
+                else:
+                    report_data = event.get('queryStringParameters').get('Query','')
+                    query = compose_query(report_data)
                 
                 temp_metadata = event.get('queryStringParameters').get('Metadata','')
                 temp_response = get_query_result(query)
@@ -284,6 +289,131 @@ def create(data):
             rows.append(row)
         
         return rows
+
+def convert_to_system_name(data):
+    if(type(data) == 'list'):
+        converted_list = []
+        for item in data:
+            converted_item = item.lower().replace(" ", "_")
+            converted_list.append(converted_item)
+        return converted_list
+    else:
+        converted_item = data.lower().replace(" ", "_")
+        return converted_item
+
+
+def replace_vowels(input_string):
+    vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']
+    for vowel in vowels:
+        input_string = input_string.replace(vowel, '')
+    return input_string
+
+def compose_query(report_data):
+    data = json.loads(report_data)
+    # for table/s relationship ===================
+    str_fields = ''
+    where_clause = ''
+    group_by = ''
+    sort = ''
+    str_table = ''
+    if(len(data["tables"]) > 1):
+        str_table = ''
+        str_tbls = ''
+        where_tbls = []
+        for index, rel_data in enumerate(data['relationships']):
+            table1       = rel_data['Table_1'].split(".")[0]
+            table1_field = rel_data['Table_1'].split(".")[1]
+            table2       = rel_data['Table_2'].split(".")[0]
+            table2_field = rel_data['Table_2'].split(".")[1]
+
+            if(index < 1):
+                str_tbls = table1 + " AS " + replace_vowels(table1) + " LEFT JOIN " + table2 + " AS " + replace_vowels(table2) + " ON " + replace_vowels(table1) + "." + table1_field + " = " + replace_vowels(table2) + "." + table2_field
+            else:
+                str_tbls =  "LEFT JOIN " + table2 + " AS " + replace_vowels(table2) + " ON " + replace_vowels(table1) + "." + table1_field + " = " + replace_vowels(table2) + "." + table2_field
+            
+            where_tbls.append(str_tbls)
+            
+        str_table = " ".join(where_tbls)
+        
+    else:
+        table = convert_to_system_name(data['tables'][0])
+        str_table = table + " AS " + replace_vowels(table)
+
+    # SUM =====================================
+    sql_sum = ", ".join([f"SUM({{col}}) AS Sum_of_{{col.split('.')[-1].capitalize()}}" for col in data['sum']])
+
+    # COUNT =====================================
+    sql_count = ", ".join([f"COUNT({{col}}) AS Count_of_{{col.split('.')[-1].capitalize()}}" for col in data['count']])
+    
+    # SELECT FIELDS =====================================
+    if data['group_by'] != '':
+        grp_by_table = data['group_by'].split(".")[0]
+        grp_by_field = data['group_by'].split(".")[1]
+        sql_group_by = replace_vowels(grp_by_table) + "." + grp_by_field
+
+        if grp_by_table != '':
+            group_by = ' GROUP BY ' + sql_group_by
+            select_grp_by = sql_group_by + ", "
+        else:
+            group_by = ""
+            select_grp_by = ""
+
+    if(sql_count != "" and sql_sum != ""):
+        str_fields = select_grp_by + sql_sum + ", " + sql_count
+    elif(sql_sum != ''):
+        str_fields = select_grp_by + sql_sum
+    elif(sql_count != ''):
+        str_fields = select_grp_by + sql_count
+    elif(sql_sum == '' or sql_count == ''):
+        if data['count_table_fields'] == len(data['fields']):
+            str_fields = '*'
+        else:
+            str_fields = ", ".join([f"cstmr.{{col.split(' | ')[1].lower().replace(' ', '_')}}" for col in data['fields']])
+
+    # WHERE CLAUSE =====================================
+    arr_where_clause = []
+
+    for filter in data['filters']:
+        # print(filter)
+        if(filter['Operand'] == 'contains'):
+            operand_value = "LIKE '%" + filter['Value'] + "%'"
+        elif(filter['Operand'] == 'begins_with'):
+            operand_value = "LIKE '" + filter['Value'] + "%'"
+        elif(filter['Operand'] == 'ends_with'):
+            operand_value = "LIKE '%" + filter['Value'] + "'"
+        elif(filter['Operand'] == 'IN'):
+            operand_value = "IN (" + filter['Value'] + ")"
+        elif(filter['Operand'] == 'between'):
+            operand_value = "BETWEEN (" + filter['Value'] + ")"
+        else:
+            operand_value = filter['Operand'] + " '" + filter['Value'] + "'"
+
+        filter_table = filter['Field'].split(".")[0]
+        filter_field = filter['Field'].split(".")[1]
+        where_clause = replace_vowels(filter_table) + "." + filter_field + " " + operand_value
+        arr_where_clause.append(where_clause)
+        
+    if(len(arr_where_clause) > 0):
+        where_clause = ' WHERE ' + " AND ".join(arr_where_clause)
+    else:
+        where_clause = ''
+   
+    # ORDER BY =====================================
+    arr_sort = []
+    for sort in data['sort']:
+        table = sort['Field'].split(".")[0]
+        field = sort['Field'].split(".")[1]
+        sort = replace_vowels(table) + "." + field + " " + sort['Sort_Type']
+        arr_sort.append(sort)
+
+    if(len(arr_sort) > 0):
+        sort = ' ORDER BY ' + " AND ".join(arr_sort)
+    else:
+        sort = ''
+
+    query = "SELECT " + str_fields + " FROM " + str_table + where_clause + group_by + sort 
+    print(query)
+    return query
 
     def dump_csv():
         entities = {entities_varname}

@@ -9,12 +9,6 @@ var root = new Vue({
                 'max_length': '',
                 'data_type': 'String'
             },
-            'Join_Type': {
-                'value': '',
-                'required': true,
-                'max_length': '',
-                'data_type': 'String'
-            },
             'Table_2': {
                 'value': '',
                 'required': true,
@@ -93,12 +87,6 @@ var root = new Vue({
         },
         lists: {
             'Item': [],
-            'Join_Type': [
-                { value: 'Inner Join', text: 'Inner Join' },
-                { value: 'Left Join', text: 'Left Join' },
-                { value: 'Right Join', text: 'Right Join' },
-                { value: 'Full Outer Join', text: 'Full Outer Join' },
-            ],
             'Relationship': [],
             'Sum': [],
             'Count': [],
@@ -182,7 +170,6 @@ var root = new Vue({
         disableRelationship: true,
         Relationship: {
             'Table_1': {},
-            'Join_Type': {},
             'Table_2': {}
         },
         Temp_Filters: {
@@ -294,9 +281,11 @@ var root = new Vue({
             }
 
             if(field_data) {
-                data['fields']          = field_data['checked_fields']
+                data['fields']              = field_data['checked_fields']
+                data['count_table_fields']  = field_data['count_of_table_fields']
             } else {
-                data['fields']          = root.checked_fields
+                data['fields']              = root.checked_fields
+                data['count_table_fields']  = (root.table_field).length
             }
 
             if(relationship_data) {
@@ -388,9 +377,11 @@ var root = new Vue({
                 }
 
                 if(field_data) {
-                    data['fields']          = field_data['checked_fields']
+                    data['fields']              = field_data['checked_fields']
+                    data['count_table_fields']  = field_data['count_of_table_fields']
                 } else {
-                    data['fields']          = root.checked_fields
+                    data['fields']              = root.checked_fields
+                    data['count_table_fields']  = (root.table_field).length
                 }
 
                 if(relationship_data) {
@@ -433,15 +424,19 @@ var root = new Vue({
                 metadata = data['metadata']
             }
             
-            root.compose_query(data)
-            query = root.Analytics.Query
-            
+            if(root.Analytics.Choose_Report == 'Query Box') {
+                Is_Custom_Report = 'Yes'
+                report_data  = root.Analytics.Query_Box
+            } else {
+                Is_Custom_Report = 'No'
+                report_data = JSON.stringify(data)
+            }
 
-            if(query != '') {
+            if(data != '') {
                 loading_modal.show();
                 console.log("VIEW: Getting!")
-                Analytics_app.get_result(query, metadata).then( function(data) {
-
+                Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
+                    console.log(data)
                     if(data.length > 0)
                     {
                         root.report_result = data[0];
@@ -477,7 +472,9 @@ var root = new Vue({
             if(query != '') {
                 loading_modal.show();
                 metadata = ''
-                Analytics_app.get_result(query, metadata).then( function(data) {
+                Is_Custom_Report = 'Yes'
+                report_data  = query
+                Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
 
                     if(data.length > 0)
                     {
@@ -627,7 +624,9 @@ var root = new Vue({
                 if (root.list_status.Saved_Report == 'empty') {
                     Analytics_app.get_saved_reports().then( function(data) {
                         root.lists.Saved_Report = []
-                        data.forEach(function(arrayItem) {
+                        saved_report_list = [...data].sort((a, b) => a - b)
+                        console.log(saved_report_list)
+                        saved_report_list.forEach(function(arrayItem) {
                             text = arrayItem['Report_Name']
                             value = arrayItem['Report_Name']            
                             root.lists.Saved_Report.push({ value: value, text: text }) 
@@ -1063,8 +1062,10 @@ var root = new Vue({
                 } 
             }
             else if(page_number == '3') { //Relationship table
+                var selected_field_data = STARK.get_local_storage_item('Analytics_Input', 'Fields')
                 var data_to_store = {}
                 data_to_store['checked_fields'] = root.checked_fields
+                data_to_store['count_of_table_fields'] = (root.table_field).length
                 STARK.set_local_storage_item('Analytics_Input', 'Fields', data_to_store)
 
                 root.list_field_options(['Relationship'], root.checked_tables)
@@ -1312,152 +1313,6 @@ var root = new Vue({
                 root.show_report_name_input = false
             }
         },
-
-        compose_query: function(data) {
-            temp_table_fields = root.convert_to_system_name(data['fields'])
-
-            str_table = ''
-            if(data['tables'].length > 1) {
-                str_table = ''
-                str_tbls = ''
-                where_tbls = []
-                for (let index = 0; index < data['relationships'].length; index++) {
-                    
-                    const rel_element = data['relationships'][index];
-                    table1       = rel_element['Table_1'].split(".")[0]
-                    table1_field = rel_element['Table_1'].split(".")[1]
-                    table2       = rel_element['Table_2'].split(".")[0]
-                    table2_field = rel_element['Table_2'].split(".")[1]
-                    if(index < 1) {
-
-                        str_tbls = table1 + " AS " + table1.replace(/[aeiou]/gi, '') + " " + rel_element['Join_Type'] + " " + table2 + " AS " + table2.replace(/[aeiou]/gi, '') + " ON " + table1.replace(/[aeiou]/gi, '') + "." + table1_field + " = " + table2.replace(/[aeiou]/gi, '') + "." + table2_field
-                    } else {
-                        str_tbls =  rel_element['Join_Type'] + " " + table2 + " AS " + table2.replace(/[aeiou]/gi, '') + " ON " + table1.replace(/[aeiou]/gi, '') + "." + table1_field + " = " + table2.replace(/[aeiou]/gi, '') + "." + table2_field
-                    }
-                    where_tbls.push(str_tbls)
-                }
-                str_table = where_tbls.join(" ")
-            } else {
-                table = root.convert_to_system_name(data['tables'][0])
-                str_table = table + " AS " + table.replace(/[aeiou]/gi, '')
-                
-            }
-
-            data_sum     = data['sum'].map(str => {
-                let firstWord = str.match(/^\w+/)[0];
-                let replacedWord = firstWord.replace(/[aeiou]/gi, '');
-                return str.replace(firstWord, replacedWord);
-              });
-
-            sql_sum = data_sum.map(item => {
-                const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                return `SUM(${item}) AS Sum_of_${words[1]}`;
-              }).join(', ');
-
-            data_count   = data['count'].map(str => {
-                let firstWord = str.match(/^\w+/)[0];
-                let replacedWord = firstWord.replace(/[aeiou]/gi, '');
-                return str.replace(firstWord, replacedWord);
-              });
-            
-            sql_count = data_count.map(item => {
-                const words = item.split('.').map(word => word.charAt(0).toUpperCase() + word.slice(1));
-                return `Count(${item}) AS Count_of_${words[1]}`;
-              }).join(', ');
-
-            grp_by_table = data['group_by'].split(".")[0]
-            grp_by_field = data['group_by'].split(".")[1]
-            sql_group_by = grp_by_table.replace(/[aeiou]/gi, '') + "." + grp_by_field
-
-            if(grp_by_table != '') {
-                group_by = ' GROUP BY ' + sql_group_by
-                select_grp_by = sql_group_by + ", "
-            } else {
-                group_by = ""
-                select_grp_by = ""
-            }
-
-            if(sql_count != "" && sql_sum != "") {
-
-                str_fields = select_grp_by + sql_sum + ", " + sql_count
-            } else if(sql_sum != '') {
-                str_fields = select_grp_by + sql_sum
-            } else if(sql_count != '') {
-                str_fields = select_grp_by + sql_count
-            } else if(sql_sum == '') {
-                if(root.table_field.length == temp_table_fields.length)
-                {
-                    str_fields = '*'
-                } else {
-                    data['tables']        = []
-                    for (let i = 0; i < temp_table_fields.length; i++) {
-                        const [prefix, suffix] = temp_table_fields[i].split('_|_');
-                        data['tables'].push(`${prefix.replace(/[aeiou]/gi, '')}.${suffix}`);
-                    }
-                    str_fields = select_grp_by + data['tables'].join(', ')
-                }
-            } 
-
-            // WHERE CLAUSE
-            arr_where_clause = []
-            for (let index = 0; index < data['filters'].length; index++) {
-                const element = data['filters'][index];
-                if(element['Operand'] == 'contains') {
-                    operand_value = "LIKE '%" + element['Value'] + "%'"
-                } else if(element['Operand'] == 'begins_with') {
-                    operand_value = "LIKE '" + element['Value'] + "%'"
-                } else if(element['Operand'] == 'ends_with') {
-                    operand_value = "LIKE '%" + element['Value'] + "'"
-                } else if(element['Operand'] == 'IN') {
-                    operand_value = "IN (" + element['Value'] + ")"
-                } else if(element['Operand'] == 'between') {
-                    operand_value = "BETWEEN (" + element['Value'] + ")"
-                } else {
-                    operand_value = element['Operand'] + " '" + element['Value'] + "'"
-                }
-                filter_table = element['Field'].split(".")[0]
-                filter_field = element['Field'].split(".")[1]
-                where_clause = filter_table.replace(/[aeiou]/gi, '') + "." + filter_field + " " + operand_value
-                if(element['Field'] != undefined) {
-                    arr_where_clause.push(where_clause)
-                }
-            }
-            if(arr_where_clause.length > 0 && root.filter_has_value) {
-                where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
-            } else {
-                if(root.action_from_run_saved_report && arr_where_clause.length > 0) {
-                    where_clause = ' WHERE ' + arr_where_clause.join(' AND ')
-                } else {
-                    where_clause = ''
-                }
-            }
-
-            // ORDER BY
-            arr_sort = []
-            for (let index = 0; index < data['sort'].length; index++) {
-                const element = data['sort'][index];
-                table = element['Field'].split(".")[0]
-                field = element['Field'].split(".")[1]
-                sort = table.replace(/[aeiou]/gi, '') + "." + field + " " + element['Sort_Type']
-                if(element['Field'] != undefined) {
-                    arr_sort.push(sort)
-                }
-            }
-
-            if(arr_sort.length > 0 && root.sort_has_value) {
-                sort = ' ORDER BY ' + arr_sort.join(', ')
-            } else {
-                if(root.action_from_run_saved_report && arr_sort.length > 0) {
-                    sort = ' ORDER BY ' + arr_sort.join(', ')
-                } else {
-                    sort = ''
-                }
-            }
-
-            query = "SELECT " + str_fields + " FROM " + str_table + where_clause + group_by + sort 
-            console.log(query)
-            root.Analytics.Query = query
-        },
         
         convert_to_system_display: function(elem) {
             if(typeof(elem) == 'string'){
@@ -1514,6 +1369,11 @@ var root = new Vue({
             STARK.local_storage_delete_key('Analytics_Input', 'Filters')
             STARK.local_storage_delete_key('Analytics_Input', 'Sort')
             STARK.local_storage_delete_key('Analytics_Input', 'Metadata')
+            root.Analytics.Saved_Report = ''
+            root.Analytics.Save_Report = ''
+            root.Analytics.Query_Box = ''
+            root.Save_Report_Settings.Report_Name = ''
+            root.list_status.Saved_Report = 'empty'
         }
     },
     computed: {
