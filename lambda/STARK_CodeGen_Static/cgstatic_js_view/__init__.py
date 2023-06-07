@@ -1095,8 +1095,10 @@ def create(data):
                 }},
                 refresh_list () {{
                     root.listview_table = ''
+                    root.curr_page = 1
                     STARK.local_storage_delete_key('Listviews', '{entity_varname}');
                     root.list()
+                    root.prev_disabled = true
                 }},
                 refresh_child () {{
                     //NOTE: this is empty if this entity does not have a child, might need refactoring
