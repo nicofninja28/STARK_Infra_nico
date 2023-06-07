@@ -158,7 +158,6 @@ def create(data):
             </div>
         </div>
 """
-
     source_code += cg_loadmod.create()
     source_code += cg_footer.create()
 
