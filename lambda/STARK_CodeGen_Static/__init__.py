@@ -268,8 +268,8 @@ def create_handler(event, context):
     pipeline_definition = pickle.loads(response['Body'].read()) 
     print(pipeline_definition)
     response = cdpl.update_pipeline(pipeline=pipeline_definition['pipeline'])
-    cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
-
+    #Bugfix: removed line below to avoid double-trigger of pipeline
+    #cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
 
 @helper.delete
 def no_op(_, __):
