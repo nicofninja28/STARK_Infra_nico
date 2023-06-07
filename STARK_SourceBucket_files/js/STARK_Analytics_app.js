@@ -48,9 +48,9 @@ var Analytics_app = {
         return STARK.request('GET', fetchUrl)
     },
 
-    get_result: function (query, metadata) {
+    get_result: function (is_custom_report, report_data, metadata) {
         // console.log(metadata)
-        fetchUrl = this.api_endpoint + '?rt=detail&Query=' + query + '&Metadata=' + metadata
+        fetchUrl = this.api_endpoint + '?rt=detail&is_custom_report=' + is_custom_report + '&Query=' + report_data + '&Metadata=' + metadata
         return STARK.request('GET', fetchUrl)
     },
 }

@@ -244,13 +244,20 @@
                                                         FULL (OUTER) JOIN: Returns all records when there is a match in either left or right table -->
                                                         <!-- <b-form-group class="form-group col-sm" label="Join Type" label-for="Join Type"  :invalid-feedback="rel_validation_properties[index].Join_Type.feedback">
                                                             <b-form-select id="Join_Type" v-model="field.Join_Type" :options="lists.Join_Type" :state="rel_validation_properties[index].Join_Type.state"> -->
-                                                        <b-form-group class="form-group col-sm" label="Join Type" label-for="Join Type">
-                                                            <b-form-select id="Join_Type" v-model="field.Join_Type" :options="lists.Join_Type">    
-                                                                <template v-slot:first>
-                                                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
-                                                            </template>
-                                                        </b-form-select>
-                                                        </b-form-group>
+                                                        <div>
+                                                            <div>
+                                                                &nbsp;
+                                                            </div>
+                                                            <div>
+                                                                
+                                                            </div>
+                                                            <div style="display: flex;
+                                                            justify-content: center;
+                                                            align-items: center;
+                                                            margin-bottom: 10%;">
+                                                                <p style="padding-top: 15px;"><strong>=</strong></p>
+                                                            </div>
+                                                        </div>
                                                         <!-- <b-form-group class="form-group col-sm" label="Table 2" label-for="Table 2" :invalid-feedback="rel_validation_properties[index].Table_2.feedback">
                                                             <b-form-select id="Table_2" v-model="field.Table_2" :options="lists.Relationship" onmouseover="" onfocus="" :state="rel_validation_properties[index].Table_2.state"> -->
                                                         <b-form-group class="form-group col-sm" label="Table 2" label-for="Table 2">
