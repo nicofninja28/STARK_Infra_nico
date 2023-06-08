@@ -285,7 +285,10 @@ def create(data):
         for result in query_results['ResultSet']['Rows'][1:]:
             row = {{}}
             for i in range(len(column_names)):
-                row[column_names[i]] = result['Data'][i]['VarCharValue']
+                if(len(result['Data'][i]) != 0):
+                    row[column_names[i]] = result['Data'][i]['VarCharValue']
+                else:
+                    row[column_names[i]] = ''
             rows.append(row)
         
         return rows
@@ -344,7 +347,7 @@ def create(data):
 
         # COUNT =====================================
         sql_count = ", ".join([f"COUNT({{col}}) AS Count_of_{{col.split('.')[-1].capitalize()}}" for col in data['count']])
-        
+
         # SELECT FIELDS =====================================
         if data['group_by'] != '':
             grp_by_table = data['group_by'].split(".")[0]
