@@ -37,63 +37,61 @@ def create(data):
     source_code += cg_bodyhead.create(data, "Report")
 
     source_code += f"""\
-            <!-- <div class="container-unauthorized" v-if="!stark_permissions['{entity}|Report']">UNAUTHORIZED!</div>
-            <div class="main-continer" v-if="stark_permissions['{entity}|Report']"> -->
-                <div class="container" v-if="!showReport && !showGraph">
-                    <div class="row">
-                        <div class="col">
-                            <div class="my-auto">
-                                <form class="border p-3">
-                                    <div>
-                                        <table class="table table-bordered">
-                                                    
-                                                <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
-                                                    <strong>Error!</strong> Put operator/s on:
-                                                    <template v-for="column in no_operator" id="no_operator">
-                                                        <tr scope="col"> - {{{{ column }}}}</tr>
-                                                    </template>
-                                                </div>
-                                        </table>
-                                    </div>
-                                    <table class="table table-dark table-striped report">
-                                        <tr>
-                                            <th>
-                                                <input type="checkbox" class="checkbox-med" name="check_checkbox" v-model="all_selected" onchange="root.toggle_all(!root.all_selected)">
-                                            </th>
-                                            <th style="padding: 10px; min-width: 250px"> Field Name </th>
-                                            <th style="padding: 10px"> Operator </th>
-                                            <th style="padding: 10px"> Filter Value </th>    
-                                            <th style="padding: 10px"> Sum </th>
-                                            <th style="padding: 10px"> Count </th>
-                                            <th style="padding: 10px"> Group By</th>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk}" id="{pk_varname}" v-model="checked_fields">
-                                            </td>
-                                            <td>
-                                                    <label for="{pk_varname}">{pk}</label>
-                                            </td>
-                                            <td>
-                                                <b-form-select id="{pk_varname}_operator" :options="lists.Report_Operator" v-model="custom_report.{pk_varname}.operator">
-                                                    <template v-slot:first>
-                                                        <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
-                                                    </template>
-                                                </b-form-select>
-                                            </td>
-                                            <td>
-                                                <input type="text" class="form-control" id="{pk_varname}_filter_value" placeholder="" v-model="custom_report.{pk_varname}.value">
-                                            </td>
-                                            <td>
-                                                <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk_varname}" id="Sum_of_Pr{pk_varname}" v-model="custom_report.STARK_sum_fields" :disabled="metadata.{pk_varname}.data_type != 'Number' && metadata.{pk_varname}.data_type != 'Float'" onchange="root.set_y_data_source('Sum_of_{pk_varname}')">
-                                            </td>
-                                            <td>
-                                                <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk_varname}" id="Count_of_{pk_varname}" v-model="custom_report.STARK_count_fields" onchange="root.set_y_data_source('Count_of_{pk_varname}')">
-                                            </td>
-                                            <td>
-                                                <input type="radio" onclick="root.toggle_group_by(event)" class="checkbox-med"  name="check_checkbox" value="{pk_varname}" id="{pk_varname}" v-model="custom_report.STARK_group_by_1" onchange="root.set_x_data_source('{pk_varname}')">
-                                            </td>
-                                        </tr>"""
+            <div class="container" v-if="!showReport && !showGraph">
+                <div class="row">
+                    <div class="col">
+                        <div class="my-auto">
+                            <form class="border p-3">
+                                <div>
+                                    <table class="table table-bordered">
+                                                
+                                            <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                                <strong>Error!</strong> Put operator/s on:
+                                                <template v-for="column in no_operator" id="no_operator">
+                                                    <tr scope="col"> - {{{{ column }}}}</tr>
+                                                </template>
+                                            </div>
+                                    </table>
+                                </div>
+                                <table class="table table-dark table-striped report">
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" class="checkbox-med" name="check_checkbox" v-model="all_selected" onchange="root.toggle_all(!root.all_selected)">
+                                        </th>
+                                        <th style="padding: 10px; min-width: 250px"> Field Name </th>
+                                        <th style="padding: 10px"> Operator </th>
+                                        <th style="padding: 10px"> Filter Value </th>    
+                                        <th style="padding: 10px"> Sum </th>
+                                        <th style="padding: 10px"> Count </th>
+                                        <th style="padding: 10px"> Group By</th>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk}" id="{pk_varname}" v-model="checked_fields">
+                                        </td>
+                                        <td>
+                                                <label for="{pk_varname}">{pk}</label>
+                                        </td>
+                                        <td>
+                                            <b-form-select id="{pk_varname}_operator" :options="lists.Report_Operator" v-model="custom_report.{pk_varname}.operator">
+                                                <template v-slot:first>
+                                                    <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                                </template>
+                                            </b-form-select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" id="{pk_varname}_filter_value" placeholder="" v-model="custom_report.{pk_varname}.value">
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk_varname}" id="Sum_of_Pr{pk_varname}" v-model="custom_report.STARK_sum_fields" :disabled="metadata.{pk_varname}.data_type != 'Number' && metadata.{pk_varname}.data_type != 'Float'" onchange="root.set_y_data_source('Sum_of_{pk_varname}')">
+                                        </td>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-med" name="check_checkbox" value="{pk_varname}" id="Count_of_{pk_varname}" v-model="custom_report.STARK_count_fields" onchange="root.set_y_data_source('Count_of_{pk_varname}')">
+                                        </td>
+                                        <td>
+                                            <input type="radio" onclick="root.toggle_group_by(event)" class="checkbox-med"  name="check_checkbox" value="{pk_varname}" id="{pk_varname}" v-model="custom_report.STARK_group_by_1" onchange="root.set_x_data_source('{pk_varname}')">
+                                        </td>
+                                    </tr>"""
     
 
     for col, col_type in cols.items():
