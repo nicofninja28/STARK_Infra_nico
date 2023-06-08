@@ -70,7 +70,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{entity}</li>
                 </ol>
             </nav>
-
 """
     elif breadcrumb == "_HomePage":
         source_code += f"""\
