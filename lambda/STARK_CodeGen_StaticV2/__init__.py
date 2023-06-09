@@ -167,13 +167,16 @@ def lambda_handler(event, context):
 
     prebuilt_layers = []
     list_packaged_layers(codegen_bucket_name, prebuilt_layers)
-    for static_file in prebuilt_layers:
+    for key in prebuilt_layers:
+        static_file = key['file_name']
+        file_size   = key['file_size']
+        print(static_file, file_size)
         #We don't want to include the "STARKLambdaLayers/" prefix in our list of keys, hence the string slice in static_file
         add_to_commit(source_code=get_file_from_bucket(codegen_bucket_name, static_file), key=static_file[18:], files_to_commit=files_to_commit, file_path='lambda/packaged_layers')
 
     prebuilt_helpers = []
     list_prebuilt_helpers(codegen_bucket_name, prebuilt_helpers)
-    for static_file in prebuilt_helpers:
+    for key in prebuilt_helpers:
         #We don't want to include the "STARKLambdaHelpers/" prefix in our list of keys, hence the string slice in static_file
         add_to_commit(source_code=get_file_from_bucket(codegen_bucket_name, static_file), key=static_file[19:], files_to_commit=files_to_commit, file_path='lambda/helpers')
 
@@ -242,7 +245,7 @@ def lambda_handler(event, context):
     cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
 
 
-def add_to_commit(source_code, key, files_to_commit, file_path=''):
+def add_to_commit(source_code, key, files_to_commit, file_path='', file_size = ''):
 
     if type(source_code) is str:
         source_code = source_code.encode()
@@ -254,7 +257,8 @@ def add_to_commit(source_code, key, files_to_commit, file_path=''):
 
     files_to_commit.append({
         'filePath': full_path,
-        'fileContent': source_code
+        'fileContent': source_code,
+        'file_size': file_size
     })
 
 def list_prebuilt_static_files(bucket_name, prebuilt_static_files):
@@ -290,8 +294,8 @@ def list_packaged_layers(bucket_name, prebuilt_static_files):
         Prefix = "STARKLambdaLayers/",
     )
 
-    for static_file in response['Contents']:
-        prebuilt_static_files.append(static_file['Key'])
+    for layer in response['Contents']:
+        prebuilt_static_files.append({'file_name':layer['Key'], 'file_size': layer['Size']})
 
 def get_file_from_bucket(bucket_name, static_file):
     response = s3.get_object(
