@@ -78,7 +78,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">Home</li>
                 </ol>
             </nav>
-
 """
     else:
         source_code += f"""\
@@ -89,7 +88,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{breadcrumb}</li>
                 </ol>
             </nav>
-
 """
 
     return source_code
