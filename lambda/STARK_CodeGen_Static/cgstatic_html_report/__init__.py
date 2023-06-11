@@ -42,16 +42,11 @@ def create(data):
                     <div class="col">
                         <div class="my-auto">
                             <form class="border p-3">
-                                <div>
-                                    <table class="table table-bordered">
-                                                
-                                            <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
-                                                <strong>Error!</strong> Put operator/s on:
-                                                <template v-for="column in no_operator" id="no_operator">
-                                                    <tr scope="col"> - {{{{ column }}}}</tr>
-                                                </template>
-                                            </div>
-                                    </table>
+                                <div class="alert alert-danger alert-dismissible fade show" v-if="showError">
+                                    <strong>Error!</strong> Put operator/s on:
+                                    <template v-for="column in no_operator" id="no_operator">
+                                        <tr scope="col"> - {{{{ column }}}}</tr>
+                                    </template>
                                 </div>
                                 <table class="table table-dark table-striped report">
                                     <tr>
@@ -316,58 +311,57 @@ def create(data):
                 </div>"""
 
     source_code += f"""
-                <div v-if="!showReport && showGraph">
-                    <div class="row">
-                        <div class="col-6 text-left d-inline-block">
-                            <button id="prev" type="button" class="btn btn-secondary mb-2" onClick="root.showGraph = false, root.showError = false"> Back </button>
-                            <button type="button" id="exportByHTML" class="btn btn-danger mb-2" :disabled="listview_table.length < 1"> Export as PDF</button>
-                            <button id="refresh" type="button" class="btn btn-primary mb-2" onClick="root.generate()" :disabled="listview_table.length < 1"> Refresh </button>
-                        </div>
-                        <div class="col-6"></div>
-                        <div class="col-6 text-left d-inline-block">
-                            <table class="table">
-                                <template v-if="listview_table.length < 1">
-                                    No records found
-                                </template>
-                            </table>
-                        </div>
+            <div v-if="!showReport && showGraph">
+                <div class="row">
+                    <div class="col-6 text-left d-inline-block">
+                        <button id="prev" type="button" class="btn btn-secondary mb-2" onClick="root.showGraph = false, root.showError = false"> Back </button>
+                        <button type="button" id="exportByHTML" class="btn btn-danger mb-2" :disabled="listview_table.length < 1"> Export as PDF</button>
+                        <button id="refresh" type="button" class="btn btn-primary mb-2" onClick="root.generate()" :disabled="listview_table.length < 1"> Refresh </button>
                     </div>
-                    <div id="chart-container"></div>
+                    <div class="col-6"></div>
+                    <div class="col-6 text-left d-inline-block">
+                        <table class="table">
+                            <template v-if="listview_table.length < 1">
+                                No records found
+                            </template>
+                        </table>
+                    </div>
                 </div>
-                <div v-if="showReport && !showGraph">
-                    <div class="row">
-                        <div class="col-6 text-left d-inline-block">
-                            <button id="prev" type="button" class="btn btn-secondary mb-2" onClick="root.showReport = false, root.showError = false"> Back </button>
-                            <button type="button" class="btn btn-success mb-2" onClick="root.download_report('csv')" :disabled="listview_table.length < 1"> Export as CSV</button>
-                            <button type="button" class="btn btn-danger mb-2" onClick="root.download_report('pdf')" :disabled="listview_table.length < 1"> Export as PDF</button>
-                            <button id="refresh" type="button" class="btn btn-primary mb-2" onClick="root.generate()" :disabled="listview_table.length < 1"> Refresh </button>
-                        </div>
-                        <div class="col-6">
-                        </div>
+                <div id="chart-container"></div>
+            </div>
+            <div v-if="showReport && !showGraph">
+                <div class="row">
+                    <div class="col-6 text-left d-inline-block">
+                        <button id="prev" type="button" class="btn btn-secondary mb-2" onClick="root.showReport = false, root.showError = false"> Back </button>
+                        <button type="button" class="btn btn-success mb-2" onClick="root.download_report('csv')" :disabled="listview_table.length < 1"> Export as CSV</button>
+                        <button type="button" class="btn btn-danger mb-2" onClick="root.download_report('pdf')" :disabled="listview_table.length < 1"> Export as PDF</button>
+                        <button id="refresh" type="button" class="btn btn-primary mb-2" onClick="root.generate()" :disabled="listview_table.length < 1"> Refresh </button>
                     </div>
-
-                    <div class="row">
-                        <div class="col overflow-auto">
-                            <table class="table  table-hover table-striped table-dark">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th v-if="showOperations" scope="col" width = "20px"> Operations </th>
-                                        <template v-for="column in STARK_report_fields" id="STARK_report_fields">
-                                            <th scope="col">{{{{column}}}}</th>
-                                        </template>"""
+                    <div class="col-6">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col overflow-auto">
+                        <table class="table  table-hover table-striped table-dark">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th v-if="showOperations" scope="col" width = "20px"> Operations </th>
+                                    <template v-for="column in STARK_report_fields" id="STARK_report_fields">
+                                        <th scope="col">{{{{column}}}}</th>
+                                    </template>"""
     source_code += f"""         
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template v-for="{entity_varname} in listview_table" id="listview-table">
-                                        <tr>
-                                            <td v-if="showOperations">
-                                                <a :href="'{entity_varname}_edit.html?{pk_varname}=' + {entity_varname}['{pk}']" target="_blank" v-if="auth_list.Edit.allowed"><img src="images/pencil-square.svg" class="bg-info"></a>
-                                                <a :href="'{entity_varname}_delete.html?{pk_varname}=' + {entity_varname}['{pk}']" target="_blank" v-if="auth_list.Delete.allowed"><img src="images/x-square.svg" class="bg-danger"></a>
-                                            </td>
-                                            <template v-for="column in STARK_report_fields">
-                                                <td>{{{{ {entity_varname}[column] }}}}</td>
-                                            </template>"""
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template v-for="{entity_varname} in listview_table" id="listview-table">
+                                    <tr>
+                                        <td v-if="showOperations">
+                                            <a :href="'{entity_varname}_edit.html?{pk_varname}=' + {entity_varname}['{pk}']" target="_blank" v-if="auth_list.Edit.allowed"><img src="images/pencil-square.svg" class="bg-info"></a>
+                                            <a :href="'{entity_varname}_delete.html?{pk_varname}=' + {entity_varname}['{pk}']" target="_blank" v-if="auth_list.Delete.allowed"><img src="images/x-square.svg" class="bg-danger"></a>
+                                        </td>
+                                        <template v-for="column in STARK_report_fields">
+                                            <td>{{{{ {entity_varname}[column] }}}}</td>
+                                        </template>"""
     source_code += f"""             
                                     </tr>
                                 </template>

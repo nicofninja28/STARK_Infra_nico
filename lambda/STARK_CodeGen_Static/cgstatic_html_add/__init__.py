@@ -111,7 +111,7 @@ def create(data):
                         "is_many_control": True
                     })
                     
-                    source_code += f"""
+                source_code += f"""
                                                             <b-form-group class="form-group col-sm" label="{rel_col_key}" label-for="{rel_col_varname}" :invalid-feedback="many_entity.{child_entity_varname}.validation_properties[index].{rel_col_varname}.feedback">
                                                                 {rel_html_control_code}
                                                             </b-form-group>"""
