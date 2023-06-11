@@ -26,7 +26,6 @@ def create():
                     </div>
                 </b-collapse>
             </template>
-        </div>
-"""
+        </div>"""
 
     return source_code

@@ -42,8 +42,6 @@ def create(data):
     source_code += cg_bodyhead.create(data, "New")
 
     source_code += f"""\
-        <!--<div class="container-unauthorized" v-if="!stark_permissions['{entity}|Add']">UNAUTHORIZED!</div>
-        <div class="main-continer" v-if="stark_permissions['{entity}|Add']">-->
             <div class="container hidden" :style="{{visibility: visibility}}">
                 <div class="row">
                     <div class="col">
@@ -158,7 +156,6 @@ def create(data):
             </div>
         </div>
 """
-
     source_code += cg_loadmod.create()
     source_code += cg_footer.create()
 

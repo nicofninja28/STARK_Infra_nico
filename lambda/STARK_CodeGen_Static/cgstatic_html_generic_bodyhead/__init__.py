@@ -33,9 +33,9 @@ def create(data, breadcrumb):
 """
     source_code += navbar
 
-    source_code += f"""\
+    #Purposely makes a new line after navbar to make navbar code also reusable for semi-static code generation
+    source_code += f"""
         <div class="container-fluid" id="vue-root">
-
             <div class="row bg-primary mb-3 p-3 text-white" style="background-image: url('images/banner_generic_blue.png')">
                 <div class="col-12 col-md-10">
                 <h2>
@@ -70,7 +70,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{entity}</li>
                 </ol>
             </nav>
-
 """
     elif breadcrumb == "_HomePage":
         source_code += f"""\
@@ -79,7 +78,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">Home</li>
                 </ol>
             </nav>
-
 """
     else:
         source_code += f"""\
@@ -90,7 +88,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{breadcrumb}</li>
                 </ol>
             </nav>
-
 """
 
     return source_code
