@@ -167,9 +167,11 @@ def lambda_handler(event, context):
 
     prebuilt_layers = []
     list_packaged_layers(codegen_bucket_name, prebuilt_layers)
-    for static_file in prebuilt_layers:
+    for key in prebuilt_layers:
+        static_file = key['file_name']
+        file_size   = key['file_size']
         #We don't want to include the "STARKLambdaLayers/" prefix in our list of keys, hence the string slice in static_file
-        add_to_commit(source_code=get_file_from_bucket(codegen_bucket_name, static_file), key=static_file[18:], files_to_commit=files_to_commit, file_path='lambda/packaged_layers')
+        add_to_commit(source_code=get_file_from_bucket(codegen_bucket_name, static_file), key=static_file[18:], files_to_commit=files_to_commit, file_path='lambda/packaged_layers', file_size = file_size)
 
     prebuilt_helpers = []
     list_prebuilt_helpers(codegen_bucket_name, prebuilt_helpers)
@@ -196,15 +198,43 @@ def lambda_handler(event, context):
     #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
     ctr                 = 0
     key                 = 0
-    chunked_commit_list = {}
+    chunked_commit_list = []
+    current_chunk = []
+    current_chunk_size = 0
+    file_size_limit     = 6 * 1024 * 1024 ## 6 MB
+
     for item in files_to_commit:
-        if ctr == 100:
-            key = key + 1
+        if (
+            ctr == 100
+            or (
+                not item.get("file_size")
+                and current_chunk
+                and current_chunk[-1].get("file_size")
+            )
+            or (
+                item.get("file_size")
+                and current_chunk_size + item["file_size"] > file_size_limit
+            )
+        ):
+            key += 1
             ctr = 0
-        ctr = ctr + 1
-        if chunked_commit_list.get(key, '') == '':
-            chunked_commit_list[key] = []
-        chunked_commit_list[key].append(item)
+            chunked_commit_list.append(current_chunk)
+            current_chunk = []
+            current_chunk_size = 0
+        ctr += 1
+        if "file_size" in item:
+            current_chunk_size += item["file_size"]
+
+        #Create new dictionary to remove file size in the chunks stored
+        new_item = {
+            'filePath': item['filePath'],
+            'fileContent': item['fileContent']
+            }
+        current_chunk.append(new_item)
+
+    if current_chunk:
+        chunked_commit_list.append(current_chunk)
+
 
     ctr         = 0
     batch_count = key + 1
@@ -224,7 +254,7 @@ def lambda_handler(event, context):
             authorName='STARK::CGStatic',
             email='STARK@fakedomainstark.com',
             commitMessage=f"Initial commit of static and prebuilt files (commit {ctr} of {batch_count})",
-            putFiles=chunked_commit_list[commit_batch]
+            putFiles=commit_batch
         )
 
     ##################################################
@@ -242,7 +272,7 @@ def lambda_handler(event, context):
     cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
 
 
-def add_to_commit(source_code, key, files_to_commit, file_path=''):
+def add_to_commit(source_code, key, files_to_commit, file_path='', file_size = 0):
 
     if type(source_code) is str:
         source_code = source_code.encode()
@@ -254,7 +284,8 @@ def add_to_commit(source_code, key, files_to_commit, file_path=''):
 
     files_to_commit.append({
         'filePath': full_path,
-        'fileContent': source_code
+        'fileContent': source_code,
+        'file_size': file_size
     })
 
 def list_prebuilt_static_files(bucket_name, prebuilt_static_files):
@@ -290,8 +321,8 @@ def list_packaged_layers(bucket_name, prebuilt_static_files):
         Prefix = "STARKLambdaLayers/",
     )
 
-    for static_file in response['Contents']:
-        prebuilt_static_files.append(static_file['Key'])
+    for layer in response['Contents']:
+        prebuilt_static_files.append({'file_name':layer['Key'], 'file_size': layer['Size']})
 
 def get_file_from_bucket(bucket_name, static_file):
     response = s3.get_object(
