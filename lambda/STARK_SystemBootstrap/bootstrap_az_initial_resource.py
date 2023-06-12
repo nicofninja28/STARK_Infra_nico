@@ -93,7 +93,7 @@ def tf_writer_cosmosdb_account(data):
     
     return textwrap.dedent(source_code)
 
-def create_get_mdb_connection():
+def create_store_terraform_files_to_bucket(data):
 
     source_code = f"""\
     import subprocess
@@ -102,7 +102,10 @@ def create_get_mdb_connection():
     import os
     import chardet
 
-    git  = boto3.client('codecommit')
+    s3  = boto3.client('s3')
+    codegen_bucket_name  = os.environ['CODEGEN_BUCKET_NAME']
+    project_varname      = {converter.convert_to_system_name(data["project_name"])}
+
     def get_terraform_output():
         output_dict = {{}}
         # Run the `terraform output` command and capture the output
@@ -157,47 +160,15 @@ def create_get_mdb_connection():
         if filename in tf_script_and_state_files:
             with open(file_path, 'r') as file:
                 file_content = file.read()
-                files_to_commit.append({{
-                    'filePath': f"terraform/{{filename}}",
-                    'fileContent': file_content
-                }})
-
-    ##################################################
-    #Commit files to the project repo
-    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
-    #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
-    ctr                 = 0
-    key                 = 0
-    chunked_commit_list = {{}}
-    for item in files_to_commit:
-        if ctr == 100:
-            key = key + 1
-            ctr = 0
-        ctr = ctr + 1
-        if chunked_commit_list.get(key, '') == '':
-            chunked_commit_list[key] = []
-        chunked_commit_list[key].append(item)
-
-    ctr         = 0
-    batch_count = key + 1
-    for commit_batch in chunked_commit_list:
-        ctr = ctr + 1
-
-        response = git.get_branch(
-            repositoryName=repo_name,
-            branchName='master'        
+                put_to_s3_terraform_directory(filename, file_content)
+    
+    def put_to_s3_terraform_directory(filename, file_content):
+        response = s3.put_object(
+            Body=file_content,
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{{project_varname}}/terraform/{{filename}}'
         )
-        commit_id = response['branch']['commitId']
 
-        response = git.create_commit(
-            repositoryName=repo_name,
-            branchName='master',
-            parentCommitId=commit_id,
-            authorName='STARK::SystemBootstrap',
-            email='STARK@fakedomainstark.com',
-            commitMessage=f'Initial commit of terraform config (commit {{ctr}} of {{batch_count}})',
-            putFiles=files_to_commit
-        )
     """
 
     return textwrap.dedent(source_code)

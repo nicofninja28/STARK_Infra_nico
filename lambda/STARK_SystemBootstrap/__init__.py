@@ -106,9 +106,9 @@ def create_handler(event, context):
         'fileContent': source_code.encode()
     }) 
 
-    source_code = boot_initial_resource.create_get_mdb_connection()
+    source_code = boot_initial_resource.create_store_terraform_files_to_bucket(data)
     files_to_commit.append({
-        'filePath': "get_mdb_connection.py",
+        'filePath': "store_terraform_files_to_bucket.py",
         'fileContent': source_code.encode()
     }) 
 
