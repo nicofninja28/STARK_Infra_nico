@@ -175,7 +175,7 @@ def lambda_handler(event, context):
 
     prebuilt_helpers = []
     list_prebuilt_helpers(codegen_bucket_name, prebuilt_helpers)
-    for key in prebuilt_helpers:
+    for static_file in prebuilt_helpers:
         #We don't want to include the "STARKLambdaHelpers/" prefix in our list of keys, hence the string slice in static_file
         add_to_commit(source_code=get_file_from_bucket(codegen_bucket_name, static_file), key=static_file[19:], files_to_commit=files_to_commit, file_path='lambda/helpers')
 
