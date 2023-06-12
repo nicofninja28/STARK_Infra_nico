@@ -60,6 +60,9 @@ def create(data):
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
                 - aws s3 cp outputtemplate.yml s3://$BUCKET/{project_varname}/
                 - cd terraform
+                - terraform init
+                - terraform apply --auto-approve
+                - python ../store_terraform_files_to_bucket.py
                 - cd ..
                 - aws lambda invoke --function-name {cgdynamic_writer_arn} --payload file://cgdynamic_payload.json response.json
                 - aws lambda invoke --function-name {cgstatic_writer_arn} --payload file://cgstatic_payload.json response.json
