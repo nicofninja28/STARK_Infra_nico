@@ -43,6 +43,7 @@ def create(data):
                 ARM_CLIENT_ID: "77514469-7062-46da-9d6b-6fc027e7722a"
                 ARM_CLIENT_SECRET: "aBx8Q~M2x~tFFQGWxD-AFd3WcIpwvfTLT5sQOcCm"
                 ARM_TENANT_ID: "c2051487-3f8f-4ee3-b98b-c6d53c2daf07"
+                CODEGEN_BUCKET_NAME: {codegen_bucket_name}
 
         phases:
             install:
