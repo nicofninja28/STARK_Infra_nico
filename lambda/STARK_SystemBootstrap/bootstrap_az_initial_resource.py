@@ -120,7 +120,14 @@ def create_store_terraform_files_to_bucket(data):
         output_dict['database_name'] = output_str
 
         return output_dict
-
+    
+    def put_to_s3_terraform_directory(filename, file_content):
+        response = s3.put_object(
+            Body=file_content,
+            Bucket=codegen_bucket_name,
+            Key=f'codegen_dynamic/{{project_varname}}/terraform/{{filename}}'
+        )
+        
     # Call the function to get the Terraform output
     tf_output = get_terraform_output()
     mongodb_database_name     = tf_output['database_name']
