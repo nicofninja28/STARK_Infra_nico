@@ -4,6 +4,9 @@
 #Python Standard Library
 import base64
 import textwrap
+import yaml
+import boto3
+import os
 
 #Private modules
 import convert_friendly_to_system as converter
@@ -12,6 +15,16 @@ import convert_friendly_to_system as converter
 def create(data):
 
     project_varname = data['project_varname']
+    s3  = boto3.client('s3')
+
+    codegen_bucket_name  = os.environ['CODEGEN_BUCKET_NAME']
+    response = s3.get_object(
+        Bucket=codegen_bucket_name,
+        Key=f'STARKConfiguration/STARK_config.yml'
+    )
+    config = yaml.safe_load(response['Body'].read().decode('utf-8'))
+
+    system_prelaunch_arn = config["PrelaunchV2_ARN"]
     
 
     source_code = f"""\
@@ -23,6 +36,7 @@ def create(data):
                 ARM_CLIENT_ID: "77514469-7062-46da-9d6b-6fc027e7722a"
                 ARM_CLIENT_SECRET: "aBx8Q~M2x~tFFQGWxD-AFd3WcIpwvfTLT5sQOcCm"
                 ARM_TENANT_ID: "c2051487-3f8f-4ee3-b98b-c6d53c2daf07"
+                CODEGEN_BUCKET_NAME: {codegen_bucket_name}
 
         phases:
             install:
@@ -36,12 +50,16 @@ def create(data):
                     - terraform --version
             build:
                 commands:
+                - BUCKET={codegen_bucket_name}
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
                 - python3 ./packager.py
+                - mkdir terraform
+                - aws cp s3://$BUCKET/{project_varname}/terraform/ terraform 
                 - cd terraform
                 - terraform init
                 - terraform apply --auto-approve
-                - python ../get_mdb_connection.py
+                - python ../store_terraform_files_to_bucket.py
+                - aws lambda invoke --function-name {system_prelaunch_arn} --payload file://cgdynamic_payload.json response.json
 
         artifacts:
             files:
