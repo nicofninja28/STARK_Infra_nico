@@ -104,7 +104,7 @@ def create_store_terraform_files_to_bucket(data):
 
     s3  = boto3.client('s3')
     codegen_bucket_name  = os.environ['CODEGEN_BUCKET_NAME']
-    project_varname      = {converter.convert_to_system_name(data["project_name"])}
+    project_varname      = '{converter.convert_to_system_name(data["project_name"])}'
 
     def get_terraform_output():
         output_dict = {{}}
