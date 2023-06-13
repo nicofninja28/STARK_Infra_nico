@@ -53,8 +53,7 @@ def create(data):
                 - BUCKET={codegen_bucket_name}
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
                 - python3 ./packager.py
-                - mkdir terraform
-                - aws cp s3://$BUCKET/{project_varname}/terraform/ terraform 
+                - aws s3 cp s3://$BUCKET/{project_varname}/terraform/ terraform 
                 - cd terraform
                 - terraform init
                 - terraform apply --auto-approve
