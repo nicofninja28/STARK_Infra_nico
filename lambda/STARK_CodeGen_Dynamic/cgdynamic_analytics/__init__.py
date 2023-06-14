@@ -191,7 +191,7 @@ def create(data):
             response = athena.start_query_execution(
                 QueryString=analytics_query, 
                 QueryExecutionContext={{'Database': database}}, 
-                ResultConfiguration={{'OutputLocation': 's3://test0601-stark-analytics-athena/result'}}
+                ResultConfiguration={{'OutputLocation': 's3://{s3_athena_bucket_name}/result'}}
             )
 
             # get the query execution ID
