@@ -197,6 +197,8 @@ var root = new Vue({
             'Sum': '',
             'Count': '',
         },
+        show_query_error_message: false,
+        query_error: '',
         for_next_page: '',
         rel_validation_properties: [],
         filter_validation_properties: [],
@@ -439,11 +441,20 @@ var root = new Vue({
                     console.log(data)
                     if(data.length > 0)
                     {
-                        root.report_result = data[0];
-                        root.temp_report_header = Object.keys(data[0][0])
-                        root.report_header = root.convert_to_system_display(root.temp_report_header)
-                        root.temp_csv_link = data[1];
-                        root.temp_pdf_link = data[2];
+                        if(data[0]['error']) {
+                            console.log(data[0]['error'])
+                            root.report_result = []
+                            root.temp_report_header = []
+                            root.show_query_error_message = true
+                            root.query_error = data[0]['error']
+                        } else {
+                            root.report_result = data[0];
+                            root.temp_report_header = Object.keys(data[0][0])
+                            root.report_header = root.convert_to_system_display(root.temp_report_header)
+                            root.temp_csv_link = data[1];
+                            root.temp_pdf_link = data[2];
+                            root.show_query_error_message = false
+                        }
                         console.log("VIEW: Retreived module data.")
                     } else {
                         root.report_result = []
@@ -478,11 +489,20 @@ var root = new Vue({
 
                     if(data.length > 0)
                     {
-                        root.report_result = data[0];
-                        root.temp_report_header = Object.keys(data[0][0])
-                        root.report_header = root.convert_to_system_display(root.temp_report_header)
-                        root.temp_csv_link = data[1];
-                        root.temp_pdf_link = data[2];
+                        if(data[0]['error']) {
+                            console.log(data[0]['error'])
+                            root.report_result = []
+                            root.temp_report_header = []
+                            root.show_query_error_message = true
+                            root.query_error = data[0]['error']
+                        } else {
+                            root.report_result = data[0];
+                            root.temp_report_header = Object.keys(data[0][0])
+                            root.report_header = root.convert_to_system_display(root.temp_report_header)
+                            root.temp_csv_link = data[1];
+                            root.temp_pdf_link = data[2];
+                            root.show_query_error_message = false
+                        }
                         console.log("VIEW: Retreived module data.")
                     } else {
                         root.report_result = []

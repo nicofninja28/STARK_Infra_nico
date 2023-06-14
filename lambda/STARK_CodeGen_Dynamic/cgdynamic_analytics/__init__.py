@@ -19,6 +19,7 @@ def create(data):
     import boto3
     import json
     import base64
+    from botocore.exceptions import ClientError
     
     import stark_core
     from stark_core import data_abstraction
@@ -78,58 +79,66 @@ def create(data):
                 else:
                     report_data = event.get('queryStringParameters').get('Query','')
                     query = compose_query(report_data)
-                
-                temp_metadata = event.get('queryStringParameters').get('Metadata','')
-                temp_response = get_query_result(query)
-                
-                if(temp_metadata):
-                    metadata = eval(event.get('queryStringParameters').get('Metadata',''))
-                else:
-                    tmp_metadata = get_query_metadata(query)
-                    metadata = {{
-                        item["column_name"].title(): {{'data_type': 'String' if item["data_type"] == 'varchar' 
-                                                    else 'Float' if item["data_type"] == 'real'
-                                                    else item["data_type"].capitalize()}}
-                        for item in tmp_metadata
-                    }}
 
-                if(temp_response):
-                    report_list = []
-                    for d in temp_response:
-                        customer_modified = {{}}
-                        for key, value in d.items():
-                            if("Sum_of" not in key and "Count_of" not in key):
-                                words = key.split('_')
-                                words = [word.capitalize() for word in words]
-                                new_key = ' '.join(words)
-                                customer_modified[new_key] = value
-                            else:
-                                words = key.split('_of_')
-                                words = [word.capitalize() for word in words]
-                                new_key = ' of '.join(words)
-                                customer_modified[new_key] = value
-                        report_list.append(customer_modified)
+                query_error_list = validate_query(query)
+                error_exists = any('error' in item for item in query_error_list)
+                
+                if not error_exists:
+                
+                    temp_metadata = event.get('queryStringParameters').get('Metadata','')
+                    temp_response = get_query_result(query)
                     
-                    key_dict = OrderedDict()
-                    for customer_dict in report_list:
-                        for key in customer_dict.keys():
-                            if key not in key_dict:
-                                key_dict[key] = None
-                    
-                    report_header = list(key_dict.keys())
-                    print(report_header)
-                    pk_field = ''
-                    report_param_dict = {{}}
-                    csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
-                    utilities.save_object_to_bucket(file_buff_value, csv_file)
-                    pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
-                    utilities.save_object_to_bucket(pdf_output, pdf_file)
-                    
-                    csv_bucket_key = bucket_tmp + csv_file
-                    pdf_bucket_key = bucket_tmp + pdf_file
-                    response = report_list, csv_bucket_key, pdf_bucket_key
+                    if(temp_metadata):
+                        metadata = eval(event.get('queryStringParameters').get('Metadata',''))
+                    else:
+                        tmp_metadata = get_query_metadata(query)
+                        metadata = {{
+                            item["column_name"].title(): {{'data_type': 'String' if item["data_type"] == 'varchar' 
+                                                        else 'Float' if item["data_type"] == 'real'
+                                                        else item["data_type"].capitalize()}}
+                            for item in tmp_metadata
+                        }}
+
+                    if(temp_response):
+                        report_list = []
+                        for d in temp_response:
+                            customer_modified = {{}}
+                            for key, value in d.items():
+                                if("Sum_of" not in key and "Count_of" not in key):
+                                    words = key.split('_')
+                                    words = [word.capitalize() for word in words]
+                                    new_key = ' '.join(words)
+                                    customer_modified[new_key] = value
+                                else:
+                                    words = key.split('_of_')
+                                    words = [word.capitalize() for word in words]
+                                    new_key = ' of '.join(words)
+                                    customer_modified[new_key] = value
+                            report_list.append(customer_modified)
+                        
+                        key_dict = OrderedDict()
+                        for customer_dict in report_list:
+                            for key in customer_dict.keys():
+                                if key not in key_dict:
+                                    key_dict[key] = None
+                        
+                        report_header = list(key_dict.keys())
+                        print(report_header)
+                        pk_field = ''
+                        report_param_dict = {{}}
+                        csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
+                        utilities.save_object_to_bucket(file_buff_value, csv_file)
+                        pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
+                        utilities.save_object_to_bucket(pdf_output, pdf_file)
+                        
+                        csv_bucket_key = bucket_tmp + csv_file
+                        pdf_bucket_key = bucket_tmp + pdf_file
+                        response = report_list, csv_bucket_key, pdf_bucket_key
+                    else:
+                        response = []
                 else:
-                    response = []
+                    response = query_error_list
+                
             elif request_type == 'get_saved_reports':
                 response = get_saved_reports()
             elif request_type == "get_saved_report_settings":
@@ -175,6 +184,40 @@ def create(data):
             items.append(item)
 
         return items
+
+    def validate_query(analytics_query):
+        try:
+            # print(analytics_query)
+            response = athena.start_query_execution(
+                QueryString=analytics_query, 
+                QueryExecutionContext={{'Database': database}}, 
+                ResultConfiguration={{'OutputLocation': 's3://test0601-stark-analytics-athena/result'}}
+            )
+
+            # get the query execution ID
+            query_execution_id = response['QueryExecutionId']
+
+            # wait for the query to complete
+            while True:
+                failure_reason = ''
+                query_status = athena.get_query_execution(QueryExecutionId=query_execution_id)
+                status = query_status['QueryExecution']['Status']['State']
+                if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
+                    if status == 'FAILED':
+                        failure_reason = query_status['QueryExecution']['Status']['StateChangeReason']
+                    break
+
+            rows = []
+            if failure_reason != '':
+                rows = []
+                rows.append({{"error": failure_reason}})
+
+        except ClientError as e:
+            error_message = e.response['Error']['Message']
+            rows = []
+            rows.append({{"error": error_message}})
+        
+        return rows
 
     def save_report(data, method='POST', db_handler = None):
         print('data')
