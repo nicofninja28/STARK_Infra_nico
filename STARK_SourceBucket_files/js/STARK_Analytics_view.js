@@ -637,6 +637,7 @@ var root = new Vue({
                 root.delete_local_storage()
                 root.action_from_saved_report = false
                 root.from_query_box = false
+                root.showSuccessSaveReport = false
             }
 
             if(root.Analytics.Choose_Report == 'Saved Report') {
