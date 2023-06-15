@@ -223,6 +223,11 @@ var root = new Vue({
             'Report': {'permission': 'Analytics|Report', 'allowed': false},
             'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
+        operations_to_avoid: [
+            'ALTER', 'ANALYZE', 'CALL', 'COMMENT', 'COMMIT', 'CREATE', 'DEALLOCATE', 'DELETE', 'DENY', 'DESC', 
+            'DESCRIBE', 'DROP', 'EXECUTE', 'EXPLAIN', 'GRANT', 'INSERT', 'MERGE', 'PREPARE', 'REFRESH', 'RESET', 
+            'REVOKE', 'ROLLBACK', 'SET', 'SHOW', 'START', 'TRUNCATE', 'UNLOAD', 'UPDATE', 'USE'
+        ],
     },
     methods: {
         
@@ -478,52 +483,77 @@ var root = new Vue({
             }
         },
 
+        string_has_element_from_list: function(string, list) {
+            var lowercasedString = string.toLowerCase(); // Convert the string to lowercase
+            
+            for (var i = 0; i < list.length; i++) {
+              var lowercasedElement = list[i].toLowerCase(); // Convert the list element to lowercase
+              
+              if (lowercasedString.includes(lowercasedElement)) {
+                return true;
+              }
+            }
+            
+            return false;
+        },
+
         submit_query_box: function(query) {
             root.from_query_box = true
+            has_avoided_operation = root.string_has_element_from_list(query, root.operations_to_avoid)
             if(query != '') {
-                loading_modal.show();
-                metadata = ''
-                Is_Custom_Report = 'Yes'
-                report_data  = query
-                Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
+                if(has_avoided_operation) {
+                    root.report_result = []
+                    root.temp_report_header = []
+                    const findElementFromList = (string, list) => list.find(element => string.toLowerCase().includes(element.toLowerCase()));
+                    operation = findElementFromList(query, root.operations_to_avoid)
+                    root.show_query_error_message = true
+                    root.query_error = operation + " statement from the provided query is not allowed. Please make sure to use only SELECT statements.";
+                } else {
+                    loading_modal.show();
+                    metadata = ''
+                    Is_Custom_Report = 'Yes'
+                    report_data  = query
+                    Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
 
-                    if(data.length > 0)
-                    {
-                        if(data[0]['error']) {
-                            console.log(data[0]['error'])
+                        if(data.length > 0)
+                        {
+                            if(data[0]['error']) {
+                                console.log(data[0]['error'])
+                                root.report_result = []
+                                root.temp_report_header = []
+                                root.show_query_error_message = true
+                                root.query_error = data[0]['error']
+                            } else {
+                                root.report_result = data[0];
+                                root.temp_report_header = Object.keys(data[0][0])
+                                root.report_header = root.convert_to_system_display(root.temp_report_header)
+                                root.temp_csv_link = data[1];
+                                root.temp_pdf_link = data[2];
+                                root.show_query_error_message = false
+                            }
+                            console.log("VIEW: Retreived module data.")
+                        } else {
                             root.report_result = []
                             root.temp_report_header = []
-                            root.show_query_error_message = true
-                            root.query_error = data[0]['error']
-                        } else {
-                            root.report_result = data[0];
-                            root.temp_report_header = Object.keys(data[0][0])
-                            root.report_header = root.convert_to_system_display(root.temp_report_header)
-                            root.temp_csv_link = data[1];
-                            root.temp_pdf_link = data[2];
-                            root.show_query_error_message = false
                         }
-                        console.log("VIEW: Retreived module data.")
-                    } else {
-                        root.report_result = []
-                        root.temp_report_header = []
-                    }
-                    root.page_1_show = false
-                    root.page_2_show = false
-                    root.page_3_show = false
-                    root.page_4_show = false
-                    root.page_5_show = false
-                    root.page_6_show = false
-                    root.page_7_show = false
-                    root.page_0_show = false
-                    root.show_result = true
-                    loading_modal.hide();
-                })
-                .catch(function(error) {
-                    console.log("Encountered an error! [" + error + "]")
-                    alert("Request Failed: System error or you may not have enough privileges")
-                    loading_modal.hide()
-                });
+                        
+                        loading_modal.hide();
+                    })
+                    .catch(function(error) {
+                        console.log("Encountered an error! [" + error + "]")
+                        alert("Request Failed: System error or you may not have enough privileges")
+                        loading_modal.hide()
+                    });
+                }
+                root.page_1_show = false
+                root.page_2_show = false
+                root.page_3_show = false
+                root.page_4_show = false
+                root.page_5_show = false
+                root.page_6_show = false
+                root.page_7_show = false
+                root.page_0_show = false
+                root.show_result = true
             }
         },
 
