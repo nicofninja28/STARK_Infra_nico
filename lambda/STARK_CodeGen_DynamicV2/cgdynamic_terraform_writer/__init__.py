@@ -11,6 +11,7 @@ def compose_stark_tf_script(data):
     tf_script = []
     # Static Site Hosting
     data["type"] = "static"
+    data["storage_account_name"] = converter.convert_to_system_name(data['project_name'], 'az-storage-account')
     storage_source_code = ""
     storage_source_code += tf_writer_storage_account(data)
 
@@ -35,8 +36,8 @@ def compose_stark_tf_script(data):
     # Functions
     functions_source_code = ""
     data["type"] = "zip-deploy"
+    data["storage_account_name"] = converter.convert_to_system_name(data['project_name'], 'az-storage-account')
     functions_source_code += tf_writer_storage_account(data)
-    functions_source_code += tf_writer_storage_account_container(data)
     functions_source_code += tf_writer_function_app(data)
 
     tf_script.append({
@@ -53,6 +54,14 @@ def compose_stark_tf_script(data):
         'filePath': "terraform/api_management.tf",
         'fileContent': api_management_source_code.encode()
     })
+
+    ## Variables
+    var_source_code = tf_writer_variables(data)
+    tf_script.append({
+        'filePath': "terraform/variables.tf",
+        'fileContent': var_source_code.encode()
+    })
+
 
     return tf_script
 
@@ -99,7 +108,7 @@ def tf_writer_storage_account(data):
     project_name = data["project_name"]
     type = data["type"] ##zip deployment for function or for static website
 
-    resource_name = converter.convert_to_system_name(project_name, 'az-storage-account')
+    resource_name = data['storage_account_name']
     source_code = f"""
     resource "azurerm_storage_account" "{resource_name}" {{
         name                     = "{resource_name}"
@@ -143,25 +152,12 @@ def tf_writer_storage_account(data):
     }}"""
     else:
         source_code += f"""
-    }}
-    
-    """
-    
-    return textwrap.dedent(source_code)
-
-def tf_writer_storage_account_container(data):
-    project_name = data["project_name"]
-    type = data["type"] ##zip deployment for function or for static website
-
-    storage_account_name = converter.convert_to_system_name(project_name, 'az-storage-account')
-    source_code = f"""
-    resource "azurerm_storage_container" "container" {{
-        name                  = "{storage_account_name}-container"
-        storage_account_name  = azurerm_storage_account.{storage_account_name}.name
-        container_access_type = "private"
-    }}
-
-    """
+        resource "azurerm_storage_container" "{resource_name}-container" {{
+            name                  = "{resource_name}-container"
+            storage_account_name  = azurerm_storage_account.{resource_name}.name
+            container_access_type = "private"
+        }}
+    }}"""
     
     return textwrap.dedent(source_code)
 
@@ -313,27 +309,28 @@ def tf_writer_cosmosdb_stark_modules(data):
 
 def tf_writer_function_app(data):
     project_name = data["project_name"]
+    storage_account_name = data['storage_account_name']
     source_code = f"""
     data "archive_file" "functions" {{
         type        = "zip"
-        source_dir  = "${{path.module}}/packages/final_package"
-        output_path = "${{path.module}}/packages/final_package.zip"
+        source_dir  = "../functions_package"
+        output_path = "../functions_package.zip"
     }}
 
     resource "azurerm_storage_blob" "function-zip-blob" {{
         name                   = "functions-${{substr(data.archive_file.functions.output_md5, 0, 6)}}.zip"
         type                   = "Block"
-        source                 = "${{path.module}}/packages/final_package.zip"
+        source                 = "../functions_package.zip"
         content_md5            = data.archive_file.functions.output_md5
-        storage_account_name   = azurerm_storage_account.{project_name}-zip-deploy.name
-        storage_container_name = azurerm_storage_container.{project_name}-zip-deploy-container.name
+        storage_account_name   = azurerm_storage_account.{storage_account_name}.name
+        storage_container_name = azurerm_storage_container.{storage_account_name}-container.name
         content_type           = "application/zip"
     }}
 
     
     data "azurerm_storage_account_blob_container_sas" "blob_container_sas" {{
-        connection_string = azurerm_storage_account.{project_name}-zip-deploy.primary_connection_string
-        container_name    = azurerm_storage_container.{project_name}-zip-deploy-container.name
+        connection_string = azurerm_storage_account.{storage_account_name}.primary_connection_string
+        container_name    = azurerm_storage_container.{storage_account_name}-container.name
         https_only = true
         start = "2023-03-21"
         expiry = "2028-03-21"
@@ -368,14 +365,14 @@ def tf_writer_function_app(data):
         resource_group_name = var.rgname
         service_plan_id     = azurerm_service_plan.{project_name}_sp.id
 
-        storage_account_name       = azurerm_storage_account.nicozipdeploy1.name
-        storage_account_access_key = azurerm_storage_account.nicozipdeploy1.primary_access_key
+        storage_account_name       = azurerm_storage_account.{storage_account_name}.name
+        storage_account_access_key = azurerm_storage_account.{storage_account_name}.primary_access_key
 
             app_settings = {{
             FUNCTIONS_WORKER_RUNTIME                   = "python"
             APPINSIGHTS_INSTRUMENTATIONKEY             = azurerm_application_insights.{project_name}_ai.instrumentation_key
             ApplicationInsightsAgent_EXTENSION_VERSION = "~3"
-            WEBSITE_CONTENTAZUREFILECONNECTIONSTRING   = azurerm_storage_account.nicozipdeploy1.primary_connection_string
+            WEBSITE_CONTENTAZUREFILECONNECTIONSTRING   = azurerm_storage_account.{storage_account_name}.primary_connection_string
             WEBSITE_RUN_FROM_PACKAGE                   = "${{azurerm_storage_blob.function-zip-blob.url}}${{data.azurerm_storage_account_blob_container_sas.blob_container_sas.sas}}"
             PYTHON_ENABLE_WORKER_EXTENSIONS            = 1
             }}
@@ -398,30 +395,31 @@ def tf_writer_api_management(data):
     project_name = data["project_name"]
     api_name = data['api_name']
     sku_name = "Consumption_0" ##Configuration for serverless implementation
+    storage_account_name = data['storage_account_name']
     source_code = f"""
     resource "azurerm_api_management" "{project_name}" {{
-    name                = "{api_name}"
-    location            = var.rglocation
-    resource_group_name = var.rgname
-    publisher_name      = "My Company"
-    publisher_email     = "company@terraform.io"
-    sku_name            = "{sku_name}"
+        name                = "{api_name}"
+        location            = var.rglocation
+        resource_group_name = var.rgname
+        publisher_name      = "My Company"
+        publisher_email     = "company@terraform.io"
+        sku_name            = "{sku_name}"
     }}
 
     resource "azurerm_api_management_api" "{project_name}" {{
-    for_each = var.function_map
-    name                = "api-integrate-${{each.value.name}}"
-    display_name        = "${{each.value.name}} Integration in API Management"
-    path                = "${{each.value.name}}"
-    resource_group_name = var.rgname
-    api_management_name = azurerm_api_management.{project_name}.name
-    revision            = 1
-    protocols           = ["https", "http"]
-    service_url         = "https://${{azurerm_linux_function_app.{project_name}.default_hostname}}/api/${{each.value.name}}"
-    subscription_required = false
-    depends_on = [
-        azurerm_storage_account.{project_name}
-    ]
+        for_each = var.function_map
+        name                = "api-integrate-${{each.value.name}}"
+        display_name        = "${{each.value.name}} Integration in API Management"
+        path                = "${{each.value.name}}"
+        resource_group_name = var.rgname
+        api_management_name = azurerm_api_management.{project_name}.name
+        revision            = 1
+        protocols           = ["https", "http"]
+        service_url         = "https://${{azurerm_linux_function_app.starkzipdeployment.default_hostname}}/api/${{each.value.name}}"
+        subscription_required = false
+        depends_on = [
+            azurerm_storage_account.{storage_account_name}
+        ]
     }}
 
 
@@ -485,67 +483,64 @@ def tf_writer_api_management_operations(data):
     }}
 
     resource "azurerm_api_management_api" "access_api" {{
-    for_each            = var.access_api
-    name                = "api-integrate-${{each.value.name}}"
-    display_name        = "${{each.value.name}} Integration in API Management"
-    path                = "${{each.value.name}}"
-    resource_group_name = var.rgname
-    api_management_name = azurerm_api_management.{project_name}.name
-    revision            = 1
-    protocols           = ["https", "http"]
-    service_url         = "https://${{azurerm_linux_function_app.{project_name}.default_hostname}}/api/${{each.value.name}}?"
-    subscription_required = false
-    depends_on = [
-        azurerm_storage_account.nicozipdeploy1
-    ]
+        for_each            = var.access_api
+        name                = "api-integrate-${{each.value.name}}"
+        display_name        = "${{each.value.name}} Integration in API Management"
+        path                = "${{each.value.name}}"
+        resource_group_name = var.rgname
+        api_management_name = azurerm_api_management.{project_name}.name
+        revision            = 1
+        protocols           = ["https", "http"]
+        service_url         = "https://${{azurerm_linux_function_app.starkzipdeployment.default_hostname}}/api/${{each.value.name}}?"
+        subscription_required = false
     }}
 
     resource "azurerm_api_management_api_operation" "access_operations" {{
         for_each              = var.access_api
         operation_id          = "${{each.value.name}}"
         api_name              = azurerm_api_management_api.access_api[each.value.name].name
-        display_name          = "Logout API"
+        display_name          = "${{each.value.name}} API"
         method                = "POST"
         url_template          = ""
         api_management_name   = azurerm_api_management.{project_name}.name
         resource_group_name   = var.rgname
-        description           = "Logout api"
+        description           = "${{each.value.name}} API operations"
     
     }}
 
     resource "azurerm_api_management_api_policy" "access_cors" {{
-    api_name            = azurerm_api_management_api_operation.access_operations.api_name
-    api_management_name = azurerm_api_management.{project_name}.name
-    resource_group_name = var.rgname
+        api_name            = azurerm_api_management_api_operation.access_operations["login"].api_name
+        api_management_name = azurerm_api_management.{project_name}.name
+        resource_group_name = var.rgname
 
-    xml_content = <<XML
-    <policies>
-        <inbound>
-            <base />
-            <cors allow-credentials="true">
-                <allowed-origins>
-                    <origin>${{var.origin}}</origin>
-                    <origin>http://localhost</origin>
-                </allowed-origins>
-                <allowed-methods preflight-result-max-age="200">
-                    <method>POST</method>
-                </allowed-methods>
-                <allowed-headers>
-                    <header>content-type</header>
-                </allowed-headers>
-            </cors>
-        </inbound>
-        <backend>
-            <base />
-        </backend>
-        <outbound>
-            <base />
-        </outbound>
-        <on-error>
-            <base />
-        </on-error>
-    </policies>
-    XML
+        xml_content = <<XML
+        <policies>
+            <inbound>
+                <base />
+                <cors allow-credentials="true">
+                    <allowed-origins>
+                        <origin>${{var.origin}}</origin>
+                        <origin>http://localhost</origin>
+                    </allowed-origins>
+                    <allowed-methods preflight-result-max-age="200">
+                        <method>POST</method>
+                    </allowed-methods>
+                    <allowed-headers>
+                        <header>content-type</header>
+                    </allowed-headers>
+                </cors>
+            </inbound>
+            <backend>
+                <base />
+            </backend>
+            <outbound>
+                <base />
+            </outbound>
+            <on-error>
+                <base />
+            </on-error>
+        </policies>
+        XML
 
     }}
 
@@ -555,80 +550,120 @@ def tf_writer_api_management_operations(data):
         api_management_name = azurerm_api_management.{project_name}.name
         resource_group_name = var.rgname
 
-    xml_content = <<XML
-    <policies>
-        <inbound>
-            <base />
-            <cors allow-credentials="true">
-                <allowed-origins>
-                    <origin>${{var.origin}}</origin>
-                    <origin>http://localhost</origin>
-                </allowed-origins>
-                <allowed-methods preflight-result-max-age="200">
-                    <method>GET</method>
-                    <method>POST</method>
-                    <method>PUT</method>
-                    <method>DELETE</method>
-                </allowed-methods>
-                <allowed-headers>
-                    <header>content-type</header>
-                </allowed-headers>
-            </cors>
-            <choose>
-                <!--
-                    If a cache miss call external authorizer
-                -->
-                <when condition="@(!context.Variables.ContainsKey("status"))">
-                    <!-- Invoke -->
-                    <send-request mode="new" response-variable-name="response" timeout="10" ignore-error="false">
-                        <set-url>https://{project_name}.azurewebsites.net/api/authorizer_default?</set-url>
-                        <set-method>GET</set-method>
-                        <set-header name="Authorization" exists-action="override">
-                            <value>@(context.Request.Headers.GetValueOrDefault("Authorization"))</value>
-                        </set-header>
-                        <set-header name="Cookie" exists-action="override">
-                            <value>@(context.Request.Headers.GetValueOrDefault("Cookie"))</value>
-                        </set-header>
-                    </send-request>
-                    <!-- Extract authorization status from authorizer's response -->
-                    <set-variable name="response-body" value="@(((IResponse)context.Variables["response"]).Body.As<JObject>())" />
-                    <trace source="MyTraceSource" severity="information">
-                        <message>@("Newly fetched " +((JObject)context.Variables["response-body"]).ToString())</message>
-                    </trace>
-                    <set-variable name="status" value="@(((JObject)context.Variables["response-body"])["isAuthorized"].ToString())" />
-                    <set-variable name="username" value="@(((JObject)((JObject)context.Variables["response-body"])["context"])["Username"].ToString())" />
+        xml_content = <<XML
+        <policies>
+            <inbound>
+                <base />
+                <cors allow-credentials="true">
+                    <allowed-origins>
+                        <origin>${{var.origin}}</origin>
+                        <origin>http://localhost</origin>
+                    </allowed-origins>
+                    <allowed-methods preflight-result-max-age="200">
+                        <method>GET</method>
+                        <method>POST</method>
+                        <method>PUT</method>
+                        <method>DELETE</method>
+                    </allowed-methods>
+                    <allowed-headers>
+                        <header>content-type</header>
+                    </allowed-headers>
+                </cors>
+                <choose>
+                    <!--
+                        If a cache miss call external authorizer
+                    -->
+                    <when condition="@(!context.Variables.ContainsKey("status"))">
+                        <!-- Invoke -->
+                        <send-request mode="new" response-variable-name="response" timeout="10" ignore-error="false">
+                            <set-url>https://{project_name}.azurewebsites.net/api/authorizer_default?</set-url>
+                            <set-method>GET</set-method>
+                            <set-header name="Authorization" exists-action="override">
+                                <value>@(context.Request.Headers.GetValueOrDefault("Authorization"))</value>
+                            </set-header>
+                            <set-header name="Cookie" exists-action="override">
+                                <value>@(context.Request.Headers.GetValueOrDefault("Cookie"))</value>
+                            </set-header>
+                        </send-request>
+                        <!-- Extract authorization status from authorizer's response -->
+                        <set-variable name="response-body" value="@(((IResponse)context.Variables["response"]).Body.As<JObject>())" />
+                        <trace source="MyTraceSource" severity="information">
+                            <message>@("Newly fetched " +((JObject)context.Variables["response-body"]).ToString())</message>
+                        </trace>
+                        <set-variable name="status" value="@(((JObject)context.Variables["response-body"])["isAuthorized"].ToString())" />
+                        <set-variable name="username" value="@(((JObject)((JObject)context.Variables["response-body"])["context"])["Username"].ToString())" />
 
-                    <!-- Cache authorization result -->
-                    <set-header name="x-STARK-Username" exists-action="override">
-                        <value>@((string)context.Variables["username"])</value>
-                    </set-header>
-                    <trace source="MyTraceSource" severity="information">
-                        <message>@((string)context.Variables["status"] + " : " + " : " + (string)context.Variables["username"])</message>
-                    </trace>
-                    <cache-store-value key="@(context.Request.Headers.GetValueOrDefault("Authorization"))" value="@((string)context.Variables["username"])" duration="5" />
-                </when>
-            </choose>
-            <choose>
-                <when condition="@((string)context.Variables["status"] == "403")">
-                    <return-response>
-                        <set-status code="403" reason="Forbidden" />
-                    </return-response>
-                </when>
-            </choose>
-        </inbound>
-        <backend>
-            <base />
-        </backend>
-        <outbound>
-            <base />
-        </outbound>
-        <on-error>
-            <base />
-        </on-error>
-    </policies>
-    XML
+                        <!-- Cache authorization result -->
+                        <set-header name="x-STARK-Username" exists-action="override">
+                            <value>@((string)context.Variables["username"])</value>
+                        </set-header>
+                        <trace source="MyTraceSource" severity="information">
+                            <message>@((string)context.Variables["status"] + " : " + " : " + (string)context.Variables["username"])</message>
+                        </trace>
+                        <cache-store-value key="@(context.Request.Headers.GetValueOrDefault("Authorization"))" value="@((string)context.Variables["username"])" duration="5" />
+                    </when>
+                </choose>
+                <choose>
+                    <when condition="@((string)context.Variables["status"] == "403")">
+                        <return-response>
+                            <set-status code="403" reason="Forbidden" />
+                        </return-response>
+                    </when>
+                </choose>
+            </inbound>
+            <backend>
+                <base />
+            </backend>
+            <outbound>
+                <base />
+            </outbound>
+            <on-error>
+                <base />
+            </on-error>
+        </policies>
+        XML
 
     }}
 
+    """
+    return textwrap.dedent(source_code)
+
+def tf_writer_variables(data):
+    entities = data["entities"]
+    source_code = f"""\
+        variable "origin" {{
+            type = string
+            default = "test for now"
+        }}
+
+        variable "access_api" {{
+            type    = map(object({{
+                name = string
+            }}))
+            default = {{
+                "login" = {{
+                name = "login"
+                }},
+                "logout" = {{
+                name = "logout"
+                }}
+            }}
+        }}
+
+        variable "function_map" {{
+            type    = map(object({{
+                name = string
+            }}))
+            default = {{"""
+    for entity in entities: 
+        entity_varname = converter.convert_to_system_name(entity) 
+        source_code += f"""
+            "{entity_varname}" = {{
+            name = "{entity_varname}"
+            }},
+        """
+    source_code += f"""
+            }}
+        }}
     """
     return textwrap.dedent(source_code)
