@@ -9,6 +9,7 @@ import textwrap
 
 def compose_stark_tf_script(data):
     tf_script = []
+
     # Static Site Hosting
     data["type"] = "static"
     data["storage_account_name"] = converter.convert_to_system_name(data['project_name'], 'az-storage-account')
@@ -18,6 +19,16 @@ def compose_stark_tf_script(data):
     tf_script.append({
         'filePath': "terraform/static_site_hosting.tf",
         'fileContent': storage_source_code.encode()
+    })
+
+    # API Gateway
+    api_management_source_code = ""
+    api_management_source_code += tf_writer_api_management(data)
+    api_management_source_code += tf_writer_api_management_operations(data)
+
+    tf_script.append({
+        'filePath': "terraform/api_management.tf",
+        'fileContent': api_management_source_code.encode()
     })
 
     # MongoDB Collections
@@ -43,16 +54,6 @@ def compose_stark_tf_script(data):
     tf_script.append({
         'filePath': "terraform/functions.tf",
         'fileContent': functions_source_code.encode()
-    })
-
-    # API Gateway
-    api_management_source_code = ""
-    api_management_source_code += tf_writer_api_management(data)
-    api_management_source_code += tf_writer_api_management_operations(data)
-
-    tf_script.append({
-        'filePath': "terraform/api_management.tf",
-        'fileContent': api_management_source_code.encode()
     })
 
     ## Variables
@@ -429,6 +430,7 @@ def tf_writer_api_management(data):
 
 def tf_writer_api_management_operations(data):
     project_name = data["project_name"]
+    storage_account_name = data['storage_account_name']
     source_code = f"""
 
     resource "azurerm_api_management_api_operation" "post_operation" {{
@@ -520,7 +522,7 @@ def tf_writer_api_management_operations(data):
                 <base />
                 <cors allow-credentials="true">
                     <allowed-origins>
-                        <origin>${{var.origin}}</origin>
+                        <origin>${{azurerm_storage_account.{storage_account_name}.primary_web_endpoint}}</origin>
                         <origin>http://localhost</origin>
                     </allowed-origins>
                     <allowed-methods preflight-result-max-age="200">
@@ -557,7 +559,7 @@ def tf_writer_api_management_operations(data):
                 <base />
                 <cors allow-credentials="true">
                     <allowed-origins>
-                        <origin>${{var.origin}}</origin>
+                        <origin>${{azurerm_storage_account.{storage_account_name}.primary_web_endpoint}}</origin>
                         <origin>http://localhost</origin>
                     </allowed-origins>
                     <allowed-methods preflight-result-max-age="200">
