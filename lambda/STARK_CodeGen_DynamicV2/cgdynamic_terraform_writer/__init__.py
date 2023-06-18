@@ -152,12 +152,13 @@ def tf_writer_storage_account(data):
     }}"""
     else:
         source_code += f"""
-        resource "azurerm_storage_container" "{resource_name}-container" {{
-            name                  = "{resource_name}-container"
-            storage_account_name  = azurerm_storage_account.{resource_name}.name
-            container_access_type = "private"
-        }}
-    }}"""
+    }}
+    resource "azurerm_storage_container" "{resource_name}-container" {{
+        name                  = "{resource_name}-container"
+        storage_account_name  = azurerm_storage_account.{resource_name}.name
+        container_access_type = "private"
+    }}
+    """
     
     return textwrap.dedent(source_code)
 
