@@ -48,6 +48,7 @@ def create():
         resources_yml = yaml.safe_load(resources_raw)
 
     os.system(f"mkdir functions_package")
+    os.system(f"echo pymongo==3.12.0 > requirements.txt")
     os.system(f"cp -R lambda/* functions_package")
 
     for stark_func in resources_yml['Lambda']:

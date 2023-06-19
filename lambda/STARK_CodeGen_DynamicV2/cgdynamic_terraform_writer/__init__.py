@@ -512,7 +512,7 @@ def tf_writer_api_management_operations(data):
     }}
 
     resource "azurerm_api_management_api_policy" "access_cors" {{
-        api_name            = azurerm_api_management_api_operation.access_operations["login"].api_name
+        api_name            = azurerm_api_management_api_operation.access_operations["stark_login"].api_name
         api_management_name = azurerm_api_management.{project_name}.name
         resource_group_name = var.rgname
 
@@ -644,11 +644,11 @@ def tf_writer_variables(data):
                 name = string
             }}))
             default = {{
-                "login" = {{
-                name = "login"
+                "stark_login" = {{
+                name = "stark_login"
                 }},
-                "logout" = {{
-                name = "logout"
+                "stark_logout" = {{
+                name = "stark_logout"
                 }}
             }}
         }}
