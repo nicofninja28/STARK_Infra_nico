@@ -24,7 +24,7 @@ def create(data):
     import stark_core
 
     from pymongo import MongoClient
-    from shared_code import stark_scrypt as scrypt
+    from helpers import stark_scrypt as scrypt
 
     def main(req: func.HttpRequest) -> func.HttpResponse:
 
