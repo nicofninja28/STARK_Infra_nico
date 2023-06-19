@@ -22,8 +22,8 @@ def create(data):
 
         const STARK={{
             'auth_url':`${{api_endpoint_1}}/stark_auth`,
-            'login_url':`${{api_endpoint_1}}/login`,
-            'logout_url':`${{api_endpoint_1}}/logout`,
+            'login_url':`${{api_endpoint_1}}/stark_login`,
+            'logout_url':`${{api_endpoint_1}}/stark_logout`,
             'sys_modules_url':`${{api_endpoint_1}}/sys_modules`,"""
 
     #Each entity is a big module, has own endpoint
