@@ -85,11 +85,14 @@ def create_store_terraform_files_to_bucket(data):
     
     # update stark_core files
 
-    for root, subdirs, files in os.walk('../lambda/stark_core'):
+    for root, subdirs, files in os.walk('../lambda/stark_core/'):
         for source_file in files:
-            with open(os.path.join(root, source_file)) as f:
+            with open(os.path.join(root, source_file), 'r') as f:
                 source_code = f.read().replace("[[STARK_MDB_TABLE_NAME]]", mongodb_database_name)
                 source_code = source_code.replace("[[COSMOSDB_CONNECTION_STRING]]", mongodb_connection_string)
+
+            with open(os.path.join(root, source_file), 'w') as f:
+                f.write(source_code)
     """
 
     return textwrap.dedent(source_code)
