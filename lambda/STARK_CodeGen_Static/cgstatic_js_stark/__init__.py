@@ -321,7 +321,7 @@ def create(data):
 
                 if(item == "Listviews") {{
                     if(temp) {{
-                        if(temp_item && temp.hasOwnProperty(key)) {{
+                        if(temp_item && temp_item.hasOwnProperty(key)) {{
                             let old_data = temp_item[key]["data"]
                             let new_data = data 
                             data = {{...old_data, ...new_data}}
