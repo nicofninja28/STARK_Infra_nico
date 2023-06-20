@@ -225,13 +225,10 @@ def lambda_handler(event, context):
 
     #    (user management, permissions, etc)
     
-    cosmosdb_primary_connection_string = event.get('ResourceProperties', {}).get('DBConnection','')
     for root, subdirs, files in os.walk('source_files'):
         for source_file in files:
             with open(os.path.join(root, source_file)) as f:
-                source_code = f.read().replace("[[STARK_MDB_TABLE_NAME]]", ddb_table_name)
-                source_code = source_code.replace("[[COSMOSDB_CONNECTION_STRING]]", cosmosdb_primary_connection_string)
-                source_code = source_code.replace("[[STARK_WEB_BUCKET]]", website_bucket)
+                source_code = f.read().replace("[[STARK_WEB_BUCKET]]", website_bucket)
                 source_code = source_code.replace("[[STARK_RAW_BUCKET]]", s3_analytics_raw_bucket_name)
                 source_code = source_code.replace("[[STARK_PROCESSED_BUCKET]]", s3_analytics_processed_bucket_name)
                 source_code = source_code.replace("[[STARK_ATHENA_BUCKET]]", s3_analytics_athena_bucket_name)
