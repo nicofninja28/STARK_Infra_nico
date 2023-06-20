@@ -8,91 +8,6 @@ import textwrap
 #Private modules
 import convert_friendly_to_system as converter
 
-def tf_writer_azure_config(data):
-
-    ##FIXME: must find a way to make sure azurerm is using the latest version
-    source_code = f"""
-    # Configure the Azure provider
-    terraform {{
-        required_providers {{
-            azurerm = {{
-            source  = "hashicorp/azurerm"
-            version = "~> 3.45"
-            }}
-        }}
-
-        required_version = ">= 1.1.0"
-    }}
-
-    provider "azurerm" {{
-        features {{}}
-    }}
-
-    
-    """
-    return textwrap.dedent(source_code)
-
-def tf_writer_cosmosdb_account(data):
-    project_name = converter.convert_to_system_name(data["project_name"], "az-cosmos-db") 
-    source_code = f"""
-
-    resource "azurerm_cosmosdb_account" "stark_storage_account" {{
-        name                 = "{project_name}"
-        location             = var.rglocation
-        resource_group_name  = var.rgname
-        offer_type           = "Standard"
-        kind                 = "MongoDB"
-        mongo_server_version = 4.2
-        consistency_policy {{
-            consistency_level = "Session"
-        }}
-
-        geo_location {{
-            location          = var.rglocation
-            failover_priority = 0
-        }}
-
-        capabilities {{
-            name = "EnableServerless"
-        }}
-
-        tags = {{
-            environment = "dev"
-        }}
-    }}
-
-    resource "azurerm_cosmosdb_mongo_database" "db_name" {{
-        name                = "{project_name}-mongodb"
-        resource_group_name = var.rgname
-        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
-    }}
-    
-    variable "rgname" {{
-        type = string
-        default = "resource_group_test2"
-    }}
-
-    variable "rglocation" {{
-        type = string 
-        default = "Southeast Asia"
-    }}
-
-    output "mongodb_database_name" {{
-        description = "Database name of the MongoDB instance"
-        value       = azurerm_cosmosdb_account.stark_storage_account.name
-    }}
-
-    output "mongodb_connection_string" {{
-        sensitive = true
-        description = "Connection string for the MongoDB instance"
-        value       = azurerm_cosmosdb_account.stark_storage_account.connection_strings[0]
-    }}
-
-
-    """
-    
-    return textwrap.dedent(source_code)
-
 def create_store_terraform_files_to_bucket(data):
 
     source_code = f"""\
@@ -130,24 +45,23 @@ def create_store_terraform_files_to_bucket(data):
         
     # Call the function to get the Terraform output
     tf_output = get_terraform_output()
-    mongodb_database_name     = tf_output['database_name']
-    mongodb_connection_string = tf_output['connection_string']
+    mongodb_database_name     = tf_output['database_name'].strip('"')
+    mongodb_connection_string = tf_output['connection_string'].strip('"')
 
     # Open the JSON file
     with open('../cgdynamic_payload.json', 'r') as file:
         data = json.load(file)
 
     # Modify the content by adding a new attribute
-    data['ResourceProperties']['DBConnection'] = mongodb_connection_string.strip('"')
-    data['ResourceProperties']['DDBTable'] = mongodb_database_name.strip('"')
+    data['ResourceProperties']['DBConnection'] = mongodb_connection_string
+    data['ResourceProperties']['DDBTable'] = mongodb_database_name
 
     repo_name = data['ResourceProperties']["RepoName"]
     
     # Save the modified data back to the same file
     with open('../cgdynamic_payload.json', 'w') as file:
         json.dump(data, file)
-
-    files_to_commit = []
+                
     directory_path = "."
     # Traverse the directory and collect file paths
     file_paths = []
@@ -156,7 +70,7 @@ def create_store_terraform_files_to_bucket(data):
             file_path = os.path.join(root, file)
             file_paths.append(file_path)
 
-    # Collect files to commit
+    # Collect files to store in s3
     for file_path in file_paths:
         filename = os.path.basename(file_path)
         tf_script_and_state_files = [
@@ -169,13 +83,13 @@ def create_store_terraform_files_to_bucket(data):
                 file_content = file.read()
                 put_to_s3_terraform_directory(filename, file_content)
     
-    def put_to_s3_terraform_directory(filename, file_content):
-        response = s3.put_object(
-            Body=file_content,
-            Bucket=codegen_bucket_name,
-            Key=f'codegen_dynamic/{{project_varname}}/terraform/{{filename}}'
-        )
+    # update stark_core files
 
+    for root, subdirs, files in os.walk('../lambda/stark_core'):
+        for source_file in files:
+            with open(os.path.join(root, source_file)) as f:
+                source_code = f.read().replace("[[STARK_MDB_TABLE_NAME]]", mongodb_database_name)
+                source_code = source_code.replace("[[COSMOSDB_CONNECTION_STRING]]", mongodb_connection_string)
     """
 
     return textwrap.dedent(source_code)
