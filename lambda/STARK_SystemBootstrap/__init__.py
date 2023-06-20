@@ -91,20 +91,8 @@ def create_handler(event, context):
         'fileContent': source_code.encode()
     })  
 
-    ##FIXME: json payloads for cgdynamic, cgstatic, and prelaunch v2. revisit later if still needs optimization
+    ##FIXME: For clean up, leave here for the meantime while testing 
     data = {"project_name": project_name}
-    
-    source_code = boot_initial_resource.tf_writer_azure_config(data)
-    files_to_commit.append({
-        'filePath': "terraform/main.tf",
-        'fileContent': source_code.encode()
-    })
-
-    source_code = boot_initial_resource.tf_writer_cosmosdb_account(data)
-    files_to_commit.append({
-        'filePath': "terraform/database.tf",
-        'fileContent': source_code.encode()
-    }) 
 
     source_code = boot_initial_resource.create_store_terraform_files_to_bucket(data)
     files_to_commit.append({

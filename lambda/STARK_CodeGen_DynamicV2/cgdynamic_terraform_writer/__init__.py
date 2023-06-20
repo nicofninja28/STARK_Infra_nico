@@ -1,7 +1,7 @@
 ##TODO: 
 #1 resource group and locations are hardcoded using var.rgname and var.location for now. make it so that it will be 
 #  using the resource group created through terraform and the location from the environment variable.
-#2 make sas start and end date dynamic
+#2 make SAS start and end date dynamic
                              
 
 import convert_friendly_to_system as converter
@@ -9,6 +9,12 @@ import textwrap
 
 def compose_stark_tf_script(data):
     tf_script = []
+
+    main_source_code = tf_writer_azure_config(data)
+    tf_script.append({
+        'filePath': "terraform/main.tf",
+        'fileContent': main_source_code.encode()
+    })
 
     # Static Site Hosting
     data["type"] = "static"
@@ -31,13 +37,19 @@ def compose_stark_tf_script(data):
         'fileContent': api_management_source_code.encode()
     })
 
-    # MongoDB Collections
-    business_modules_collection = tf_writer_cosmosdb_business_modules(data)
+    # MongoDB 
+    db_source_code = tf_writer_cosmosdb_account(data)
+    tf_script.append({
+        'filePath': "terraform/database.tf",
+        'fileContent': db_source_code.encode()
+    }) 
 
+    business_modules_collection = tf_writer_cosmosdb_business_modules(data)
     tf_script.append({
         'filePath': "terraform/business_modules_collection.tf",
         'fileContent': business_modules_collection.encode()
     })
+    
     stark_modules_collection = tf_writer_cosmosdb_stark_modules(data)
     tf_script.append({
         'filePath': "terraform/stark_modules_collection.tf",
@@ -166,6 +178,7 @@ def tf_writer_storage_account(data):
 def tf_writer_cosmosdb_account(data):
     project_name = converter.convert_to_system_name(data["project_name"], "az-cosmos-db") 
     source_code = f"""
+
     resource "azurerm_cosmosdb_account" "stark_storage_account" {{
         name                 = "{project_name}"
         location             = var.rglocation
@@ -192,11 +205,31 @@ def tf_writer_cosmosdb_account(data):
     }}
 
     resource "azurerm_cosmosdb_mongo_database" "db_name" {{
-    name                = "{project_name}-mongodb"
-    resource_group_name = var.rgname
-    account_name        = azurerm_cosmosdb_account.stark_storage_account.name
+        name                = "{project_name}-mongodb"
+        resource_group_name = var.rgname
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     }}
     
+    variable "rgname" {{
+        type = string
+        default = "resource_group_test2"
+    }}
+
+    variable "rglocation" {{
+        type = string 
+        default = "Southeast Asia"
+    }}
+
+    output "mongodb_database_name" {{
+        description = "Database name of the MongoDB instance"
+        value       = azurerm_cosmosdb_account.stark_storage_account.name
+    }}
+
+    output "mongodb_connection_string" {{
+        sensitive = true
+        description = "Connection string for the MongoDB instance"
+        value       = azurerm_cosmosdb_account.stark_storage_account.connection_strings[0]
+    }}    
     """
     
     return textwrap.dedent(source_code)
