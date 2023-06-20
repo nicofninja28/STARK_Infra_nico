@@ -110,6 +110,17 @@ def tf_writer_azure_config(data):
     provider "azurerm" {{
         features {{}}
     }}
+    
+    variable "rgname" {{
+        type = string
+        default = "resource_group_test2"
+    }}
+
+    variable "rglocation" {{
+        type = string 
+        default = "Southeast Asia"
+    }}
+
 
     
     """
@@ -214,16 +225,6 @@ def tf_writer_cosmosdb_account(data):
         name                = "{project_name}-mongodb"
         resource_group_name = var.rgname
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
-    }}
-    
-    variable "rgname" {{
-        type = string
-        default = "resource_group_test2"
-    }}
-
-    variable "rglocation" {{
-        type = string 
-        default = "Southeast Asia"
     }}
 
     output "mongodb_database_name" {{
@@ -332,17 +333,17 @@ def tf_writer_cosmosdb_stark_modules(data):
     }}
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_sessions_collection" {{
-    name                = "STARK_User_Sessions"
-    resource_group_name = var.rgname
-    account_name        = azurerm_cosmosdb_account.stark_storage_account.name
-    database_name       = azurerm_cosmosdb_mongo_database.db_name.name
+        name                = "STARK_User_Sessions"
+        resource_group_name = var.rgname
+        account_name        = azurerm_cosmosdb_account.stark_storage_account.name
+        database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
-        index {{
-            keys    = ["_id"]
-            unique = true
+            index {{
+                keys    = ["_id"]
+                unique = true
+            }}
+
         }}
-
-    }}
 
     """
     
