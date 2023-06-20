@@ -269,9 +269,15 @@ def lambda_handler(event, context):
     #     'fileContent': source_code.encode()
     # })
     
-    source_code = cg_packager.create()
+    source_code = cg_packager.create_packager()
     files_to_commit.append({
         'filePath': "packager.py",
+        'fileContent': source_code.encode()
+    })
+
+    source_code = cg_packager.create_terraform_output_utility()
+    files_to_commit.append({
+        'filePath': "terraform_output_utility.py",
         'fileContent': source_code.encode()
     })
     
