@@ -36,6 +36,11 @@ cg_delete            = importlib.import_module(f"{prepend_dir}cgstatic_html_dele
 cg_listview          = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")  
 cg_homepage          = importlib.import_module(f"{prepend_dir}cgstatic_html_homepage")  
 cg_report            = importlib.import_module(f"{prepend_dir}cgstatic_html_report")   
+cg_header            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_header")
+cg_footer            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_footer")
+cg_bodyhead          = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_bodyhead")
+cg_loadmod           = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_loadingmodal")
+cg_navbar            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_navbar")
 
 import convert_friendly_to_system as converter
 import get_relationship as get_rel
@@ -176,6 +181,9 @@ def create_handler(event, context):
         with open(dir + os.sep + html_file) as f:
             #replace all occurences of "[[STARK_PROJECT_NAME]]" with project_name
             source_code = f.read().replace("[[STARK_PROJECT_NAME]]", project_name)
+            source_code = source_code.replace("[[NAVBAR]]", textwrap.dedent(cg_navbar.create()))
+            source_code = source_code.replace("[[LOADING MODAL]]", textwrap.dedent(cg_loadmod.create()))
+            source_code = source_code.replace("[[FOOTER]]", textwrap.dedent(cg_footer.create()) )
             add_to_commit(source_code=source_code, key=html_file, files_to_commit=files_to_commit, file_path='static')
 
     ##################################################################
@@ -260,8 +268,8 @@ def create_handler(event, context):
     pipeline_definition = pickle.loads(response['Body'].read()) 
     print(pipeline_definition)
     response = cdpl.update_pipeline(pipeline=pipeline_definition['pipeline'])
-    cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
-
+    #Bugfix: removed line below to avoid double-trigger of pipeline
+    #cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
 
 @helper.delete
 def no_op(_, __):
