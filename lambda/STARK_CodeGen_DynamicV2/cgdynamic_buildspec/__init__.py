@@ -52,10 +52,14 @@ def create(data):
                 commands:
                 - BUCKET={codegen_bucket_name}
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
+                - aws s3 sync s3://$BUCKET/codegen_dynamic/{project_varname}/terraform/ terraform/
                 - python3 ./packager.py
                 - pip install pymongo --target functions_package
-                - aws s3 sync s3://$BUCKET/codegen_dynamic/{project_varname}/terraform/ terraform/
-                - cd terraform
+                - cd terraform/database
+                - terraform init
+                - terraform apply --auto-approve
+                - python3 ../../terraform_output_utility.py
+                - cd ..
                 - terraform init
                 - terraform apply --auto-approve
                 - python ../store_terraform_files_to_bucket.py

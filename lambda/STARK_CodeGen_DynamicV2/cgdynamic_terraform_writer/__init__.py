@@ -10,6 +10,31 @@ import textwrap
 def compose_stark_tf_script(data):
     tf_script = []
 
+    database_main_source_code = tf_writer_azure_config(data)
+    tf_script.append({
+        'filePath': "terraform/database/main.tf",
+        'fileContent': database_main_source_code.encode()
+    })
+
+    # MongoDB 
+    db_source_code = tf_writer_cosmosdb_account(data)
+    tf_script.append({
+        'filePath': "terraform/database/database.tf",
+        'fileContent': db_source_code.encode()
+    }) 
+
+    business_modules_collection = tf_writer_cosmosdb_business_modules(data)
+    tf_script.append({
+        'filePath': "terraform/database/business_modules_collection.tf",
+        'fileContent': business_modules_collection.encode()
+    })
+    
+    stark_modules_collection = tf_writer_cosmosdb_stark_modules(data)
+    tf_script.append({
+        'filePath': "terraform/database/stark_modules_collection.tf",
+        'fileContent': stark_modules_collection.encode()
+    })
+
     main_source_code = tf_writer_azure_config(data)
     tf_script.append({
         'filePath': "terraform/main.tf",
@@ -35,25 +60,6 @@ def compose_stark_tf_script(data):
     tf_script.append({
         'filePath': "terraform/api_management.tf",
         'fileContent': api_management_source_code.encode()
-    })
-
-    # MongoDB 
-    db_source_code = tf_writer_cosmosdb_account(data)
-    tf_script.append({
-        'filePath': "terraform/database.tf",
-        'fileContent': db_source_code.encode()
-    }) 
-
-    business_modules_collection = tf_writer_cosmosdb_business_modules(data)
-    tf_script.append({
-        'filePath': "terraform/business_modules_collection.tf",
-        'fileContent': business_modules_collection.encode()
-    })
-    
-    stark_modules_collection = tf_writer_cosmosdb_stark_modules(data)
-    tf_script.append({
-        'filePath': "terraform/stark_modules_collection.tf",
-        'fileContent': stark_modules_collection.encode()
     })
 
     # Functions
