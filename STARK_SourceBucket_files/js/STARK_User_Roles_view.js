@@ -537,8 +537,10 @@ var root = new Vue({
 
         refresh_list () {
             root.listview_table = ''
+            root.curr_page = 1
             STARK.local_storage_delete_key('Listviews', 'STARK_User_Roles'); //localStorage
             root.list()
+            root.prev_disabled = true
         },
         
         //Charting ------------------------------------------------
