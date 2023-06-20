@@ -79,12 +79,11 @@ def create(data):
         html_code=f"""<b-form-textarea id="{col_varname}" v-model="{field_entity_varname}.{col_varname}" class="mb-2" rows="4" max-rows="8" {state_control}></b-form-textarea>"""
 
     elif isinstance(col_type, list):
-        html_code=f"""
-                        <b-form-select id="{col_varname}" v-model="{field_entity_varname}.{col_varname}" :options="lists.{col_varname}" {state_control}>
-                            <template v-slot:first>
-                                <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
-                            </template>
-                        </b-form-select>"""
+        html_code=f"""<b-form-select id="{col_varname}" v-model="{field_entity_varname}.{col_varname}" :options="lists.{col_varname}" {state_control}>
+                                    <template v-slot:first>
+                                        <b-form-select-option :value="null" disabled>-- Please select an option --</b-form-select-option>
+                                    </template>
+                                </b-form-select>"""
 
     elif isinstance(col_type, dict):
         #These are the complex data types that need additional settings as part of their spec
@@ -174,7 +173,7 @@ def create(data):
             html_code=f"""{ugly_hack}<b-form-radio-group id="{col_varname}" v-model="{field_entity_varname}.{col_varname}" :options="lists.{col_varname}" {buttons} {state_control}></b-form-radio-group>"""
         elif col_type["type"] == "multi select combo":
             dropup_flag = col_type.get('dropup',"false") #dropup by default is false as for now, only reporting is using this property
-            html_code =f"""<b-form-group label-for="tags-with-dropdown">
+            html_code=f"""<b-form-group label-for="tags-with-dropdown">
                                 <b-form-tags id="tags-with-dropdown" v-model="multi_select_values.{col_varname}" no-outer-focus {state_control}>
                                     <template v-slot="{{ tags, disabled, addTag, removeTag, inputAttrs, inputHandlers}}">
                                         <b-form-tags style="border:0px" no-outer-focus input-id="{col_varname}" v-model="multi_select_values.{col_varname}" remove-on-delete :input-attrs="{{autocomplete: 'off' }}" add-on-change>

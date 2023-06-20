@@ -42,8 +42,6 @@ def create(data):
     source_code += cg_bodyhead.create(data, "New")
 
     source_code += f"""\
-        <!--<div class="container-unauthorized" v-if="!stark_permissions['{entity}|Add']">UNAUTHORIZED!</div>
-        <div class="main-continer" v-if="stark_permissions['{entity}|Add']">-->
             <div class="container hidden" :style="{{visibility: visibility}}">
                 <div class="row">
                     <div class="col">
@@ -113,7 +111,7 @@ def create(data):
                         "is_many_control": True
                     })
                     
-                    source_code += f"""
+                source_code += f"""
                                                             <b-form-group class="form-group col-sm" label="{rel_col_key}" label-for="{rel_col_varname}" :invalid-feedback="many_entity.{child_entity_varname}.validation_properties[index].{rel_col_varname}.feedback">
                                                                 {rel_html_control_code}
                                                             </b-form-group>"""
@@ -158,7 +156,6 @@ def create(data):
             </div>
         </div>
 """
-
     source_code += cg_loadmod.create()
     source_code += cg_footer.create()
 
