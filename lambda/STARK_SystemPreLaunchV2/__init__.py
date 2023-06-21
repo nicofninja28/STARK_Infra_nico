@@ -183,7 +183,7 @@ def lambda_handler(event, context):
             business_module['Image_Alt']         =  ""
             business_module['Priority']          =  0
 
-    collection = mdb_database["STARK_Modules"]
+    collection = mdb_database["STARK_Module"]
     collection.insert_many(modules_list)
 
     #User Permissions
