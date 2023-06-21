@@ -1,13 +1,13 @@
 #Python Standard Library
 import base64
-from copyreg import constructor
 import json
 import importlib
 from urllib.parse import unquote
+import logging
 
 #Extra modules
-import boto3
 import uuid
+import azure.functions as func
 
 #STARK
 import stark_core
@@ -15,22 +15,18 @@ from stark_core import utilities
 from stark_core import validation
 from stark_core import data_abstraction
 
-ddb = boto3.client('dynamodb')
-s3_res = boto3.resource('s3')
+
 
 #######
 #CONFIG
-ddb_table         = stark_core.ddb_table
+mdb_collection    = stark_core.mdb_database["STARK_Module_Groups"]
 bucket_name       = stark_core.bucket_name
-region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
-bucket_url        = stark_core.bucket_url
-bucket_tmp        = stark_core.bucket_tmp
 pk_field          = "Group_Name"
 default_sk        = "STARK|module_group"
 sort_fields       = ["Group_Name", ]
 relationships     = []
-entity_upload_dir = stark_core.upload_dir + "STARK_Module/"
+entity_upload_dir = stark_core.upload_dir + "STARK_Module_Group/"
 metadata          = {
     'Group_Name': {
         'value': '',
@@ -67,7 +63,7 @@ metadata          = {
 }
 
 ############
-#PERMISSIONS
+#az_PERMISSIONS
 stark_permissions = {
     'view': 'Module Groups|View',
     'add': 'Module Groups|Add',
@@ -76,34 +72,40 @@ stark_permissions = {
     'report': 'Module Groups|Report'
 }
 
-def lambda_handler(event, context):
+def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     responseStatusCode = 200
-    #Get request type
-    request_type = event.get('queryStringParameters',{}).get('rt','')
+    # #Get request type
+    # request_type = event.get('queryStringParameters',{}).get('rt','')
+    logging.info("REQUEST PARAMETERS")
+    logging.info(req.params)
+    request_type = req.params.get("rt", '')
+    logging.info(request_type)
 
     if request_type == '':
         ########################
         #Handle non-GET requests
-
         #Get specific request method
-        method  = event.get('requestContext').get('http').get('method')
+        # method  = event.get('requestContext').get('http').get('method')
+        method  = req.method
 
-        if event.get('isBase64Encoded') == True :
-            payload = json.loads(base64.b64decode(event.get('body'))).get('STARK_Module_Groups',"")
-        else:    
-            payload = json.loads(event.get('body')).get('STARK_Module_Groups',"")
-
+        # if event.get('isBase64Encoded') == True :
+        #     payload = json.loads(base64.b64decode(event.get('body'))).get('STARK_Module_Groups',"")
+        # else:    
+        #     payload = json.loads(event.get('body')).get('STARK_Module_Groups',"")
+        
+        payload = json.loads(req.get_body().decode()).get('STARK_Module_Groups', "")
         data    = {}
-
+        
+        logging.info(method)
+        logging.info(payload)
         if payload == "":
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Client payload missing"),
-                "headers": {
+            return func.HttpResponse(
+                "Client payload missing",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
+            )
         else:
             isInvalidPayload = False
             data['pk'] = payload.get('Group_Name')
@@ -137,133 +139,126 @@ def lambda_handler(event, context):
             data['STARK_uploaded_s3_keys'] = payload.get('STARK_uploaded_s3_keys',{})
 
             if isInvalidPayload:
-                return {
-                    "isBase64Encoded": False,
-                    "statusCode": 400,
-                    "body": json.dumps("Missing operators"),
-                    "headers": {
+                return func.HttpResponse(
+                    "Missing operators",
+                    status_code = 400,
+                    headers = {
                         "Content-Type": "application/json",
                     }
-                }
+                )
+            
         if method == "DELETE":
-            if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                response = delete(data)
+            if(stark_core.sec.az_is_authorized(stark_permissions['delete'], req)):
+                response = delete(data, mdb_collection)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
         elif method == "PUT":
-            if(stark_core.sec.is_authorized(stark_permissions['edit'], event, ddb)):
+            if(stark_core.sec.az_is_authorized(stark_permissions['edit'], req)):
                 payload = data
                 payload[pk_field] = data['pk']
                 invalid_payload = validation.validate_form(payload, metadata)
                 if len(invalid_payload) > 0:
-                    return {
-                        "isBase64Encoded": False,
-                        "statusCode": responseStatusCode,
-                        "body": json.dumps(invalid_payload),
-                        "headers": {
+                    return func.HttpResponse(
+                        json.dumps(invalid_payload),
+                        status_code = 400,
+                        headers = {
                             "Content-Type": "application/json",
                         }
-                    }
+                    )
                 else:
                 #We can't update DDB PK, so if PK is different, we need to do ADD + DELETE
                     if data['orig_pk'] == data['pk']:
-                        response = edit(data)
+                        response = edit(data, mdb_collection)
                     else:
-                        response   = add(data, method)
+                        # response   = add(data, method)
                         data['pk'] = data['orig_pk']
-                        response   = delete(data)
+                        # response   = delete(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
         elif method == "POST":
             if 'STARK_isReport' in data:
-                if(stark_core.sec.is_authorized(stark_permissions['report'], event, ddb)):
+                if(stark_core.sec.az_is_authorized(stark_permissions['report'], req)):
                     print(data)
                     response = report(data, default_sk)
                 else:
                     responseStatusCode, response = stark_core.sec.authFailResponse
             else:
-                if(stark_core.sec.is_authorized(stark_permissions['add'], event, ddb)):
+                if(stark_core.sec.az_is_authorized(stark_permissions['add'], req)):
                     payload = data
                     payload[pk_field] = data['pk']
                     invalid_payload = validation.validate_form(payload, metadata)
+                    logging.info(invalid_payload)
                     if len(invalid_payload) > 0:
-                        return {
-                            "isBase64Encoded": False,
-                            "statusCode": responseStatusCode,
-                            "body": json.dumps(invalid_payload),
-                            "headers": {
+                        return func.HttpResponse(
+                            json.dumps(invalid_payload),
+                            status_code = responseStatusCode,
+                            headers = {
                                 "Content-Type": "application/json",
                             }
-                        }
+                        )
 
                     else:
-                        response = add(data)
+                        response = add(data, method, mdb_collection)
                 else:
                     responseStatusCode, response = stark_core.sec.authFailResponse
 
         else:
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Could not handle API request"),
-                "headers": {
+            return func.HttpResponse(
+                "Could not handle API request",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
-
+            )
     else:
         ####################
         #Handle GET requests
         if request_type == "all":
             #check for submitted token
-            lv_token = event.get('queryStringParameters',{}).get('nt', None)
+            lv_token = req.params.get('nt', None)
             if lv_token != None:
                 lv_token = unquote(lv_token)
                 lv_token = json.loads(lv_token)
 
-            items, next_token = get_all(default_sk, lv_token)
-
+            items = get_all(default_sk, lv_token)
+            next_token = ''
             response = {
                 'Next_Token': json.dumps(next_token),
                 'Items': items
             }
 
         elif request_type == "get_fields":
-            fields = event.get('queryStringParameters').get('fields','')
+            fields = req.params.get('fields','')
             fields = fields.split(",")
-            response = data_abstraction.get_fields(fields, pk_field, default_sk)
+            response = data_abstraction.az_get_fields(fields, pk_field, default_sk)
 
         elif request_type == "detail":
 
-            pk = event.get('queryStringParameters').get('Group_Name','')
-            sk = event.get('queryStringParameters').get('sk','')
-            print('pk')
-            print(pk)
-            print(sk)
+            pk = req.params.get('Group_Name','')
+            sk = req.params.get('sk','')
             if sk == "":
                 sk = default_sk
 
-            response = get_by_pk(pk, sk)
+            response = get_by_id(pk, sk)
         else:
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Could not handle GET request - unknown request type"),
-                "headers": {
+            
+            return func.HttpResponse(
+                "Could not handle GET request - unknown request type",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
-
-    return {
-        "isBase64Encoded": False,
-        "statusCode": responseStatusCode,
-        "body": json.dumps(response),
-        "headers": {
-            "Content-Type": "application/json",
-        }
-    }
+            )
+    
+    return func.HttpResponse(
+                json.dumps(response),
+                status_code = responseStatusCode,
+                headers = {
+                    "Content-Type": "application/json",
+                }
+            )
 
 def report(data, sk=default_sk):
     #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
@@ -282,218 +277,199 @@ def report(data, sk=default_sk):
                 report_param_dict.update(processed_operator_and_parameter_dict['report_params'])
     string_filter = temp_string_filter[1:-3]
 
-    next_token = 'initial'
-    items = []
-    ddb_arguments = {}
-    aggregated_results = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['IndexName'] = "STARK-ListView-Index"
-    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    ddb_arguments['Limit'] = 2
-    ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
-    ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
-    ddb_arguments['ExpressionAttributeValues'] = object_expression_value
+    # next_token = 'initial'
+    # items = []
+    # ddb_arguments = {}
+    # aggregated_results = {}
+    # ddb_arguments['TableName'] = ddb_table
+    # ddb_arguments['IndexName'] = "STARK-ListView-Index"
+    # ddb_arguments['Select'] = "ALL_ATTRIBUTES"
+    # ddb_arguments['Limit'] = 2
+    # ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
+    # ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    # ddb_arguments['ExpressionAttributeValues'] = object_expression_value
 
-    if temp_string_filter != "":
-        ddb_arguments['FilterExpression'] = string_filter
+    # if temp_string_filter != "":
+    #     ddb_arguments['FilterExpression'] = string_filter
 
-    while next_token != None:
-        next_token = '' if next_token == 'initial' else next_token
+    # while next_token != None:
+    #     next_token = '' if next_token == 'initial' else next_token
 
-        if next_token != '':
-            ddb_arguments['ExclusiveStartKey']=next_token
+    #     if next_token != '':
+    #         ddb_arguments['ExclusiveStartKey']=next_token
 
-        response = ddb.query(**ddb_arguments)
-        raw = response.get('Items')
-        next_token = response.get('LastEvaluatedKey')
-        aggregate_report = False if data['STARK_group_by_1'] == '' else True
-        for record in raw:
-            item = map_results(record)
-            if aggregate_report:
-                aggregate_key = data['STARK_group_by_1']
-                aggregate_key_value = item.get(aggregate_key)
-                if aggregate_key_value in aggregated_results:
-                    for field in data['STARK_count_fields']:
-                        count_index_name = f"Count of {field}"
-                        aggregated_results[aggregate_key_value][count_index_name] += 1
+    #     response = ddb.query(**ddb_arguments)
+    #     raw = response.get('Items')
+    #     next_token = response.get('LastEvaluatedKey')
+    #     aggregate_report = False if data['STARK_group_by_1'] == '' else True
+    #     for record in raw:
+    #         item = map_results(record)
+    #         if aggregate_report:
+    #             aggregate_key = data['STARK_group_by_1']
+    #             aggregate_key_value = item.get(aggregate_key)
+    #             if aggregate_key_value in aggregated_results:
+    #                 for field in data['STARK_count_fields']:
+    #                     count_index_name = f"Count of {field}"
+    #                     aggregated_results[aggregate_key_value][count_index_name] += 1
 
-                    for field in data['STARK_sum_fields']:
-                        sum_index_name = f"Sum of {field}"
-                        sum_value = float(item.get(field))
-                        aggregated_results[aggregate_key_value][sum_index_name] = round(aggregated_results[aggregate_key_value][sum_index_name], 1) + sum_value
+    #                 for field in data['STARK_sum_fields']:
+    #                     sum_index_name = f"Sum of {field}"
+    #                     sum_value = float(item.get(field))
+    #                     aggregated_results[aggregate_key_value][sum_index_name] = round(aggregated_results[aggregate_key_value][sum_index_name], 1) + sum_value
 
-                    for column in data['STARK_report_fields']:
-                        if column != aggregate_key:  
-                            aggregated_results[aggregate_key_value][column] = item.get(column.replace(" ","_"))
+    #                 for column in data['STARK_report_fields']:
+    #                     if column != aggregate_key:  
+    #                         aggregated_results[aggregate_key_value][column] = item.get(column.replace(" ","_"))
 
-                else:
-                    temp_dict = { aggregate_key : aggregate_key_value}
-                    for field in data['STARK_count_fields']:
-                        count_index_name = f"Count of {field}"
-                        temp_dict.update({
-                            count_index_name:  1
-                        })
+    #             else:
+    #                 temp_dict = { aggregate_key : aggregate_key_value}
+    #                 for field in data['STARK_count_fields']:
+    #                     count_index_name = f"Count of {field}"
+    #                     temp_dict.update({
+    #                         count_index_name:  1
+    #                     })
 
-                    for field in data['STARK_sum_fields']:
-                        sum_index_name = f"Sum of {field}"
-                        sum_value = float(item.get(field))
-                        temp_dict.update({
-                            sum_index_name: sum_value
-                        })
+    #                 for field in data['STARK_sum_fields']:
+    #                     sum_index_name = f"Sum of {field}"
+    #                     sum_value = float(item.get(field))
+    #                     temp_dict.update({
+    #                         sum_index_name: sum_value
+    #                     })
 
-                    for column in data['STARK_report_fields']:
-                        if column != aggregate_key:  
-                            temp_dict.update({
-                                column: item.get(column.replace(" ","_"))
-                            })
+    #                 for column in data['STARK_report_fields']:
+    #                     if column != aggregate_key:  
+    #                         temp_dict.update({
+    #                             column: item.get(column.replace(" ","_"))
+    #                         })
 
-                    aggregated_results[aggregate_key_value] = temp_dict
-            else:
-                items.append(item)
+    #                 aggregated_results[aggregate_key_value] = temp_dict
+    #         else:
+    #             items.append(item)
 
-    report_list = []
-    csv_file = ''
-    pdf_file = ''
-    report_header = []
-    diff_list = []
-    if aggregate_report:
-        temp_list = []
-        for key, val in aggregated_results.items():
-            temp_header = []
-            for index in val.keys():
-                temp_header.append(index.replace("_"," "))
-            temp_list.append(val)
-            report_header = temp_header
-        items = temp_list
-    else:
-        display_fields = data['STARK_report_fields']
-        master_fields = []
-        for key in metadata.keys():
-            master_fields.append(key.replace("_"," "))
-        if len(display_fields) > 0:
-            report_header = display_fields
-            diff_list = list(set(master_fields) - set(display_fields))
-        else:
-            report_header = master_fields
+    # report_list = []
+    # csv_file = ''
+    # pdf_file = ''
+    # report_header = []
+    # diff_list = []
+    # if aggregate_report:
+    #     temp_list = []
+    #     for key, val in aggregated_results.items():
+    #         temp_header = []
+    #         for index in val.keys():
+    #             temp_header.append(index.replace("_"," "))
+    #         temp_list.append(val)
+    #         report_header = temp_header
+    #     items = temp_list
+    # else:
+    #     display_fields = data['STARK_report_fields']
+    #     master_fields = []
+    #     for key in metadata.keys():
+    #         master_fields.append(key.replace("_"," "))
+    #     if len(display_fields) > 0:
+    #         report_header = display_fields
+    #         diff_list = list(set(master_fields) - set(display_fields))
+    #     else:
+    #         report_header = master_fields
 							   
 
-    if len(items) > 0:
-        for key in items:
-            temp_dict = {}
-            #remove primary identifiers and STARK attributes
-            if not aggregate_report:
-                key.pop("sk")
-            for index, value in key.items():
-                temp_dict[index.replace("_"," ")] = value
-            report_list.append(temp_dict)								 
+    # if len(items) > 0:
+    #     for key in items:
+    #         temp_dict = {}
+    #         #remove primary identifiers and STARK attributes
+    #         if not aggregate_report:
+    #             key.pop("sk")
+    #         for index, value in key.items():
+    #             temp_dict[index.replace("_"," ")] = value
+    #         report_list.append(temp_dict)								 
 
         
 
-        report_list = utilities.filter_report_list(report_list, diff_list)
-        csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
-        utilities.save_object_to_bucket(file_buff_value, csv_file)
-        pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)						 
-        utilities.save_object_to_bucket(pdf_output, pdf_file)
+    #     report_list = utilities.filter_report_list(report_list, diff_list)
+    #     csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
+    #     utilities.save_object_to_bucket(file_buff_value, csv_file)
+    #     pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)						 
+    #     utilities.save_object_to_bucket(pdf_output, pdf_file)
 
-    csv_bucket_key = bucket_tmp + csv_file
-    pdf_bucket_key = bucket_tmp + pdf_file
+    # csv_bucket_key = bucket_tmp + csv_file
+    # pdf_bucket_key = bucket_tmp + pdf_file
 
-    if not aggregate_report:
-        report_list = items
-        new_report_list = []
-        for row in report_list:
-            temp_dict = {}
-            for index, value in row.items():
-                temp_dict[index.replace("_"," ")] = value
-            new_report_list.append(temp_dict)
-        report_list = new_report_list
+    # if not aggregate_report:
+    #     report_list = items
+    #     new_report_list = []
+    #     for row in report_list:
+    #         temp_dict = {}
+    #         for index, value in row.items():
+    #             temp_dict[index.replace("_"," ")] = value
+    #         new_report_list.append(temp_dict)
+    #     report_list = new_report_list
 
-    return report_list, csv_bucket_key, pdf_bucket_key
+    # return report_list, csv_bucket_key, pdf_bucket_key
+    pass
 
-def get_all(sk=default_sk, lv_token=None, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
-
-
+def get_all(sk=default_sk, lv_token=None):
+    
     items = []
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['IndexName'] = "STARK-ListView-Index"
-    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    ddb_arguments['Limit'] = page_limit
-    ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
-    ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
-    ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
+    logging.info("Fetching module groups..")
+    documents = list(mdb_collection.find())
+    for record in documents:
+        record[pk_field] = record["_id"]
+        items.append(record)
+    # if db_handler == None:
+    #     db_handler = ddb
 
-    if lv_token != None:
-        ddb_arguments['ExclusiveStartKey'] = lv_token
 
-    next_token = ''
-    while len(items) < page_limit and next_token is not None:
-        if next_token != '':
-            ddb_arguments['ExclusiveStartKey']=next_token
+    # items = []
+    # ddb_arguments = {}
+    # ddb_arguments['TableName'] = ddb_table
+    # ddb_arguments['IndexName'] = "STARK-ListView-Index"
+    # ddb_arguments['Select'] = "ALL_ATTRIBUTES"
+    # ddb_arguments['Limit'] = page_limit
+    # ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
+    # ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    # ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
 
-        response = ddb.query(**ddb_arguments)
-        raw = response.get('Items')
-        next_token = response.get('LastEvaluatedKey')
+    # if lv_token != None:
+    #     ddb_arguments['ExclusiveStartKey'] = lv_token
 
-        for record in raw:
-            items.append(map_results(record))
+    # next_token = ''
+    # while len(items) < page_limit and next_token is not None:
+    #     if next_token != '':
+    #         ddb_arguments['ExclusiveStartKey']=next_token
 
-    #Get the "next" token, pass to calling function. This enables a "next page" request later.
-    next_token = response.get('LastEvaluatedKey')
+    #     response = ddb.query(**ddb_arguments)
+    #     raw = response.get('Items')
+    #     next_token = response.get('LastEvaluatedKey')
 
-    return items, next_token
+    #     for record in raw:
+    #         items.append(map_results(record))
 
-def get_by_pk(pk, sk=default_sk, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
+    # #Get the "next" token, pass to calling function. This enables a "next page" request later.
+    # next_token = response.get('LastEvaluatedKey')
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
-    ddb_arguments['ExpressionAttributeNames'] = {
-                                                '#pk' : 'pk',
-                                                '#sk' : 'sk'
-                                            }
-    ddb_arguments['ExpressionAttributeValues'] = {
-                                                ':pk' : {'S' : pk },
-                                                ':sk' : {'S' : sk }
-                                            }
-    response = db_handler.query(**ddb_arguments)
-    raw = response.get('Items')
+    return items
 
-    #Map to expected structure
-    response = {}
-    response['item'] = map_results(raw[0])
+def get_by_id(pk, sk=default_sk, db_handler = None):
 
+    logging.info("Fetching module groups..")
+    identifier_query = { "_id": pk }
+    documents = list(mdb_collection.find(identifier_query))
+    for record in documents:
+        record[pk_field] = record["_id"]
+
+    response =  {"item": record}    
     return response
 
-def delete(data, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
-
+def delete(data, collection_handler = None):
     pk = data.get('pk','')
-    sk = data.get('sk','')
-    if sk == '': sk = default_sk
+    identifier_query = { "_id": pk }
+    response = collection_handler.delete_one(identifier_query)
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Key'] = {
-            'pk' : {'S' : pk},
-            'sk' : {'S' : sk}
-        }
-
-    response = db_handler.delete_item(**ddb_arguments)
     global resp_obj
     resp_obj = response
 
     return "OK"
 
-def edit(data, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb             
+def edit(data, collection_handler = None):      
     pk = data.get('pk', '')
     sk = data.get('sk', '')
     if sk == '': sk = default_sk
@@ -501,39 +477,23 @@ def edit(data, db_handler = None):
     Icon = str(data.get('Icon', ''))
     Priority = str(data.get('Priority', ''))
 
-    UpdateExpressionString = "SET #Description = :Description, #Icon = :Icon, #Priority = :Priority,  #STARKListViewsk = :STARKListViewsk" 
-    ExpressionAttributeNamesDict = {
-        '#Description' : 'Description',
-        '#Icon' : 'Icon',
-        '#Priority' : 'Priority',
-        '#STARKListViewsk' : 'STARK-ListView-sk'
+    update_values = {
+        '$set' : {
+            'Description' : Description,
+            'Icon' : Icon ,
+            'Priority' : Priority  },
+        
     }
-    ExpressionAttributeValuesDict = {
-        ':Description' : {'S' : Description },
-        ':Icon' : {'S' : Icon },
-        ':Priority' : {'N' : Priority },
-        ':STARKListViewsk' : {'S' : data['STARK-ListView-sk']}
-    }
+    identifier_query = { "_id": pk }
+    response = collection_handler.update_one(identifier_query, update_values)
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Key'] = {
-            'pk' : {'S' : pk},
-            'sk' : {'S' : sk}
-        }
-    ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
-    ddb_arguments['UpdateExpression'] = UpdateExpressionString
-    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
-    ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
-    response = db_handler.update_item(**ddb_arguments)
 
     global resp_obj
     resp_obj = response
     return "OK"
 
-def add(data, method='POST', db_handler=None):
-    if db_handler == None:
-        db_handler = ddb
+def add(data, method='POST', collection_handler=None):
+
     pk = data.get('pk', '')
     sk = data.get('sk', '')
     if sk == '': sk = default_sk
@@ -542,21 +502,13 @@ def add(data, method='POST', db_handler=None):
     Priority = str(data.get('Priority', ''))
 
     item={}
-    item['pk'] = {'S' : pk}
-    item['sk'] = {'S' : sk}
-    item['Description'] = {'S' : Description}
-    item['Icon'] = {'S' : Icon}
-    item['Priority'] = {'N' : Priority}
+    item['_id'] =  pk
+    item['Description'] =  Description
+    item['Icon'] =  Icon
+    item['Priority'] = Priority
 
-    if data.get('STARK-ListView-sk','') == '':
-        item['STARK-ListView-sk'] = {'S' : create_listview_index_value(data)}
-    else:
-        item['STARK-ListView-sk'] = {'S' : data['STARK-ListView-sk']}
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Item'] = item
-    response = db_handler.put_item(**ddb_arguments)
-
+    response = collection_handler.insert_one(item)
+    logging.info("Added")
     global resp_obj
     resp_obj = response
     return "OK"
@@ -629,33 +581,17 @@ def map_results(record):
 
 def get_module_groups(groups, sk=default_sk):
     ##################################
-    #GET MODULE GROUPS 
-    response = ddb.query(
-        TableName=ddb_table,
-        IndexName="STARK-ListView-Index",
-        Select='ALL_ATTRIBUTES',
-        ReturnConsumedCapacity='TOTAL',
-        KeyConditionExpression="#sk = :sk",
-        ExpressionAttributeNames={
-            '#sk' : 'sk'
-        },
-        ExpressionAttributeValues={
-            ':sk'  : {'S' : sk }
-        }
-    )
-    
-    raw = response.get('Items')
-    
+    #GET MODULE GROUPS     
     items = []
-    for record in raw:
-        group_name = record.get('pk', {}).get('S','')
+    documents = list(mdb_collection.find())
+    for record in documents:
+        group_name = record.get('_id', '')
         if group_name in groups:
             item = {}
-            item['Group_Name'] = record.get('pk', {}).get('S','')
-            item['sk'] = record.get('sk',{}).get('S','')
-            item['Description'] = record.get('Description',{}).get('S','')
-            item['Icon'] = record.get('Icon',{}).get('S','')
-            item['Priority'] = record.get('Priority',{}).get('N','')
+            item['Group_Name'] = record.get('_id', '')
+            item['Description'] = record.get('Description','')
+            item['Icon'] = record.get('Icon','')
+            item['Priority'] = record.get('Priority','')
             items.append(item)
 
     return items

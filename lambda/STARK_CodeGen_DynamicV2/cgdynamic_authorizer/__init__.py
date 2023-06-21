@@ -16,6 +16,7 @@ def create(data):
     #Extra modules
     from pymongo import MongoClient
     import azure.functions as func
+    import json
 
     #STARK
     import stark_core
