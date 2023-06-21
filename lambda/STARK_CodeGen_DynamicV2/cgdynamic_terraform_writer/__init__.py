@@ -673,6 +673,27 @@ def tf_writer_api_management_operations(data):
 
 def tf_writer_variables(data):
     entities = data["entities"]
+    stark_entities = {
+            "STARK_Module" : {
+                "name": "STARK_Module"
+            },
+            "STARK_Module_Groups" : {
+                "name": "STARK_Module_Groups"
+            },
+            "STARK_User" : {
+                "name": "STARK_User"
+            },
+            "STARK_User_Permissions" : {
+                "name": "STARK_User_Permissions"
+            },
+            "STARK_User_Roles" : {
+                "name": "STARK_User_Roles"
+            },
+            "STARK_User_Sessions" : {
+                "name": "STARK_User_Sessions"
+            }
+    }
+    combined_entities = {**entities, **stark_entities}
     source_code = f"""\
         variable "origin" {{
             type = string
@@ -692,24 +713,6 @@ def tf_writer_variables(data):
                 }},
                 "stark_auth" = {{
                 name = "stark_auth"
-                }},
-                "STARK_Module" = {{
-                name = "STARK_Module"
-                }},
-                "STARK_Module_Groups" = {{
-                name = "STARK_Module_Groups"
-                }},
-                "STARK_User" = {{
-                name = "STARK_User"
-                }},
-                "STARK_User_Permissions" = {{
-                name = "STARK_User_Permissions"
-                }},
-                "STARK_User_Roles" = {{
-                name = "STARK_User_Roles"
-                }},
-                "STARK_User_Sessions" = {{
-                name = "STARK_User_Sessions"
                 }}
             }}
         }}
@@ -719,7 +722,7 @@ def tf_writer_variables(data):
                 name = string
             }}))
             default = {{"""
-    for entity in entities: 
+    for entity in combined_entities: 
         entity_varname = converter.convert_to_system_name(entity) 
         source_code += f"""
             "{entity_varname}" = {{
