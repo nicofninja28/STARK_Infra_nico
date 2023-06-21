@@ -619,7 +619,7 @@ def tf_writer_api_management_operations(data):
                     <when condition="@(!context.Variables.ContainsKey("status"))">
                         <!-- Invoke -->
                         <send-request mode="new" response-variable-name="response" timeout="10" ignore-error="false">
-                            <set-url>https://{project_name}.azurewebsites.net/api/authorizer_default?</set-url>
+                            <set-url>https://${{azurerm_linux_function_app.starkzipdeployment.default_hostname}}/api/authorizer_default?</set-url>
                             <set-method>GET</set-method>
                             <set-header name="Authorization" exists-action="override">
                                 <value>@(context.Request.Headers.GetValueOrDefault("Authorization"))</value>
