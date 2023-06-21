@@ -229,7 +229,7 @@ def tf_writer_cosmosdb_account(data):
 
     output "mongodb_database_name" {{
         description = "Database name of the MongoDB instance"
-        value       = azurerm_cosmosdb_account.stark_storage_account.name
+        value       = azurerm_cosmosdb_mongo_database.db_name.name
     }}
 
     output "mongodb_connection_string" {{

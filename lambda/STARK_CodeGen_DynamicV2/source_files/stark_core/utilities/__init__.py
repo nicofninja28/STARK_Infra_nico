@@ -1,16 +1,13 @@
 import math
 import uuid
-import boto3
 from datetime import datetime
 import time
 
 from io import StringIO
-from fpdf import FPDF
+# from fpdf import FPDF
 import csv
 
 import stark_core
-s3     = boto3.client("s3")
-s3_res = boto3.resource('s3')
 
 name = "STARK Utilities"
 
@@ -186,71 +183,72 @@ def prepare_pdf_data(data_to_tuple, master_fields, report_params, metadata, pk_f
     filename = f"{str(uuid.uuid4())}"
     pdf_file = f"{filename}.pdf"
 
-    pdf = create_pdf(header_tuple, data_tuple, report_params, pk_field, metadata)
+    # pdf = create_pdf(header_tuple, data_tuple, report_params, pk_field, metadata)
 
-    return pdf_file, pdf.output()
+    # return pdf_file, pdf.output()
+    return pdf_file, {}
 
 
-def create_pdf(header_tuple, data_tuple, report_params, pk_field, metadata):
+# def create_pdf(header_tuple, data_tuple, report_params, pk_field, metadata):
 
-    pdf = FPDF(orientation='L')
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=10)
-    with_total_row = False
-    line_height = pdf.font_size * 2.5
-    row_number_width = 10
-    col_width = pdf.epw / len(header_tuple)  # distribute content evenly
-    col_width = col_width + (col_width - row_number_width) / (len(header_tuple) -1)
+#     pdf = FPDF(orientation='L')
+#     pdf.add_page()
+#     pdf.set_font("Helvetica", size=10)
+#     with_total_row = False
+#     line_height = pdf.font_size * 2.5
+#     row_number_width = 10
+#     col_width = pdf.epw / len(header_tuple)  # distribute content evenly
+#     col_width = col_width + (col_width - row_number_width) / (len(header_tuple) -1)
 
-    render_page_header(pdf, line_height, report_params, pk_field)
-    render_table_header(pdf, header_tuple, col_width, line_height, row_number_width) 
+#     render_page_header(pdf, line_height, report_params, pk_field)
+#     render_table_header(pdf, header_tuple, col_width, line_height, row_number_width) 
     
-    for index in header_tuple:
-        if index != "#" and ("Count of" not in index and "Sum of" not in index):
-            if metadata[index.replace(" ","_")]["data_type"] == 'number':
-                with_total_row = True
+#     for index in header_tuple:
+#         if index != "#" and ("Count of" not in index and "Sum of" not in index):
+#             if metadata[index.replace(" ","_")]["data_type"] == 'number':
+#                 with_total_row = True
 
-    counter = 0
-    for row in data_tuple:
-        if pdf.will_page_break(line_height):
-            render_table_header(pdf, header_tuple, col_width, line_height, row_number_width) 
-        row_height = pdf.font_size * estimate_lines_needed(pdf, row, col_width)
-        if row_height < line_height: #min height
-            row_height = line_height
-        elif row_height > 120: #max height tested, beyond this value will distort the table
-            row_height = 120
+#     counter = 0
+#     for row in data_tuple:
+#         if pdf.will_page_break(line_height):
+#             render_table_header(pdf, header_tuple, col_width, line_height, row_number_width) 
+#         row_height = pdf.font_size * estimate_lines_needed(pdf, row, col_width)
+#         if row_height < line_height: #min height
+#             row_height = line_height
+#         elif row_height > 120: #max height tested, beyond this value will distort the table
+#             row_height = 120
 
-        if counter % 2 ==0:
-            pdf.set_fill_color(222,226,230)
-        else:
-            pdf.set_fill_color(255,255,255)
+#         if counter % 2 ==0:
+#             pdf.set_fill_color(222,226,230)
+#         else:
+#             pdf.set_fill_color(255,255,255)
         
-        if with_total_row and counter + 1 == len(data_tuple):
-            border = 'T'
-        else:
-            border = 0
+#         if with_total_row and counter + 1 == len(data_tuple):
+#             border = 'T'
+#         else:
+#             border = 0
 
-        column_counter = 0
-        for datum in row:
-            width = col_width
-            if column_counter == 0:
-                width = row_number_width
-                text_align = 'R'
-            else:
-                if ("Count of" not in header_tuple[column_counter] and "Sum of" not in header_tuple[column_counter]): 
-                    if metadata[header_tuple[column_counter].replace(" ","_")]['data_type'] in ['number', 'date']:
-                        text_align = 'R'
-                    else:
-                        text_align = 'L'
-                else:
-                    text_align = 'R'
+#         column_counter = 0
+#         for datum in row:
+#             width = col_width
+#             if column_counter == 0:
+#                 width = row_number_width
+#                 text_align = 'R'
+#             else:
+#                 if ("Count of" not in header_tuple[column_counter] and "Sum of" not in header_tuple[column_counter]): 
+#                     if metadata[header_tuple[column_counter].replace(" ","_")]['data_type'] in ['number', 'date']:
+#                         text_align = 'R'
+#                     else:
+#                         text_align = 'L'
+#                 else:
+#                     text_align = 'R'
 
-            pdf.multi_cell(width, row_height, str(datum), border=border, new_x="RIGHT", new_y="TOP", max_line_height=pdf.font_size, fill = True, align = text_align)
-            column_counter += 1
-        pdf.ln(row_height)
-        counter += 1
+#             pdf.multi_cell(width, row_height, str(datum), border=border, new_x="RIGHT", new_y="TOP", max_line_height=pdf.font_size, fill = True, align = text_align)
+#             column_counter += 1
+#         pdf.ln(row_height)
+#         counter += 1
 
-    return pdf
+#     return pdf
 
 def render_table_header(pdf, header_tuple, col_width, line_height, row_number_width):
     pdf.set_font(style="B")  # enabling bold text
@@ -306,32 +304,32 @@ def estimate_lines_needed(self, iter, col_width: float) -> int:
     max_cell_text_len_header = max([len(str(col)) for col in iter])  # how long is the longest string?
     return math.ceil(max_cell_text_len_header * font_width_in_mm / col_width)
 
-def save_object_to_bucket(body, filename, bucket_name = None, directory = "tmp"):
-    canned_ACL = 'private'
-    if bucket_name == None:
-        bucket_name = stark_core.bucket_name
-        canned_ACL = 'public-read'
+# def save_object_to_bucket(body, filename, bucket_name = None, directory = "tmp"):
+#     canned_ACL = 'private'
+#     if bucket_name == None:
+#         bucket_name = stark_core.bucket_name
+#         canned_ACL = 'public-read'
 
-    s3_action = s3.put_object(
-        ACL= canned_ACL,
-        Body= body,
-        Bucket=bucket_name,
-        Key=directory+'/'+filename
-    )
+#     s3_action = s3.put_object(
+#         ACL= canned_ACL,
+#         Body= body,
+#         Bucket=bucket_name,
+#         Key=directory+'/'+filename
+#     )
 
-def copy_object_to_bucket(filename, destination_dir, bucket_name = None, source_dir='tmp'):
-    if bucket_name == None:
-        bucket = stark_core.bucket_name
+# def copy_object_to_bucket(filename, destination_dir, bucket_name = None, source_dir='tmp'):
+#     if bucket_name == None:
+#         bucket = stark_core.bucket_name
 
-        copy_source = {
-            'Bucket': bucket,
-            'Key': source_dir + '/' + filename
-        }
+#         copy_source = {
+#             'Bucket': bucket,
+#             'Key': source_dir + '/' + filename
+#         }
 
-        extra_args = {
-            'ACL': 'public-read'
-        }
-        s3_res.meta.client.copy(copy_source, bucket, destination_dir + filename, extra_args)
+#         extra_args = {
+#             'ACL': 'public-read'
+#         }
+#         s3_res.meta.client.copy(copy_source, bucket, destination_dir + filename, extra_args)
 
 def convert_value_data_type(value, data_type):
     converted_value = ""
