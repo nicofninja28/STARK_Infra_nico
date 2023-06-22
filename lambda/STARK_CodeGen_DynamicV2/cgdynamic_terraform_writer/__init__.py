@@ -294,7 +294,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     }}
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_modules_collection" {{
-        name                = "STARK_Modules"
+        name                = "STARK_Module"
         resource_group_name = var.rgname
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
@@ -552,7 +552,8 @@ def tf_writer_api_management_operations(data):
     }}
 
     resource "azurerm_api_management_api_policy" "access_cors" {{
-        api_name            = azurerm_api_management_api_operation.access_operations["stark_login"].api_name
+        for_each = var.access_api
+        api_name            = azurerm_api_management_api_operation.access_operations[each.value.name].api_name
         api_management_name = azurerm_api_management.{project_name}.name
         resource_group_name = var.rgname
 
