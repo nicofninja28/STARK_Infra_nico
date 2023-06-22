@@ -509,41 +509,52 @@ var root = new Vue({
                     root.show_query_error_message = true
                     root.query_error = operation + " statement from the provided query is not allowed. Please make sure to use only SELECT statements.";
                 } else {
-                    loading_modal.show();
-                    metadata = ''
-                    Is_Custom_Report = 'Yes'
-                    report_data  = query
-                    Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
+                    var analytics_data = STARK.get_local_storage_item('Analytics_Data', 'analytics')
+                    var tables_with_permission = Object.keys(analytics_data)
+                    tables_from_query = root.convert_to_system_display(root.extractTableName(query))
+                    valid_reports = root.hasPermission(tables_from_query, tables_with_permission)
+                    if(valid_reports) {
+                        loading_modal.show();
+                        metadata = ''
+                        Is_Custom_Report = 'Yes'
+                        report_data  = query
+                        Analytics_app.get_result(Is_Custom_Report, report_data, metadata).then( function(data) {
 
-                        if(data.length > 0)
-                        {
-                            if(data[0]['error']) {
-                                console.log(data[0]['error'])
+                            if(data.length > 0)
+                            {
+                                if(data[0]['error']) {
+                                    console.log(data[0]['error'])
+                                    root.report_result = []
+                                    root.temp_report_header = []
+                                    root.show_query_error_message = true
+                                    root.query_error = data[0]['error']
+                                } else {
+                                    root.report_result = data[0];
+                                    root.temp_report_header = Object.keys(data[0][0])
+                                    root.report_header = root.convert_to_system_display(root.temp_report_header)
+                                    root.temp_csv_link = data[1];
+                                    root.temp_pdf_link = data[2];
+                                    root.show_query_error_message = false
+                                }
+                                console.log("VIEW: Retreived module data.")
+                            } else {
                                 root.report_result = []
                                 root.temp_report_header = []
-                                root.show_query_error_message = true
-                                root.query_error = data[0]['error']
-                            } else {
-                                root.report_result = data[0];
-                                root.temp_report_header = Object.keys(data[0][0])
-                                root.report_header = root.convert_to_system_display(root.temp_report_header)
-                                root.temp_csv_link = data[1];
-                                root.temp_pdf_link = data[2];
-                                root.show_query_error_message = false
                             }
-                            console.log("VIEW: Retreived module data.")
-                        } else {
-                            root.report_result = []
-                            root.temp_report_header = []
-                        }
-                        
-                        loading_modal.hide();
-                    })
-                    .catch(function(error) {
-                        console.log("Encountered an error! [" + error + "]")
-                        alert("Request Failed: System error or you may not have enough privileges")
-                        loading_modal.hide()
-                    });
+                            
+                            loading_modal.hide();
+                        })
+                        .catch(function(error) {
+                            console.log("Encountered an error! [" + error + "]")
+                            alert("Request Failed: System error or you may not have enough privileges")
+                            loading_modal.hide()
+                        });
+                    } else {
+                        root.report_result = []
+                        root.temp_report_header = []
+                        root.show_query_error_message = true
+                        root.query_error = "Other tables are not allowed to access. Here are list of allowed tables: " + tables_with_permission;
+                    }
                 }
                 root.page_1_show = false
                 root.page_2_show = false
@@ -661,6 +672,33 @@ var root = new Vue({
             }
         },
 
+        extractTableName: function (query) {
+            const regex = /\b(?:FROM|JOIN)\s+([^\s;]+)/gi;
+            const matches = query.match(regex);
+            if (matches && matches.length > 0) {
+                return matches.map(match => match.split(/\s+/)[1]);
+            }
+            return [];
+        },
+
+        hasPermission: function(array1, array2) {
+            bool_list = []
+            for (let i = 0; i < array1.length; i++) {
+              if (array2.includes(array1[i])) {
+                bool_list.push('true')
+              } else {
+                console.log(array1[i])
+                bool_list.push('false')
+              }
+            }
+
+            if(bool_list.includes('false')) {
+                return false
+            } else {
+                return true
+            }
+        },
+
         onReport_Type: function() {
             // Analytics_app.test_dump().then( function(data) {})
             if(root.Analytics.Choose_Report != ''){
@@ -674,13 +712,30 @@ var root = new Vue({
                 root.action_from_saved_report = true
                 if (root.list_status.Saved_Report == 'empty') {
                     Analytics_app.get_saved_reports().then( function(data) {
+                        var analytics_data = STARK.get_local_storage_item('Analytics_Data', 'analytics')
+                        var table_data = Object.keys(analytics_data)
+                        
                         root.lists.Saved_Report = []
                         saved_report_list = [...data].sort((a, b) => a - b)
-                        console.log(saved_report_list)
                         saved_report_list.forEach(function(arrayItem) {
-                            text = arrayItem['Report_Name']
-                            value = arrayItem['Report_Name']            
-                            root.lists.Saved_Report.push({ value: value, text: text }) 
+                            tables_with_permission = table_data
+                            if(arrayItem['Report_Name'].includes('- [Custom]')) {
+                                valid_reports = true
+                                tables_from_Settings = root.convert_to_system_display(root.extractTableName(arrayItem['Report_Settings']))
+                                valid_reports = root.hasPermission(tables_from_Settings, tables_with_permission)
+
+                            }else{
+                                
+                                tables_from_Settings = JSON.parse(arrayItem['Report_Settings']).tables
+                                valid_reports = root.hasPermission(tables_from_Settings, tables_with_permission)
+                            }
+                            
+                            if(valid_reports) {
+                                text = arrayItem['Report_Name']
+                                value = arrayItem['Report_Name']            
+                                root.lists.Saved_Report.push({ value: value, text: text }) 
+                            }
+                            
                         })
                         root.list_status.Saved_Report = 'populated'
                     }).catch(function(error) {
@@ -1405,9 +1460,53 @@ var root = new Vue({
             
         },
 
+        get_metadata: function(tables) {
+            loading_modal.show()
+            analytics_data = {};
+            tables.forEach(element => {
+                table = element.replace(' ', '_') + "_url"
+                fetchUrl = STARK[table] + '?rt=get_metadata'
+                analytics_data[element] = {};
+                STARK.request('GET', fetchUrl)
+                .then( function(data) {
+                    dataTypeMapping = {};
+                    root.get_relationship(element).then( function(rel_data) {
+                        if(rel_data['belongs_to'] && !rel_data['has_many'] && !rel_data['has_one']) {
+                            rel_data['belongs_to'].forEach(rel_element => {
+                                
+                                if(rel_element['rel_type'] == 'has_many') {
+                                    field = rel_element['pk_field']
+                                    data[field] = {data_type: 'string'};
+                                }
+                            });
+                        }
+                        new_data = data
+                        for (key in new_data) {
+                            fields = {}
+                            if (data.hasOwnProperty(key)) {
+                                const dataType = data[key].data_type
+                                analytics_data[element][key] = dataType.charAt(0).toUpperCase() + dataType.slice(1)
+                            }
+                        }
+                        STARK.set_local_storage_item('Analytics_Data', 'analytics', analytics_data)
+                        loading_modal.hide()
+                    })
+                })
+            });
+        },
+
+        get_relationship: function(table) {
+            table_url = table.replace(' ', '_') + "_url"
+            fetchUrl = STARK[table_url] + '?rt=get_relationship'
+            return STARK.request('GET', fetchUrl)
+        },
+
         set_local_storage_data() {
-            tables = STARK.get_local_storage_item('Analytics_Table', 'tables')
-            sidebar.get_metadata(tables)
+            fetchUrl = STARK.STARK_Module_url + '?rt=usermodules'
+            STARK.request('GET', fetchUrl)
+            .then( function(data) {
+                root.get_metadata(data['report_items'])
+            })
         },
 
         delete_local_storage() {

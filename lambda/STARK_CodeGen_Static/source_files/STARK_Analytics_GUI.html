@@ -573,20 +573,23 @@
                 <table class="table  table-hover table-striped table-dark">
                     <thead class="thead-dark">
                         <tr>
-                            <template v-for="column in report_header" id="report_header">
+                            <template v-for="column in report_header" id="report_header" v-if="show_query_error_message == false">
                                 <th scope="col">{{column}}</th>
                             </template>         
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-if="report_result.length > 0" v-for="Document in report_result" id="report_result">
+                        <div class="alert alert-danger alert-dismissible fade show" v-if="show_query_error_message">
+                            <strong>Error!</strong> {{ query_error }}
+                        </div>
+                        <template v-if="report_result.length > 0 && show_query_error_message == false" v-for="Document in report_result" id="report_result">
                             <tr>
                                 <template v-for="column in temp_report_header">
                                     <td>{{ Document[column] }}</td>
                                 </template>             
                             </tr>
                         </template>
-                        <template v-if="report_result.length < 1">
+                        <template v-if="report_result.length < 1 && show_query_error_message == false">
                             <tr>
                                 No records found            
                             </tr>
