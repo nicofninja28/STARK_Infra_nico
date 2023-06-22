@@ -699,9 +699,6 @@ def tf_writer_variables(data):
                 }},
                 "stark_logout" = {{
                 name = "stark_logout"
-                }},
-                "stark_auth" = {{
-                name = "stark_auth"
                 }}
             }}
         }}
@@ -714,11 +711,14 @@ def tf_writer_variables(data):
     for entity in combined_entities: 
         entity_varname = converter.convert_to_system_name(entity) 
         source_code += f"""
-            "{entity_varname}" = {{
-            name = "{entity_varname}"
-            }},
+                "{entity_varname}" = {{
+                name = "{entity_varname}"
+                }},
         """
     source_code += f"""
+                "stark_auth" = {{
+                name = "stark_auth"
+                }}
             }}
         }}
     """
