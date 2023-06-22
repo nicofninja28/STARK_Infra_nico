@@ -182,6 +182,7 @@ def lambda_handler(event, context):
             business_module['Icon']              =  icon
             business_module['Image_Alt']         =  ""
             business_module['Priority']          =  0
+            modules_list.append(business_module)
 
     collection = mdb_database["STARK_Module"]
     collection.insert_many(modules_list)
