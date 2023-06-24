@@ -24,8 +24,8 @@ ddb_table         = stark_core.ddb_table
 bucket_name       = stark_core.bucket_name
 region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
-bucket_url        = stark_core.bucket_url
-bucket_tmp        = stark_core.bucket_tmp
+file_storage_url        = stark_core.file_storage_url
+file_storage_tmp        = stark_core.file_storage_tmp
 pk_field          = "Role_Name"
 default_sk        = "STARK|role"
 sort_fields       = ["Role_Name", ]
@@ -549,8 +549,8 @@ def report(data, sk=default_sk):
         pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
         utilities.save_object_to_bucket(pdf_output, pdf_file)
 
-    csv_bucket_key = bucket_tmp + csv_file
-    pdf_bucket_key = bucket_tmp + pdf_file
+    csv_bucket_key = file_storage_tmp + csv_file
+    pdf_bucket_key = file_storage_tmp + pdf_file
 
     if not aggregate_report:
         report_list = items
@@ -656,8 +656,8 @@ def map_results(record):
 
 #     prepare_pdf_data(report_list, csv_header, pdf_file, report_params)
 
-#     csv_bucket_key = bucket_tmp + csv_file
-#     pdf_bucket_key = bucket_tmp + pdf_file
+#     csv_bucket_key = file_storage_tmp + csv_file
+#     pdf_bucket_key = file_storage_tmp + pdf_file
 
 #     return csv_bucket_key, pdf_bucket_key
 

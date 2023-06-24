@@ -117,8 +117,8 @@ def create(data):
     file_storage      = stark_core.file_storage
     region_name       = stark_core.region_name
     page_limit        = stark_core.page_limit
-    bucket_url        = stark_core.bucket_url
-    bucket_tmp        = stark_core.bucket_tmp
+    file_storage_url  = stark_core.file_storage_url
+    file_storage_tmp  = stark_core.file_storage_tmp
     pk_field          = "{pk_varname}"
     default_sk        = "{default_sk}"
     sort_fields       = ["{pk_varname}", ]
@@ -372,7 +372,7 @@ def create(data):
             #Handle GET requests
             if request_type == "all":
                 #check for submitted token
-                lv_token = event.get('queryStringParameters',{{}}).get('nt', None)
+                lv_token = req.params.get('nt', None)
                 if lv_token != None:
                     lv_token = unquote(lv_token)
                     lv_token = json.loads(lv_token)
@@ -670,8 +670,8 @@ def create(data):
             pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
             utilities.save_object_to_bucket(pdf_output, pdf_file)
 
-        csv_bucket_key = bucket_tmp + csv_file
-        pdf_bucket_key = bucket_tmp + pdf_file
+        csv_file_storage_key = file_storage_tmp + csv_file
+        pdf_file_storage_key = file_storage_tmp + pdf_file
 
         if not aggregate_report:
             report_list = items
@@ -683,7 +683,7 @@ def create(data):
                 new_report_list.append(temp_dict)
             report_list = new_report_list
 
-        return report_list, csv_bucket_key, pdf_bucket_key
+        return report_list, csv_file_storage_key, pdf_file_storage_key
 
     def get_all(sk=default_sk, lv_token=None, db_handler = None):
 
@@ -723,7 +723,7 @@ def create(data):
 
     if with_upload or with_upload_on_many: 
         source_code +=f"""
-        response['object_url_prefix'] = bucket_url + entity_upload_dir"""
+        response['object_url_prefix'] = file_storage_url + entity_upload_dir"""
     source_code+= f"""
 
         return response"""
