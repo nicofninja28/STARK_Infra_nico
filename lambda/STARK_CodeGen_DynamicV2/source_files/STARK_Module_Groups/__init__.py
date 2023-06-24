@@ -390,8 +390,8 @@ def report(data, sk=default_sk):
     #     pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)						 
     #     utilities.save_object_to_bucket(pdf_output, pdf_file)
 
-    # csv_bucket_key = bucket_tmp + csv_file
-    # pdf_bucket_key = bucket_tmp + pdf_file
+    # csv_bucket_key = file_storage_tmp + csv_file
+    # pdf_bucket_key = file_storage_tmp + pdf_file
 
     # if not aggregate_report:
     #     report_list = items

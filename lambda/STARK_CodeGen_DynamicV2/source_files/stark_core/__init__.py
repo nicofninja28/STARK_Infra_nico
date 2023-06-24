@@ -3,7 +3,7 @@ import stark_core.data_abstraction as data
 import stark_core.security as sec
 import stark_core.logging as log
 from pymongo import MongoClient
-# region_name = os.environ['AWS_REGION']
+region_name = "[[REGION_NAME]]"
 
 test_region = 'eu-west-2'
 page_limit  = 100
@@ -13,10 +13,11 @@ mdb_database      = client["[[STARK_MDB_TABLE_NAME]]"]
 
 TTL_for_deleted_records_in_days = 120
 
-##Bucket Related Config
+##file storage related config
 bucket_name = "[[STARK_WEB_BUCKET]]"
-# bucket_url  = f"{bucket_name}.s3.{region_name}.amazonaws.com/"
-# bucket_tmp  = f"{bucket_url}tmp/"
+file_storage = "[[FILE_STORAGE_NAME]]"
+file_storage_url  = "[[FILE_STORAGE_URL]]"
+file_storage_tmp  = f"{file_storage_url}tmp/"
 upload_dir  = f"uploaded_files/"
 
 analytics_raw_bucket_name       = "[[STARK_RAW_BUCKET]]"
