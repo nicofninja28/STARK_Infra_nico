@@ -198,7 +198,7 @@ def create(data):
     
             #Get specific request method
             method = req.method
-            payload = json.loads(req.get_body().decode()).get('Customer', "")
+            payload = json.loads(req.get_body().decode()).get('{entity_varname}', "")
 
             data    = {{}}
 
@@ -373,7 +373,7 @@ def create(data):
             if request_type == "all":
                 #check for submitted token
                 lv_token = req.params.get('nt', None)
-                if lv_token != None:
+                if lv   _token != None:
                     lv_token = unquote(lv_token)
                     lv_token = json.loads(lv_token)
         
@@ -783,9 +783,7 @@ def create(data):
         """
 
     source_code+= f"""
-    def edit(data, db_handler = None):
-        if db_handler == None:
-            db_handler = ddb           
+    def edit(data, db_handler = None):  
         {dict_to_var_code}"""
 
     if with_upload or with_upload_on_many:
@@ -916,9 +914,7 @@ def create(data):
             dict_to_var_code_add += f"""
         {col_varname} = data.get('{col_varname}', '')"""
 
-    source_code+= f"""    
-        if db_handler == None:
-            db_handler = ddb
+    source_code+= f"""
         {dict_to_var_code_add}"""
 
 
@@ -943,7 +939,7 @@ def create(data):
         """
     source_code += f"""
         item = utilities.az_append_record_metadata('add', username)
-        item['_id'] = {{'S' : pk}}"""
+        item['_id'] = pk"""
 
     for col, col_type in columns.items():
         col_varname = converter.convert_to_system_name(col)
