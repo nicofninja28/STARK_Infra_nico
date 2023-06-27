@@ -526,16 +526,16 @@ def create(data):
             Select='ALL_ATTRIBUTES',
             ReturnConsumedCapacity='TOTAL',
             KeyConditionExpression='pk = :pk and sk = :sk',
-            ExpressionAttributeValues={
-                ':pk' : {'S' : username},
-                ':sk' : {'S' : "STARK|user|permissions"}
-            }
+            ExpressionAttributeValues={{
+                ':pk' : {{'S' : username}},
+                ':sk' : {{'S' : "STARK|user|permissions"}}
+            }}
         )
 
         raw = response.get('Items')
         permissions = []
         for record in raw:
-            permission_string = record.get('Permissions',{}).get('S','')
+            permission_string = record.get('Permissions',{{}}).get('S','')
         
         #Split permission_string by the delimeter (comma+space / ", ")
         permissions_list = permission_string.split(", ")
@@ -548,18 +548,18 @@ def create(data):
             Select='ALL_ATTRIBUTES',
             ReturnConsumedCapacity='TOTAL',
             KeyConditionExpression='sk = :sk',
-            ExpressionAttributeValues={
-                ':sk' : {'S' : sk}
-            }
+            ExpressionAttributeValues={{
+                ':sk' : {{'S' : sk}}
+            }}
         )
         raw = response.get('Items')
 
         report_items = []
         for record in raw:
-            if 'pk' in record and '|Report' in record['pk']['S'] and 'STARK_' not in record.get('Target', {}).get('S'):
-                if record.get('pk', {}).get('S','') in permissions_list:
-                    item = {}
-                    item = record.get('Descriptive_Title',{}).get('S','').replace('Report ', '')
+            if 'pk' in record and '|Report' in record['pk']['S'] and 'STARK_' not in record.get('Target', {{}}).get('S'):
+                if record.get('pk', {{}}).get('S','') in permissions_list:
+                    item = {{}}
+                    item = record.get('Descriptive_Title',{{}}).get('S','').replace('Report ', '')
                     report_items.append(item)
 
         return report_items
