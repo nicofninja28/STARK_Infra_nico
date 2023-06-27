@@ -535,6 +535,9 @@
                                 </div>
                         </table>
                     </div>
+                    <div class="alert alert-danger alert-dismissible fade show" v-if="show_query_error_message">
+                        <strong>Error!</strong> {{ query_error }}
+                    </div>
                     <form class="border p-3">
 
                     <b-form-group class="form-group" label="Save Report?" label-for="Save_Report">

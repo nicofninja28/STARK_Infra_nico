@@ -228,6 +228,7 @@ var root = new Vue({
             'DESCRIBE', 'DROP', 'EXECUTE', 'EXPLAIN', 'GRANT', 'INSERT', 'MERGE', 'PREPARE', 'REFRESH', 'RESET', 
             'REVOKE', 'ROLLBACK', 'SET', 'SHOW', 'START', 'TRUNCATE', 'UNLOAD', 'UPDATE', 'USE'
         ],
+        tables_with_permission: ''
     },
     methods: {
         
@@ -339,26 +340,51 @@ var root = new Vue({
             
             if(root.Analytics.Choose_Report == 'Query Box') {
                 root.Save_Report_Settings['Is_Custom_Report'] = 'Yes'
-                root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Box
+                root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Boxtables_from_query = root.convert_to_system_display(root.extractTableName(root.Analytics.Query_Box))
+                valid_report = root.hasPermission(tables_from_query, root.tables_with_permission)
+                console.log(valid_report)
             } else {
                 root.Save_Report_Settings['Is_Custom_Report'] = 'No'
                 root.Save_Report_Settings['Report_Settings'] = JSON.stringify(data)
+                tables_from_query = data['tables']
+                valid_report = root.hasPermission(tables_from_query, root.tables_with_permission)
+                console.log(valid_report)
             }
-            let payload = { Analytics_Report: root.Save_Report_Settings }
 
-            Analytics_app.add(payload).then( function(data) {
-                if(data == 'OK') {
-                    root.showSuccessSaveReport = true
-                } else {
-                    root.showSuccessSaveReport = false
-                }
+            if(valid_report) {
+                root.show_query_error_message = false
+                let payload = { Analytics_Report: root.Save_Report_Settings }
+
+                Analytics_app.add(payload).then( function(data) {
+                    if(data == 'OK') {
+                        root.showSuccessSaveReport = true
+                    } else {
+                        root.showSuccessSaveReport = false
+                        root.show_query_error_message = true
+                        root.query_error = "Access is not allowed for other tables. Here is a list of the permitted tables: " + root.tables_with_permission;
+                    }
+                })
+                .catch(function(error) {
+                    console.log("Encountered an error! [" + error + "]")
+                    alert("Request Failed: System error or you may not have enough privileges")
+                    loading_modal.hide()
+                });
+            } else {
+                root.show_query_error_message = true
+                root.query_error = "Access is not allowed for other tables. Here is a list of the permitted tables: " + root.tables_with_permission;
+            }
+        },
+
+        get_report_permissions: function() {
+            Analytics_app.get_report_modules().then( function(data) {
+                root.tables_with_permission = data
             })
             .catch(function(error) {
                 console.log("Encountered an error! [" + error + "]")
                 alert("Request Failed: System error or you may not have enough privileges")
                 loading_modal.hide()
             });
-        },
+        }, 
 
         submit: function(data) {
             
@@ -510,10 +536,9 @@ var root = new Vue({
                     root.query_error = operation + " statement from the provided query is not allowed. Please make sure to use only SELECT statements.";
                 } else {
                     var analytics_data = STARK.get_local_storage_item('Analytics_Data', 'analytics')
-                    var tables_with_permission = Object.keys(analytics_data)
                     tables_from_query = root.convert_to_system_display(root.extractTableName(query))
-                    valid_reports = root.hasPermission(tables_from_query, tables_with_permission)
-                    if(valid_reports) {
+                    valid_report = root.hasPermission(tables_from_query, root.tables_with_permission)
+                    if(valid_report) {
                         loading_modal.show();
                         metadata = ''
                         Is_Custom_Report = 'Yes'
@@ -553,7 +578,7 @@ var root = new Vue({
                         root.report_result = []
                         root.temp_report_header = []
                         root.show_query_error_message = true
-                        root.query_error = "Other tables are not allowed to access. Here are list of allowed tables: " + tables_with_permission;
+                        root.query_error = "Access is not allowed for other tables. Here is a list of the permitted tables: " + root.tables_with_permission;
                     }
                 }
                 root.page_1_show = false
@@ -706,6 +731,7 @@ var root = new Vue({
                 root.action_from_saved_report = false
                 root.from_query_box = false
                 root.showSuccessSaveReport = false
+                root.show_query_error_message = false
             }
 
             if(root.Analytics.Choose_Report == 'Saved Report') {
@@ -720,17 +746,17 @@ var root = new Vue({
                         saved_report_list.forEach(function(arrayItem) {
                             tables_with_permission = table_data
                             if(arrayItem['Report_Name'].includes('- [Custom]')) {
-                                valid_reports = true
+                                valid_report = true
                                 tables_from_Settings = root.convert_to_system_display(root.extractTableName(arrayItem['Report_Settings']))
-                                valid_reports = root.hasPermission(tables_from_Settings, tables_with_permission)
+                                valid_report = root.hasPermission(tables_from_Settings, root.tables_with_permission)
 
                             }else{
                                 
                                 tables_from_Settings = JSON.parse(arrayItem['Report_Settings']).tables
-                                valid_reports = root.hasPermission(tables_from_Settings, tables_with_permission)
+                                valid_report = root.hasPermission(tables_from_Settings, root.tables_with_permission)
                             }
                             
-                            if(valid_reports) {
+                            if(valid_report) {
                                 text = arrayItem['Report_Name']
                                 value = arrayItem['Report_Name']            
                                 root.lists.Saved_Report.push({ value: value, text: text }) 
@@ -1580,3 +1606,4 @@ var root = new Vue({
 // root.get_tables()
 root.add_row('Filter')
 root.set_local_storage_data()
+root.get_report_permissions()
