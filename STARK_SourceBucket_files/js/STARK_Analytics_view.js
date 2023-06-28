@@ -340,7 +340,8 @@ var root = new Vue({
             
             if(root.Analytics.Choose_Report == 'Query Box') {
                 root.Save_Report_Settings['Is_Custom_Report'] = 'Yes'
-                root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Boxtables_from_query = root.convert_to_system_display(root.extractTableName(root.Analytics.Query_Box))
+                root.Save_Report_Settings['Report_Settings']  = root.Analytics.Query_Box
+                tables_from_query = root.convert_to_system_display(root.extractTableName(root.Analytics.Query_Box))
                 valid_report = root.hasPermission(tables_from_query, root.tables_with_permission)
                 console.log(valid_report)
             } else {

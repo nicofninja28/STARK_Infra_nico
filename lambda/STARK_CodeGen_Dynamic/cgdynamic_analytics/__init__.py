@@ -83,10 +83,10 @@ def create(data):
                     valid_report = has_permission(table_from_query, table_with_permission)
                 else:
                     report_data = event.get('queryStringParameters').get('Query','')
-                    query = compose_query(report_data)
                     data = json.loads(report_data)
                     table_from_query = data['tables']
                     valid_report = has_permission(table_from_query, table_with_permission)
+                    query = compose_query(report_data)
 
                 query_error_list = validate_query(query)
                 error_exists = any('error' in item for item in query_error_list)
@@ -186,7 +186,7 @@ def create(data):
         
 
     def extract_table_name(query):
-        regex = r'\b(?:FROM|JOIN)\s+([^\s;]+)'
+        regex = r'\\b(?:FROM|JOIN)\s+([^\s;]+)'
         matches = re.findall(regex, query, flags=re.IGNORECASE)
         
         if matches:
