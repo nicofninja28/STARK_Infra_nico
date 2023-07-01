@@ -53,4 +53,9 @@ var Analytics_app = {
         fetchUrl = this.api_endpoint + '?rt=detail&is_custom_report=' + is_custom_report + '&Query=' + report_data + '&Metadata=' + metadata
         return STARK.request('GET', fetchUrl)
     },
+
+    get_report_modules: function() {
+        fetchUrl = this.api_endpoint + '?rt=get_report_modules'
+        return STARK.request('GET', fetchUrl)
+    }
 }
