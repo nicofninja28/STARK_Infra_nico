@@ -1059,8 +1059,8 @@ def create(data):
     source_code += f"""
         return item
 
-    # def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
-    
+    def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
+    pass
     #     string_filter = " attribute_not_exists(#isDeleted) AND #Attribute = :old_parent_value"
     #     object_expression_value = {{':sk' : {{'S' : sk}},
     #                                 ':old_parent_value': {{'S' : old_pk_val}}}}
