@@ -103,6 +103,7 @@ def create(data):
     import azure.functions as func
     import uuid
     import copy
+    import logging
 
     #STARK
     import stark_core 
@@ -373,7 +374,7 @@ def create(data):
             if request_type == "all":
                 #check for submitted token
                 lv_token = req.params.get('nt', None)
-                if lv   _token != None:
+                if lv_token != None:
                     lv_token = unquote(lv_token)
                     lv_token = json.loads(lv_token)
         
@@ -460,7 +461,7 @@ def create(data):
         items = []
         ddb_arguments = {{}}
         aggregated_results = {{}}
-        ddb_arguments['TableName'] = ddb_table
+        # ddb_arguments['TableName'] = ddb_table
         ddb_arguments['IndexName'] = "STARK-ListView-Index"
         ddb_arguments['Select'] = "ALL_ATTRIBUTES"
         ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
@@ -475,7 +476,7 @@ def create(data):
             if next_token != '':
                 ddb_arguments['ExclusiveStartKey']=next_token
 
-            response = ddb.query(**ddb_arguments)
+            # response = ddb.query(**ddb_arguments)
             raw = response.get('Items')
             next_token = response.get('LastEvaluatedKey')
             aggregate_report = False if data['STARK_group_by_1'] == '' else True
@@ -815,13 +816,13 @@ def create(data):
         """
     source_code += f"""
         temp_values = {{
-            '$set' : {{
-                {update_expression}
-            }}
+            {update_expression}
         }}"""
             
     source_code += f"""
-        update_values = temp_values | utilities.az_append_record_metadata('edit', username)
+        update_values = {{
+            '$set' : temp_values | utilities.az_append_record_metadata('edit', username)
+        }}
 
         object_expression_values = {{ "_id": pk }}
         response = mdb_collection.update_one(object_expression_values, update_values)
@@ -1058,46 +1059,46 @@ def create(data):
     source_code += f"""
         return item
 
-    def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
+    # def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
     
-        string_filter = " attribute_not_exists(#isDeleted) AND #Attribute = :old_parent_value"
-        object_expression_value = {{':sk' : {{'S' : sk}},
-                                    ':old_parent_value': {{'S' : old_pk_val}}}}
-        ExpressionAttributeNamesDict = {{
-            '#Attribute' : attribute,
-            '#isDeleted' : 'STARK-Is-Deleted'
-        }}
+    #     string_filter = " attribute_not_exists(#isDeleted) AND #Attribute = :old_parent_value"
+    #     object_expression_value = {{':sk' : {{'S' : sk}},
+    #                                 ':old_parent_value': {{'S' : old_pk_val}}}}
+    #     ExpressionAttributeNamesDict = {{
+    #         '#Attribute' : attribute,
+    #         '#isDeleted' : 'STARK-Is-Deleted'
+    #     }}
 
-        ddb_arguments = {{}}
-        ddb_arguments['TableName'] = ddb_table
-        ddb_arguments['IndexName'] = "STARK-ListView-Index"
-        ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-        ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
-        ddb_arguments['FilterExpression'] = string_filter
-        ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
-        ddb_arguments['ExpressionAttributeValues'] = object_expression_value
-        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    #     ddb_arguments = {{}}
+    #     # ddb_arguments['TableName'] = ddb_table
+    #     ddb_arguments['IndexName'] = "STARK-ListView-Index"
+    #     ddb_arguments['Select'] = "ALL_ATTRIBUTES"
+    #     ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
+    #     ddb_arguments['FilterExpression'] = string_filter
+    #     ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    #     ddb_arguments['ExpressionAttributeValues'] = object_expression_value
+    #     ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
-        next_token = 'initial'
-        items = []
-        while next_token != None:
-            next_token = '' if next_token == 'initial' else next_token
+    #     next_token = 'initial'
+    #     items = []
+    #     while next_token != None:
+    #         next_token = '' if next_token == 'initial' else next_token
 
-            if next_token != '':
-                ddb_arguments['ExclusiveStartKey']=next_token
+    #         if next_token != '':
+    #             ddb_arguments['ExclusiveStartKey']=next_token
 
-            response = ddb.query(**ddb_arguments)
-            raw = response.get('Items')
-            next_token = response.get('LastEvaluatedKey')
-            for record in raw:
-                item = map_results(record)
-                #add pk as literal 'pk' value
-                #and STARK-ListView-Sk
-                item['pk'] = record.get('pk', {{}}).get('S','')
-                item['STARK-ListView-sk'] = record.get('STARK-ListView-sk',{{}}).get('S','')
-                items.append(item)
+    #         # response = ddb.query(**ddb_arguments)
+    #         raw = response.get('Items')
+    #         next_token = response.get('LastEvaluatedKey')
+    #         for record in raw:
+    #             item = map_results(record)
+    #             #add pk as literal 'pk' value
+    #             #and STARK-ListView-Sk
+    #             item['pk'] = record.get('pk', {{}}).get('S','')
+    #             item['STARK-ListView-sk'] = record.get('STARK-ListView-sk',{{}}).get('S','')
+    #             items.append(item)
                 
-        return items
+    #     return items
     """
     
     if len(relationships) > 0:
