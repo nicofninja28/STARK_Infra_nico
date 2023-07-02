@@ -217,8 +217,6 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
                 'Next_Token': json.dumps(next_token),
                 'Items': items
             }
-            logging.info("GET_ALL")
-            logging.info(response)
 
         elif request_type == "detail":
 
@@ -236,7 +234,6 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
                     "Content-Type": "application/json",
                 }
             )
-    logging.info("RESPONSE", response)
     return func.HttpResponse(
             json.dumps(response),
             status_code = responseStatusCode,
