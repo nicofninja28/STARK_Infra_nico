@@ -316,12 +316,12 @@ def create(data):
                     invalid_payload = validation.validate_form(payload, metadata)
                     if len(invalid_payload) > 0:
                         return func.HttpResponse(
-                        json.dumps(invalid_payload),
-                        status_code = 400,
-                        headers = {{
-                            "Content-Type": "application/json",
-                        }}
-                    )
+                            json.dumps(invalid_payload),
+                            status_code = 400,
+                            headers = {{
+                                "Content-Type": "application/json",
+                            }}
+                        )
                         
                     else:
                         if data['orig_pk'] == data['pk']:
