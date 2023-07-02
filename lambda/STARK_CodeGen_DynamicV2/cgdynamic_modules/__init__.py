@@ -316,12 +316,12 @@ def create(data):
                     invalid_payload = validation.validate_form(payload, metadata)
                     if len(invalid_payload) > 0:
                         return func.HttpResponse(
-                        json.dumps(invalid_payload),
-                        status_code = 400,
-                        headers = {{
-                            "Content-Type": "application/json",
-                        }}
-                    )
+                            json.dumps(invalid_payload),
+                            status_code = 400,
+                            headers = {{
+                                "Content-Type": "application/json",
+                            }}
+                        )
                         
                     else:
                         if data['orig_pk'] == data['pk']:
@@ -1060,7 +1060,7 @@ def create(data):
         return item
 
     def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
-    pass
+
     #     string_filter = " attribute_not_exists(#isDeleted) AND #Attribute = :old_parent_value"
     #     object_expression_value = {{':sk' : {{'S' : sk}},
     #                                 ':old_parent_value': {{'S' : old_pk_val}}}}
@@ -1080,7 +1080,7 @@ def create(data):
     #     ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
     #     next_token = 'initial'
-    #     items = []
+        items = []
     #     while next_token != None:
     #         next_token = '' if next_token == 'initial' else next_token
 
@@ -1098,7 +1098,7 @@ def create(data):
     #             item['STARK-ListView-sk'] = record.get('STARK-ListView-sk',{{}}).get('S','')
     #             items.append(item)
                 
-    #     return items
+        return items
     """
     
     if len(relationships) > 0:

@@ -205,16 +205,16 @@ def lambda_handler(event, context):
     user_roles_list.append(item)
 
     item                      = {}
-    item['pk']                =  "Admin"
+    item['_id']               =  "Admin"
     item['Description']       =  "All system management permissions, no business permissions"
     item['Permissions']       =  system_permissions
     user_roles_list.append(item)
 
     item                      = {}
-    item['pk']                = {'S' : "General User"}
-    item['sk']                = {'S' : "STARK|role"}
-    item['Description']       = {'S' : "Business permissions only"}
-    item['Permissions']       = {'S' : business_permissions}
+    item['_id']               = "General User"
+    item['sk']                = "STARK|role"
+    item['Description']       = "Business permissions only"
+    item['Permissions']       = business_permissions
     user_roles_list.append(item)
 
     collection = mdb_database["STARK_User_Roles"]
