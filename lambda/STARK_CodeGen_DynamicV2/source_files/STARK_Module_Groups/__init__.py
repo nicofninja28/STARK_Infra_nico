@@ -20,8 +20,11 @@ from stark_core import data_abstraction
 #######
 #CONFIG
 mdb_collection    = stark_core.mdb_database["STARK_Module_Groups"]
-bucket_name       = stark_core.bucket_name
+file_storage      = stark_core.file_storage
+region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
+file_storage_url  = stark_core.file_storage_url
+file_storage_tmp  = stark_core.file_storage_tmp
 pk_field          = "Group_Name"
 default_sk        = "STARK|module_group"
 sort_fields       = ["Group_Name", ]
@@ -75,23 +78,16 @@ stark_permissions = {
 def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     responseStatusCode = 200
     # #Get request type
-    # request_type = event.get('queryStringParameters',{}).get('rt','')
-    logging.info("REQUEST PARAMETERS")
-    logging.info(req.params)
     request_type = req.params.get("rt", '')
-    logging.info(request_type)
+
+    global username
+    username = req.headers.get('x-STARK-Username', '')
 
     if request_type == '':
         ########################
         #Handle non-GET requests
         #Get specific request method
-        # method  = event.get('requestContext').get('http').get('method')
         method  = req.method
-
-        # if event.get('isBase64Encoded') == True :
-        #     payload = json.loads(base64.b64decode(event.get('body'))).get('STARK_Module_Groups',"")
-        # else:    
-        #     payload = json.loads(event.get('body')).get('STARK_Module_Groups',"")
         
         payload = json.loads(req.get_body().decode()).get('STARK_Module_Groups', "")
         data    = {}
@@ -149,7 +145,7 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
             
         if method == "DELETE":
             if(stark_core.sec.az_is_authorized(stark_permissions['delete'], req)):
-                response = delete(data, mdb_collection)
+                response = delete_v2(data, mdb_collection)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -171,9 +167,9 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
                     if data['orig_pk'] == data['pk']:
                         response = edit(data, mdb_collection)
                     else:
-                        # response   = add(data, method)
+                        response   = add(data, method)
                         data['pk'] = data['orig_pk']
-                        # response   = delete(data)
+                        response   = delete(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -241,7 +237,7 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
             if sk == "":
                 sk = default_sk
 
-            response = get_by_id(pk, sk)
+            response = get_by_pk(pk, sk)
         else:
             
             return func.HttpResponse(
@@ -407,69 +403,57 @@ def report(data, sk=default_sk):
     pass
 
 def get_all(sk=default_sk, lv_token=None):
-    
+
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+    }
     items = []
-    logging.info("Fetching module groups..")
-    documents = list(mdb_collection.find())
+    next_token = ""
+    documents = list(mdb_collection.find(ojbect_expression_values))
     for record in documents:
         record[pk_field] = record["_id"]
         items.append(record)
-    # if db_handler == None:
-    #     db_handler = ddb
 
+    return items, next_token
 
-    # items = []
-    # ddb_arguments = {}
-    # ddb_arguments['TableName'] = ddb_table
-    # ddb_arguments['IndexName'] = "STARK-ListView-Index"
-    # ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    # ddb_arguments['Limit'] = page_limit
-    # ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
-    # ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
-    # ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
-
-    # if lv_token != None:
-    #     ddb_arguments['ExclusiveStartKey'] = lv_token
-
-    # next_token = ''
-    # while len(items) < page_limit and next_token is not None:
-    #     if next_token != '':
-    #         ddb_arguments['ExclusiveStartKey']=next_token
-
-    #     response = ddb.query(**ddb_arguments)
-    #     raw = response.get('Items')
-    #     next_token = response.get('LastEvaluatedKey')
-
-    #     for record in raw:
-    #         items.append(map_results(record))
-
-    # #Get the "next" token, pass to calling function. This enables a "next page" request later.
-    # next_token = response.get('LastEvaluatedKey')
-
-    return items
-
-def get_by_id(pk, sk=default_sk, db_handler = None):
-
-    logging.info("Fetching module groups..")
-    identifier_query = { "_id": pk }
-    documents = list(mdb_collection.find(identifier_query))
+def get_by_pk(pk, sk=default_sk, db_handler = None):
+    ojbect_expression_values = {
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
+    documents = list(mdb_collection.find(ojbect_expression_values))
     for record in documents:
         record[pk_field] = record["_id"]
 
-    response =  {"item": record}    
+    response =  {"item": record}
     return response
 
-def delete(data, collection_handler = None):
+def delete_v2(data, db_handler = None):
+
+    pk = data.get('pk','')
+    set_values = {
+        "$set": utilities.az_append_record_metadata('delete', username)
+    }
+
+    ojbect_expression_values = { 
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
+
+    mdb_collection.update_one(ojbect_expression_values, set_values)
+    return "OK"
+
+def delete(data, db_handler = None):
     pk = data.get('pk','')
     identifier_query = { "_id": pk }
-    response = collection_handler.delete_one(identifier_query)
+    response = mdb_collection.delete_one(identifier_query)
 
     global resp_obj
     resp_obj = response
 
     return "OK"
 
-def edit(data, collection_handler = None):      
+def edit(data, db_handler = None):      
     pk = data.get('pk', '')
     sk = data.get('sk', '')
     if sk == '': sk = default_sk
@@ -485,14 +469,14 @@ def edit(data, collection_handler = None):
         
     }
     identifier_query = { "_id": pk }
-    response = collection_handler.update_one(identifier_query, update_values)
+    response = mdb_collection.update_one(identifier_query, update_values)
 
 
     global resp_obj
     resp_obj = response
     return "OK"
 
-def add(data, method='POST', collection_handler=None):
+def add(data, method='POST', db_handler=None):
 
     pk = data.get('pk', '')
     sk = data.get('sk', '')
@@ -501,64 +485,17 @@ def add(data, method='POST', collection_handler=None):
     Icon = str(data.get('Icon', ''))
     Priority = str(data.get('Priority', ''))
 
-    item={}
+    item = utilities.az_append_record_metadata('add', username)
     item['_id'] =  pk
     item['Description'] =  Description
     item['Icon'] =  Icon
     item['Priority'] = Priority
 
-    response = collection_handler.insert_one(item)
+    response = mdb_collection.insert_one(item)
     logging.info("Added")
     global resp_obj
     resp_obj = response
     return "OK"
-
-# def compose_report_operators_and_parameters(key, data):
-#     composed_filter_dict = {"filter_string":"","expression_values": {}}
-#     if data['operator'] == "IN":
-#         string_split = data['value'].split(',')
-#         composed_filter_dict['filter_string'] += f" {key} IN "
-#         temp_in_string = ""
-#         in_string = ""
-#         in_counter = 1
-#         composed_filter_dict['report_params'] = {key : f"Is in {data['value']}"}
-#         for in_index in string_split:
-#             in_string += f" :inParam{in_counter}, "
-#             composed_filter_dict['expression_values'][f":inParam{in_counter}"] = {data['type'] : in_index.strip()}
-#             in_counter += 1
-#         temp_in_string = in_string[1:-2]
-#         composed_filter_dict['filter_string'] += f"({temp_in_string}) AND"
-#     elif data['operator'] in [ "contains", "begins_with" ]:
-#         composed_filter_dict['filter_string'] += f" {data['operator']}({key}, :{key}) AND"
-#         composed_filter_dict['expression_values'][f":{key}"] = {data['type'] : data['value'].strip()}
-#         composed_filter_dict['report_params'] = {key : f"{data['operator'].capitalize().replace('_', ' ')} {data['value']}"}
-#     elif data['operator'] == "between":
-#         from_to_split = data['value'].split(',')
-#         composed_filter_dict['filter_string'] += f" ({key} BETWEEN :from{key} AND :to{key}) AND"
-#         composed_filter_dict['expression_values'][f":from{key}"] = {data['type'] : from_to_split[0].strip()}
-#         composed_filter_dict['expression_values'][f":to{key}"] = {data['type'] : from_to_split[1].strip()}
-#         composed_filter_dict['report_params'] = {key : f"Between {from_to_split[0].strip()} and {from_to_split[1].strip()}"}
-#     else:
-#         composed_filter_dict['filter_string'] += f" {key} {data['operator']} :{key} AND"
-#         composed_filter_dict['expression_values'][f":{key}"] = {data['type'] : data['value'].strip()}
-#         operator_string_equivalent = ""
-#         if data['operator'] == '=':
-#             operator_string_equivalent = 'Is equal to'
-#         elif data['operator'] == '>':
-#             operator_string_equivalent = 'Is greater than'
-#         elif data['operator'] == '>=':
-#             operator_string_equivalent = 'Is greater than or equal to'
-#         elif data['operator'] == '<':
-#             operator_string_equivalent = 'Is less than'
-#         elif data['operator'] == '<=':
-#             operator_string_equivalent = 'Is greater than or equal to'
-#         elif data['operator'] == '<=':
-#             operator_string_equivalent = 'Is not equal to'
-#         else:
-#             operator_string_equivalent = 'Invalid operator'
-#         composed_filter_dict['report_params'] = {key : f" {operator_string_equivalent} {data['value'].strip()}" }
-
-#     return composed_filter_dict
 
 def create_listview_index_value(data):
     ListView_index_values = []
@@ -580,6 +517,9 @@ def map_results(record):
     return item
 
 def get_module_groups(groups, sk=default_sk):
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+    }
     ##################################
     #GET MODULE GROUPS     
     items = []

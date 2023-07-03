@@ -6,8 +6,8 @@ from urllib.parse import unquote
 import sys
 
 #Extra modules
-import boto3
 import uuid
+import azure.functions as func
 
 #STARK
 import stark_core
@@ -15,17 +15,14 @@ from stark_core import utilities
 from stark_core import validation
 from stark_core import data_abstraction
 
-ddb = boto3.client('dynamodb')
-s3_res = boto3.resource('s3')
-
 #######
 #CONFIG
-ddb_table         = stark_core.ddb_table
-bucket_name       = stark_core.bucket_name
+mdb_collection    = stark_core.mdb_database["STARK_User_Sessions"]
+file_storage      = stark_core.file_storage
 region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
-file_storage_url        = stark_core.file_storage_url
-file_storage_tmp        = stark_core.file_storage_tmp
+file_storage_url  = stark_core.file_storage_url
+file_storage_tmp  = stark_core.file_storage_tmp
 pk_field          = "Session_ID"
 default_sk        = "STARK|session"
 sort_fields       = ["Session_ID", ]
@@ -84,34 +81,33 @@ stark_permissions = {
     'report': 'User Sessions|Report'
 }
 
-def lambda_handler(event, context):
+def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     responseStatusCode = 200
     #Get request type
-    request_type = event.get('queryStringParameters',{}).get('rt','')
+    request_type = req.params.get("rt", '')
+
+    global username
+    username = req.headers.get('x-STARK-Username', '')
 
     if request_type == '':
         ########################
         #Handle non-GET requests
 
         #Get specific request method
-        method  = event.get('requestContext').get('http').get('method')
-
-        if event.get('isBase64Encoded') == True :
-            payload = json.loads(base64.b64decode(event.get('body'))).get('STARK_User_Sessions',"")
-        else:    
-            payload = json.loads(event.get('body')).get('STARK_User_Sessions',"")
+        method  = req.method
+        
+        payload = json.loads(req.get_body().decode()).get('STARK_User_Sessions',"")
 
         data    = {}
 
         if payload == "":
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Client payload missing"),
-                "headers": {
+            return func.HttpResponse(
+                "Client payload missing",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
+            )
         else:
             isInvalidPayload = False
             data['pk'] = payload.get('Session_ID')
@@ -146,35 +142,33 @@ def lambda_handler(event, context):
             data['STARK_uploaded_s3_keys'] = payload.get('STARK_uploaded_s3_keys',{})
 
             if isInvalidPayload:
-                return {
-                    "isBase64Encoded": False,
-                    "statusCode": 400,
-                    "body": json.dumps("Missing operators"),
-                    "headers": {
+                return func.HttpResponse(
+                    "Missing operators",
+                    status_code = 400,
+                    headers = {
                         "Content-Type": "application/json",
                     }
-                }
+                )
 
         if method == "DELETE":
-            if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                response = delete(data)
+            if(stark_core.sec.az_is_authorized(stark_permissions['delete'], req)):
+                response = delete_v2(data, mdb_collection)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
         elif method == "PUT":
-            if(stark_core.sec.is_authorized(stark_permissions['edit'], event, ddb)):
+            if(stark_core.sec.az_is_authorized(stark_permissions['edit'], req)):
                 payload = data
                 payload['Session_ID'] = data['pk']
                 invalid_payload = validation.validate_form(payload, metadata)
                 if len(invalid_payload) > 0:
-                    return {
-                        "isBase64Encoded": False,
-                        "statusCode": responseStatusCode,
-                        "body": json.dumps(invalid_payload),
-                        "headers": {
+                    return func.HttpResponse(
+                        json.dumps(invalid_payload),
+                        status_code = 400,
+                        headers = {
                             "Content-Type": "application/json",
                         }
-                    }
+                    )
                 else:
                 #We can't update DDB PK, so if PK is different, we need to do ADD + DELETE
                     if data['orig_pk'] == data['pk']:
@@ -188,24 +182,23 @@ def lambda_handler(event, context):
 
         elif method == "POST":
             if 'STARK_isReport' in data:
-                if(stark_core.sec.is_authorized(stark_permissions['report'], event, ddb)):
+                if(stark_core.sec.az_is_authorized(stark_permissions['report'], req)):
                     response = report(data, default_sk)
                 else:
                     responseStatusCode, response = stark_core.sec.authFailResponse
             else:
-                if(stark_core.sec.is_authorized(stark_permissions['add'], event, ddb)):
+                if(stark_core.sec.az_is_authorized(stark_permissions['add'], req)):
                     payload = data
                     payload['Session_ID'] = data['pk']
                     invalid_payload = validation.validate_form(payload, metadata)
                     if len(invalid_payload) > 0:
-                        return {
-                            "isBase64Encoded": False,
-                            "statusCode": responseStatusCode,
-                            "body": json.dumps(invalid_payload),
-                            "headers": {
+                        return func.HttpResponse(
+                            json.dumps(invalid_payload),
+                            status_code = responseStatusCode,
+                            headers = {
                                 "Content-Type": "application/json",
                             }
-                        }
+                        )
 
                     else:
                         response = add(data)
@@ -214,21 +207,20 @@ def lambda_handler(event, context):
 
 
         else:
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Could not handle API request"),
-                "headers": {
+            return func.HttpResponse(
+                "Could not handle API request",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
+            )
 
     else:
         ####################
         #Handle GET requests
         if request_type == "all":
             #check for submitted token
-            lv_token = event.get('queryStringParameters',{}).get('nt', None)
+            lv_token = req.params.get('nt', None)
             if lv_token != None:
                 lv_token = unquote(lv_token)
                 lv_token = json.loads(lv_token)
@@ -242,113 +234,76 @@ def lambda_handler(event, context):
 
         elif request_type == "detail":
 
-            pk = event.get('queryStringParameters').get('Session_ID','')
-            sk = event.get('queryStringParameters').get('sk','')
+            pk = req.params.get('Session_ID','')
+            sk = req.params.get('sk','')
             if sk == "":
                 sk = default_sk
 
             response = get_by_pk(pk, sk)
         else:
-            return {
-                "isBase64Encoded": False,
-                "statusCode": 400,
-                "body": json.dumps("Could not handle GET request - unknown request type"),
-                "headers": {
+            return func.HttpResponse(
+                "Could not handle GET request - unknown request type",
+                status_code = 400,
+                headers = {
                     "Content-Type": "application/json",
                 }
-            }
+            )
 
-    return {
-        "isBase64Encoded": False,
-        "statusCode": responseStatusCode,
-        "body": json.dumps(response),
-        "headers": {
-            "Content-Type": "application/json",
-        }
-    }
+    return func.HttpResponse(
+                json.dumps(response),
+                status_code = responseStatusCode,
+                headers = {
+                    "Content-Type": "application/json",
+                }
+            )
 
 def get_all(sk=default_sk, lv_token=None):
 
-    if lv_token == None:
-        response = ddb.query(
-            TableName=ddb_table,
-            IndexName="STARK-ListView-Index",
-            Select='ALL_ATTRIBUTES',
-            Limit=page_limit,
-            ReturnConsumedCapacity='TOTAL',
-            KeyConditionExpression='sk = :sk',
-            ExpressionAttributeValues={
-                ':sk' : {'S' : sk}
-            }
-        )
-    else:
-        response = ddb.query(
-            TableName=ddb_table,
-            IndexName="STARK-ListView-Index",
-            Select='ALL_ATTRIBUTES',
-            Limit=page_limit,
-            ExclusiveStartKey=lv_token,
-            ReturnConsumedCapacity='TOTAL',
-            KeyConditionExpression='sk = :sk',
-            ExpressionAttributeValues={
-                ':sk' : {'S' : sk}
-            }
-        )
-
-    raw = response.get('Items')
-
-    #Map to expected structure
-    #FIXME: this is duplicated code, make this DRY by outsourcing the mapping to a different function.
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+    }
     items = []
-    for record in raw:
-        items.append(map_results(record))
-
-    #Get the "next" token, pass to calling function. This enables a "next page" request later.
-    next_token = response.get('LastEvaluatedKey')
+    next_token = ""
+    documents = list(mdb_collection.find(ojbect_expression_values))
+    for record in documents:
+        record[pk_field] = record["_id"]
+        items.append(record)
 
     return items, next_token
 
 def get_by_pk(pk, sk=default_sk, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
+    ojbect_expression_values = {
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
+    documents = list(mdb_collection.find(ojbect_expression_values))
+    for record in documents:
+        record[pk_field] = record["_id"]
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-    ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
-    ddb_arguments['ExpressionAttributeNames'] = {
-                                                '#pk' : 'pk',
-                                                '#sk' : 'sk'
-                                            }
-    ddb_arguments['ExpressionAttributeValues'] = {
-                                                ':pk' : {'S' : pk },
-                                                ':sk' : {'S' : sk }
-                                            }
-    response = db_handler.query(**ddb_arguments)
-    raw = response.get('Items')
-
-    #Map to expected structure
-    response = {}
-    response['item'] = map_results(raw[0])
+    response =  {"item": record}
 
     return response
 
-def delete(data, db_handler = None):
-    if db_handler == None:
-        db_handler = ddb
+def delete_v2(data, db_handler = None):
 
     pk = data.get('pk','')
-    sk = data.get('sk','')
-    if sk == '': sk = default_sk
+    set_values = {
+        "$set": utilities.az_append_record_metadata('delete', username)
+    }
 
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Key'] = {
-            'pk' : {'S' : pk},
-            'sk' : {'S' : sk}
-        }
+    ojbect_expression_values = { 
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
 
-    response = db_handler.delete_item(**ddb_arguments)
+    mdb_collection.update_one(ojbect_expression_values, set_values)
+    return "OK"
+
+def delete(data, db_handler = None):
+    pk = data.get('pk','')
+    identifier_query = { "_id": pk }
+    response = mdb_collection.delete_one(identifier_query)
+
     global resp_obj
     resp_obj = response
 
@@ -403,8 +358,6 @@ def edit(data, db_handler = None):
     return "OK"
 
 def add(data, method ='POST', db_handler=None):
-    if db_handler == None:
-        db_handler = ddb
     pk = data.get('pk', '')
     sk = data.get('sk', '')
     if sk == '': sk = default_sk
@@ -413,23 +366,15 @@ def add(data, method ='POST', db_handler=None):
     TTL = str(data.get('TTL', ''))
     Permissions = str(data.get('Permissions', ''))
 
-    item={}
-    item['pk'] = {'S' : pk}
-    item['sk'] = {'S' : sk}
-    item['Username'] = {'S' : Username}
-    item['Sess_Start'] = {'S' : Sess_Start}
-    item['TTL'] = {'N' : TTL}
-    item['Permissions'] = {'S' : Permissions}
+    item = utilities.az_append_record_metadata('add', username)
+    item['pk'] =  pk
+    item['sk'] =  sk
+    item['Username'] =  Username
+    item['Sess_Start'] =  Sess_Start
+    item['TTL'] =  TTL
+    item['Permissions'] =  Permissions
 
-    if data.get('STARK-ListView-sk','') == '':
-        item['STARK-ListView-sk'] = {'S' : create_listview_index_value(data)}
-    else:
-        item['STARK-ListView-sk'] = {'S' : data['STARK-ListView-sk']}
-
-    ddb_arguments = {}
-    ddb_arguments['TableName'] = ddb_table
-    ddb_arguments['Item'] = item
-    response = db_handler.put_item(**ddb_arguments)
+    response = mdb_collection.insert_one(item)
 
     global resp_obj
     resp_obj = response
@@ -457,7 +402,7 @@ def report(data, sk=default_sk):
     items = []
     ddb_arguments = {}
     aggregated_results = {}
-    ddb_arguments['TableName'] = ddb_table
+    # ddb_arguments['TableName'] = ddb_table
     ddb_arguments['IndexName'] = "STARK-ListView-Index"
     ddb_arguments['Select'] = "ALL_ATTRIBUTES"
     ddb_arguments['Limit'] = 2
@@ -473,8 +418,8 @@ def report(data, sk=default_sk):
 
         if next_token != '':
             ddb_arguments['ExclusiveStartKey']=next_token
-
-        response = ddb.query(**ddb_arguments)
+        response = {}
+        # response = ddb.query(**ddb_arguments)
         raw = response.get('Items')
         next_token = response.get('LastEvaluatedKey')
         aggregate_report = False if data['STARK_group_by_1'] == '' else True
