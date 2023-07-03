@@ -20,8 +20,11 @@ from stark_core import data_abstraction
 #######
 #CONFIG
 mdb_collection    = stark_core.mdb_database["STARK_Module_Groups"]
-bucket_name       = stark_core.bucket_name
+file_storage      = stark_core.file_storage
+region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
+file_storage_url  = stark_core.file_storage_url
+file_storage_tmp  = stark_core.file_storage_tmp
 pk_field          = "Group_Name"
 default_sk        = "STARK|module_group"
 sort_fields       = ["Group_Name", ]
@@ -164,9 +167,9 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
                     if data['orig_pk'] == data['pk']:
                         response = edit(data, mdb_collection)
                     else:
-                        # response   = add(data, method)
+                        response   = add(data, method)
                         data['pk'] = data['orig_pk']
-                        # response   = delete(data)
+                        response   = delete(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
