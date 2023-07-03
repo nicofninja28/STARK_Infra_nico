@@ -132,7 +132,7 @@ def create(data):
                 item['Sess_Start'] = str(dt_now)
                 item['Username']   = username
             
-                collection = stark_core.mdb_database["STARK_User_Session"]
+                collection = stark_core.mdb_database["STARK_User_Sessions"]
                 collection.insert_one(item)
                 #3. Return token (and session ID?) to client for cookie creating purposes
                 return sess_id
