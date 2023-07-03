@@ -367,7 +367,7 @@ def add(data, method='POST', db_handler=None):
     Password_Hash = str(data.get('Password_Hash', ''))
     Role = str(data.get('Role', ''))
 
-    item={}
+    item = utilities.az_append_record_metadata('add', username)
     item['_id'] = pk
     item['sk'] = sk
     item['Full_Name'] = Full_Name

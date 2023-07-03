@@ -314,7 +314,7 @@ def add(data, method='POST', db_handler=None):
     if sk == '': sk = default_sk
     Permissions = str(data.get('Permissions', ''))
 
-    item={}
+    item = utilities.az_append_record_metadata('add', username)
     item['_id'] =  pk
     item['sk'] =  sk
     item['Permissions'] =  Permissions

@@ -243,7 +243,7 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
 
         if method == "DELETE":
             if(stark_core.sec.az_is_authorized(stark_permissions['delete'], req)):
-                response = delete(data, mdb_collection)
+                response = delete_v2(data, mdb_collection)
                 pass
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
@@ -575,7 +575,7 @@ def add(data, method='POST', collection_handler=None):
     # else:
     #     Is_Enabled = False
 
-    item={}
+    item = utilities.az_append_record_metadata('add', username)
     item['_id'] = pk
     item['Descriptive_Title'] = Descriptive_Title
     item['Target'] = Target
@@ -785,7 +785,9 @@ def get_user_modules(username, sk=default_sk):
     ########################
     #1.GET USER PERMISSIONS
     STARK_user_permission_collection = stark_core.mdb_database["STARK_User_Permissions"]
+    
     query_filter_obj = {
+                'STARK-Is-Deleted' : {'$exists': False},
                 "_id": username
                 }
     item = {}

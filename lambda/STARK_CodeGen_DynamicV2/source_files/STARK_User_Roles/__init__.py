@@ -326,7 +326,7 @@ def add(data, method ='POST', db_handler=None):
     Description = str(data.get('Description', ''))
     Permissions = str(data.get('Permissions', ''))
 
-    item={}
+    item = utilities.az_append_record_metadata('add', username)
     item['_id'] =  pk
     item['sk'] =  sk
     item['Description'] =  Description
