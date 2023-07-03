@@ -16,17 +16,17 @@ from stark_core import utilities
 from stark_core import validation
 from stark_core import data_abstraction
 
-# s3_res = boto3.resource('s3')
-
 #######
 #CONFIG
 
 mdb_collection    = stark_core.mdb_database["STARK_Module"]
-default_sk        = "STARK|module"
-
-bucket_name       = stark_core.bucket_name
+file_storage      = stark_core.file_storage
+region_name       = stark_core.region_name
 page_limit        = stark_core.page_limit
+file_storage_url  = stark_core.file_storage_url
+file_storage_tmp  = stark_core.file_storage_tmp
 pk_field          = "Module_Name"
+default_sk        = "STARK|module"
 sort_fields       = ["Module_Name", ]
 relationships     = []
 entity_upload_dir = stark_core.upload_dir + "STARK_Module/"
@@ -105,6 +105,9 @@ metadata          = {
     },
 }
 
+resp_obj = None
+username = ""
+
 ############
 #PERMISSIONS
 stark_permissions = {
@@ -124,20 +127,14 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
     responseStatusCode = 200
 
     #Get request type
-    # request_type = event.get('queryStringParameters',{}).get('rt','')
-    logging.info("REQUEST PARAMETERS")
-    logging.info(req.params)
     request_type = req.params.get("rt")
-    logging.info(request_type)
 
     #Get specific request method
-    # method  = event.get('requestContext').get('http').get('method')
     method  = req.method
 
-    # if event.get('isBase64Encoded') == True :
-    #     payload = json.loads(base64.b64decode(event.get('body'))).get('STARK_Module',"")
-    # else:    
-    #     payload = json.loads(event.get('body')).get('STARK_Module',"")
+    global username
+    username = req.headers.get('x-STARK-Username', '')
+    
     data    = {}
     if method == 'GET':
         ####################
@@ -170,13 +167,12 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
             if sk == "":
                 sk = default_sk
 
-            # response = get_by_pk(pk, sk)
+            response = get_by_pk(pk, sk)
 
         elif request_type == "usermodules":
             #FIXME: Getting the username should be a STARK Core framework utility. Only here for now for MVP implem, to not hold up more urgent dependent features
             #FIXME: When framework-ized, getting the requestContext should be at the beginning of the handler, and will exit if handler needs the Username and is not present (i.e., not properly authorized)
             #FIXME: Make sure for this framework-ized implementation that it will still work when Framework components call each other directly through the STARK registry instead of through API Gateway.
-            username = req.headers.get('x-STARK-Username', '')
             response = get_user_modules(username, default_sk)
             logging.info("Successfully fetched user modules", response)
 
@@ -190,10 +186,6 @@ def main(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
                 }
             )
     else:
-        logging.info(req.get_body())
-        logging.info(type(req.get_body()))
-        print(req.get_body())
-        print(type(req.get_body()))
         payload = json.loads(req.get_body().decode()).get('STARK_Module', "")
         if payload == "":
 
@@ -474,25 +466,47 @@ def report(data, sk=default_sk):
 
 def get_all(sk=default_sk, lv_token=None):
 
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+    }
+
     items = []
     logging.info("Fetching modules..")
-    documents = list(mdb_collection.find())
+    documents = list(mdb_collection.find(ojbect_expression_values))
     for record in documents:
         record[pk_field] = record["_id"]
         items.append(record)
 
     return items
 
-def get_by_id(pk, sk=default_sk, db_handler = None):
+def get_by_pk(pk, sk=default_sk, db_handler = None):
 
     logging.info("Fetching modules..")
-    identifier_query = { "_id": pk }
-    documents = list(mdb_collection.find(identifier_query))
+    ojbect_expression_values = {
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
+    documents = list(mdb_collection.find(ojbect_expression_values))
     for record in documents:
         record[pk_field] = record["_id"]
         
     response =  {"item": record}    
     return response
+
+def delete_v2(data, db_handler = None):
+
+    pk = data.get('pk','')
+    set_values = {
+        "$set": utilities.az_append_record_metadata('delete', username)
+    }
+
+    ojbect_expression_values = { 
+        "_id": pk,
+        'STARK-Is-Deleted' : {'$exists': False} 
+    }
+
+    mdb_collection.update_one(ojbect_expression_values, set_values)
+    return "OK"
 
 def delete(data, collection_handler = None):
     pk = data.get('pk','')
@@ -515,9 +529,7 @@ def edit(data, collection_handler = None):
     Is_Enabled = data.get('Is_Enabled', False)
     Icon = str(data.get('Icon', ''))
     Priority = str(data.get('Priority', ''))
-
-    update_values = {
-        '$set' : {
+    temp_values = {
             'Descriptive_Title' : Descriptive_Title,
             'Target' : Target ,
             'Description' : Description ,
@@ -525,7 +537,11 @@ def edit(data, collection_handler = None):
             'Is_Menu_Item' : Is_Menu_Item ,
             'Is_Enabled' : Is_Enabled ,
             'Icon' : Icon ,
-            'Priority' : Priority  },
+            'Priority' : Priority  
+    }
+    
+    update_values = {
+        '$set' : temp_values | utilities.az_append_record_metadata('edit', username)
         
     }
     identifier_query = { "_id": pk }
