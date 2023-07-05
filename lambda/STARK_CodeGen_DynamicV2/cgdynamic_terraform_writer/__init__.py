@@ -121,7 +121,7 @@ def tf_writer_azure_config(data):
 
 def tf_writer_resource_group(data):
     source_code = f"""
-     resource "azurerm_resource_group" "stark_rg.name" {{
+     resource "azurerm_resource_group" "stark_rg" {{
         name     = "{data['stark_resource_group_name']}"
         location = var.rglocation
     }}
