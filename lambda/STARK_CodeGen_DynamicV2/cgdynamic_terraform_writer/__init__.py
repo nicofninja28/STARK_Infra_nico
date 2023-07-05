@@ -90,18 +90,6 @@ def compose_stark_tf_script(data):
 
     return tf_script
 
-def tf_writer_variables(data):
-    source_code = f"""
-    
-    variable "rgname" {{
-        type = string
-        default = "{data['stark_resource_group_name']}"
-    }}
-    
-    """
-    
-    return textwrap.dedent(source_code)
-
 def tf_writer_azure_config(data):
 
     ##FIXME: must find a way to make sure azurerm is using the latest version
@@ -692,6 +680,11 @@ def tf_writer_variables(data):
     ]
     combined_entities = entities + stark_entities
     source_code = f"""\
+        variable "rgname" {{
+            type = string
+            default = "{data['stark_resource_group_name']}"
+        }}
+
         variable "origin" {{
             type = string
             default = "test for now"
