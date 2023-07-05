@@ -207,7 +207,7 @@ def tf_writer_cosmosdb_account(data):
     resource "azurerm_cosmosdb_account" "stark_storage_account" {{
         name                 = "{project_name}"
         location             = var.rglocation
-        resource_group_name  = azurerm_resource_group.stark_resource_group_name
+        resource_group_name  = azurerm_resource_group.stark_rg
         offer_type           = "Standard"
         kind                 = "MongoDB"
         mongo_server_version = 4.2
