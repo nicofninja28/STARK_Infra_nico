@@ -284,7 +284,8 @@ def lambda_handler(event, context):
     data = {
         "entities": entities,
         "project_name": project_varname,
-        "api_name": cloud_resources["API Gateway"]['Name']
+        "api_name": cloud_resources["API Gateway"]['Name'],
+        "stark_resource_group_name": converter.to_az_resource_group_name(project_varname, 'az-resource-group')
     }
     
     tf_script_to_commit = cg_tfwriter.compose_stark_tf_script(data)
