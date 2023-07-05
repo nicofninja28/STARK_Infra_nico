@@ -39,7 +39,7 @@ def create_store_terraform_files_to_bucket(data):
         tf_script_and_state_files = [
                                 'main.tf', 'database.tf', 'terraform.tfstate', '.terraform.lock.hcl', 'terraform.tfstate.backup',
                                 'api_management.tf', 'stark_modules_collection.tf', 'business_modules_collection.tf', 'functions.tf',
-                                'static_site_hosting.tf'
+                                'static_site_hosting.tf', 'resource_group.tf', 'variables.tf'
         ]
         if filename in tf_script_and_state_files:
             with open(file_path, 'r') as file:

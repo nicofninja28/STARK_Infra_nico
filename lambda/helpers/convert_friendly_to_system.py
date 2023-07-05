@@ -17,6 +17,8 @@ def convert_to_system_name(friendly_name, target='variable'):
         system_name = to_az_storage_account_name(preprocessed_name)
     elif target == 'az-cosmos-db':
         system_name = to_az_cosmosdb_name(preprocessed_name)
+    elif target == 'az-resource-group':
+        system_name = to_az_resource_group_name(preprocessed_name)
     else:
         system_name = to_variable(preprocessed_name)
 
