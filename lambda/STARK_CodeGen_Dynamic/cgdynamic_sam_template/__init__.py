@@ -552,6 +552,18 @@ def create(data, cli_mode=False):
                     - python3.7
                     - python3.8
                     - python3.9
+        OpenAILayer:
+            Type: AWS::Lambda::LayerVersion
+            Properties:
+                Content:
+                    S3Bucket: !Ref UserCICDPipelineBucketNameParameter
+                    S3Key: {project_varname}/STARKLambdaLayers/OpenAI_layer.zip
+                Description: OpenAI module for Python 3.x
+                LayerName: {project_varname}_OpenAI
+                CompatibleArchitectures:
+                    - x86_64
+                CompatibleRuntimes:
+                    - python3.10
         RequestsLayer:
             Type: AWS::Lambda::LayerVersion
             Properties:
@@ -914,6 +926,62 @@ def create(data, cli_mode=False):
                 Layers:
                     - !Ref Fpdf2Layer""" 
     cf_template += f"""
+        GenAIforSTARK:
+            Type: AWS::Serverless::Function
+            Properties:
+                Events:
+                    GenAIPostEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /GenAI
+                            Method: POST
+                            ApiId:
+                                Ref: STARKApiGateway
+                Runtime: python3.10
+                Handler: __init__.lambda_handler
+                CodeUri: lambda/GenAI
+                Policies:
+                    - AWSLambdaBasicExecutionRole
+                    - AmazonSSMReadOnlyAccess
+                    - CloudWatchLogsReadOnlyAccess
+                Architectures:
+                    - x86_64
+                MemorySize: 128
+                Timeout: 60
+                Layers:
+                    - !Ref OpenAILayer
+        ObservabilityforSTARK:
+            Type: AWS::Serverless::Function
+            Properties:
+                Events:
+                    ObservabilityGetEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /STARK_Observability
+                            Method: GET
+                            ApiId:
+                                Ref: STARKApiGateway
+                    ObservabilityPostEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /STARK_Observability
+                            Method: POST
+                            ApiId:
+                                Ref: STARKApiGateway
+                Runtime: python3.9
+                Handler: __init__.lambda_handler
+                CodeUri: lambda/STARK_Observability
+                Policies:
+                    - AWSLambdaBasicExecutionRole
+                    - CloudWatchLogsReadOnlyAccess
+                    - AWSLambda_FullAccess
+                    - AmazonS3FullAccess
+                Architectures:
+                    - x86_64
+                MemorySize: 128
+                Timeout: 60
+                Layers:
+                    - !Ref RequestsLayer
         STARKBackendApiForSTARKUser:
             Type: AWS::Serverless::Function
             Properties:
@@ -1245,6 +1313,12 @@ def create(data, cli_mode=False):
                 - STARKBucketCleaner
                 - STARKDynamoDB
                 - STARKProjectDefaultLambdaServiceRole
+        Type: AWS::SSM::Parameter
+        Properties: 
+            Name: {project_name} OPENAI_API_KEY
+            Type: String
+            Description: Place your OpenAI API Key here
+            Value: (Your API Key)
         """
 
     return textwrap.dedent(cf_template)
