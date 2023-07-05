@@ -133,7 +133,7 @@ def tf_writer_azure_config(data):
 
 def tf_writer_resource_group(data):
     source_code = f"""
-     resource "azurerm_resource_group" "stark_rg" {{
+     resource "azurerm_resource_group" "stark_rg.name" {{
         name     = "{data['stark_resource_group_name']}"
         location = var.rglocation
     }}
@@ -207,7 +207,7 @@ def tf_writer_cosmosdb_account(data):
     resource "azurerm_cosmosdb_account" "stark_storage_account" {{
         name                 = "{project_name}"
         location             = var.rglocation
-        resource_group_name  = azurerm_resource_group.stark_rg
+        resource_group_name  = azurerm_resource_group.stark_rg.name
         offer_type           = "Standard"
         kind                 = "MongoDB"
         mongo_server_version = 4.2
@@ -231,7 +231,7 @@ def tf_writer_cosmosdb_account(data):
 
     resource "azurerm_cosmosdb_mongo_database" "db_name" {{
         name                = "{project_name}-mongodb"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
     }}
 
@@ -258,7 +258,7 @@ def tf_writer_cosmosdb_business_modules(data):
         source_code += f"""
     resource "azurerm_cosmosdb_mongo_collection" "stark_{entity_varname}_collection" {{
         name                = "{entity_varname}"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -277,7 +277,7 @@ def tf_writer_cosmosdb_stark_modules(data):
     ##STARK Modules
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_collection" {{
         name                = "STARK_User"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -290,7 +290,7 @@ def tf_writer_cosmosdb_stark_modules(data):
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_roles_collection" {{
         name                = "STARK_User_Roles"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -303,7 +303,7 @@ def tf_writer_cosmosdb_stark_modules(data):
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_modules_collection" {{
         name                = "STARK_Module"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -316,7 +316,7 @@ def tf_writer_cosmosdb_stark_modules(data):
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_module_groups_collection" {{
         name                = "STARK_Module_Groups"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -329,7 +329,7 @@ def tf_writer_cosmosdb_stark_modules(data):
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_permissions_collection" {{
         name                = "STARK_User_Permissions"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
@@ -342,7 +342,7 @@ def tf_writer_cosmosdb_stark_modules(data):
 
     resource "azurerm_cosmosdb_mongo_collection" "stark_user_sessions_collection" {{
         name                = "STARK_User_Sessions"
-        resource_group_name = azurerm_resource_group.stark_rg
+        resource_group_name = azurerm_resource_group.stark_rg.name
         account_name        = azurerm_cosmosdb_account.stark_storage_account.name
         database_name       = azurerm_cosmosdb_mongo_database.db_name.name
 
