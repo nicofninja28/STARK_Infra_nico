@@ -66,7 +66,7 @@ def create(data):
 
         # Select the database and collection you want to fetch data from
 
-        collection = stark_core.mdb_database["STARK_User_Session"]
+        collection = stark_core.mdb_database["STARK_User_Sessions"]
 
         query_filter_obj = {{
                     "_id": sess_id
