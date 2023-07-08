@@ -91,6 +91,16 @@ def parse(data):
             "Dependencies": [
                 "STARK_Module"
             ]
+        },
+        "GenAI": {
+            "Memory": 128,
+            "Arch": "x86_64",
+            "Timeout": 60,
+        },
+        "STARK_Observability": {
+            "Memory": 128,
+            "Arch": "arm64",
+            "Timeout": 60,
         }
     }
     
