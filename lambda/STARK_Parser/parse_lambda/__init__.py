@@ -99,8 +99,15 @@ def parse(data):
         },
         "STARK_Observability": {
             "Memory": 128,
-            "Arch": "arm64",
+            "Arch": "x86_64",
             "Timeout": 60,
+            "Dependencies": [
+                "GenAI"
+            ],
+            "Layers": [
+                "OpenAILayer"
+            ],
+
         }
     }
     

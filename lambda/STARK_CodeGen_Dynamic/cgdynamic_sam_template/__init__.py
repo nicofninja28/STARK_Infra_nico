@@ -982,6 +982,7 @@ def create(data, cli_mode=False):
                 Timeout: 60
                 Layers:
                     - !Ref RequestsLayer
+                    - !Ref OpenAILayer
         STARKBackendApiForSTARKUser:
             Type: AWS::Serverless::Function
             Properties:
