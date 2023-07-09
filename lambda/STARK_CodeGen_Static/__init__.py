@@ -234,6 +234,7 @@ def create_handler(event, context):
             key = key + 1
             ctr = 0
             total_commit_size = len(item['fileContent'])
+        ctr = ctr + 1
         if chunked_commit_list.get(key, '') == '':
             chunked_commit_list[key] = []
         chunked_commit_list[key].append(item)
