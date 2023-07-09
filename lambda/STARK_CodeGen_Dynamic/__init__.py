@@ -230,7 +230,7 @@ def create_handler(event, context):
                 source_code = source_code.replace("[[STARK_RAW_BUCKET]]", s3_analytics_raw_bucket_name)
                 source_code = source_code.replace("[[STARK_PROCESSED_BUCKET]]", s3_analytics_processed_bucket_name)
                 source_code = source_code.replace("[[STARK_ATHENA_BUCKET]]", s3_analytics_athena_bucket_name)
-                source_code = source_code.replace("[[STARK_PROJECT_NAME]]", project_name)
+                source_code = source_code.replace("[[STARK_PROJECT_VARNAME]]", project_varname)
                 #We use root[13:] because we want to strip out the "source_files/" part of the root path
                 files_to_commit.append({
                     'filePath': f"lambda/" + os.path.join(root[13:], source_file),

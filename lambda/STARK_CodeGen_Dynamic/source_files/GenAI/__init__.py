@@ -6,7 +6,7 @@ import stark_core
 
 ssm = boto3.client('ssm')
 response = ssm.get_parameter(
-    Name='[[STARK_PROJECT_NAME]] OPENAI_API_KEY',
+    Name='[[STARK_PROJECT_VARNAME]]_OPENAI_API_KEY',
     WithDecryption=True
 )
 openai.api_key = response.get('Parameter',{}).get('Value','')
