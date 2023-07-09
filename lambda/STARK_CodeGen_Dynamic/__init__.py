@@ -230,7 +230,7 @@ def create_handler(event, context):
                 source_code = source_code.replace("[[STARK_RAW_BUCKET]]", s3_analytics_raw_bucket_name)
                 source_code = source_code.replace("[[STARK_PROCESSED_BUCKET]]", s3_analytics_processed_bucket_name)
                 source_code = source_code.replace("[[STARK_ATHENA_BUCKET]]", s3_analytics_athena_bucket_name)
-                source_code = source_code.replace("[[STARK_PROJECT_NAME]]", project_name)
+                source_code = source_code.replace("[[STARK_PROJECT_VARNAME]]", project_varname)
                 #We use root[13:] because we want to strip out the "source_files/" part of the root path
                 files_to_commit.append({
                     'filePath': f"lambda/" + os.path.join(root[13:], source_file),
@@ -298,15 +298,19 @@ def create_handler(event, context):
 
     ##################################################
     #Commit files to the project repo
-    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
+    #   There's a codecommit limit of 100 files and 7mb - this will fail if more than 100 static files or >7mb are needed,
     #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
     ctr                 = 0
     key                 = 0
+    total_commit_size   = 0
+    total_commit_limit  = 6500000 #we limit to 6500000 bytes
     chunked_commit_list = {}
     for item in files_to_commit:
-        if ctr == 100:
+        total_commit_size += len(item['fileContent'])
+        if ctr == 100 or total_commit_size > total_commit_limit:
             key = key + 1
             ctr = 0
+            total_commit_size = len(item['fileContent'])
         ctr = ctr + 1
         if chunked_commit_list.get(key, '') == '':
             chunked_commit_list[key] = []

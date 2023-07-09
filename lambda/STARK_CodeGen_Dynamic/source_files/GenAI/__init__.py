@@ -6,21 +6,15 @@ import stark_core
 
 ssm = boto3.client('ssm')
 response = ssm.get_parameter(
-    Name='[[STARK_PROJECT_NAME]] OPENAI_API_KEY',
-    WithDecryption=True
+    Name='[[STARK_PROJECT_VARNAME]]_OPENAI_API_KEY',
+    WithDecryption=False #This was True, but set to False because CloudFormation cannot create SecureString parameters
 )
 openai.api_key = response.get('Parameter',{}).get('Value','')
 
-def lambda_handler(event, context):
+def request(data):
 
-    if event.get('isBase64Encoded') == True :
-        stark_core.log.msg('isBase64Encoded = True')
-        payload = json.loads(base64.b64decode(event.get('body'))).get('GenAIPayload',"")
-        type    = json.loads(base64.b64decode(event.get('body'))).get('GenAIType',"")
-    else:    
-        stark_core.log.msg('isBase64Encoded = False')
-        payload = json.loads(event.get('body')).get('GenAIPayload',"")
-        type    = json.loads(event.get('body')).get('GenAIType',"")
+    payload = data.get('GenAIPayload',"")
+    type    = data.get('GenAIType',"")
 
     if type == 'customer_feedback':
         response = customer_feedback(payload)
