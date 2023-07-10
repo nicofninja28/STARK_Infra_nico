@@ -230,6 +230,7 @@ def create(data, cli_mode=False):
                             - '*'
                           AllowedMethods:
                             - PUT
+                            - POST
                           AllowedOrigins:
                             - '*'
                           ExposedHeaders:
