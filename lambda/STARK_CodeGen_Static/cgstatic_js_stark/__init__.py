@@ -140,6 +140,12 @@ def create(data):
                 fetchUrl = STARK.auth_url
                 return this.request('POST', fetchUrl, {{'rt': 's3'}})
             }},
+
+            get_s3_presigned_url: function(payload){{
+                fetchUrl = STARK.auth_url
+                return this.request('POST', fetchUrl, payload)
+            }},
+
             get_file_ext_whitelist: function(field_settings, table_settings = "", mode="overwrite") {{
                 //two modes: overwrite = overwrites the whitelist in the following order: field defined > table defined > globally defined
                 //           mix       = combines the all the whitelist

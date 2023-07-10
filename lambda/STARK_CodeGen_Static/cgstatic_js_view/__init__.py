@@ -973,30 +973,7 @@ def create(data):
                     root.all_selected = false
                 }},
         """
-    if with_upload or with_upload_on_many:
-        source_code += f"""
-                init_s3_access: function(){{
-
-                    if(root.s3_access == "") {{
-                        STARK.get_s3_credentials().then( function(data){{
-                            access_key_id = data[0]['access_key_id']
-                            secret_access_key = data[0]['secret_access_key']
-
-                            root.s3_access = new AWS.S3({{
-                                params: {{Bucket: STARK.bucket_name}},
-                                region: STARK.region_name,
-                                apiVersion: '2006-03-01',
-                                accessKeyId: access_key_id,
-                                secretAccessKey: secret_access_key,
-                            }});
-
-                            console.log("S3 authorized")
-                        }}).catch(function(error) {{
-                            console.log("Can't retrieve S3 creds! [" + error + "]")
-                        }});
-                    }}
-                    
-                }},"""
+        
     if with_upload:
         source_code += f"""
                 show_preview(filename) {{
@@ -1060,22 +1037,24 @@ def create(data):
                     var upload_processed = root.process_upload_file(file_upload_element)
                     if(upload_processed['message'] == "") {{
                         root.{entity_varname}[file_upload_element] = upload_processed['filename']
-                        var filePath = 'tmp/' + upload_processed['s3_key'];
+                        var obj_name = 'tmp/' + upload_processed['s3_key'];
                         root.{entity_varname}.STARK_uploaded_s3_keys[file_upload_element] = upload_processed['s3_key']
-                        root.s3_access.upload({{
-                            Key: filePath,
-                            Body: upload_processed['file_body'],
-                            ACL: 'public-read'
-                            }}, function(err, data) {{
-                                console.log(data)
-                                root.STARK_upload_elements[file_upload_element]['tmp_location'] = data.Location
-                                if(err) {{
-                                    console.log(err)
-                                }}
-                            }}).on('httpUploadProgress', function (progress) {{
-                            root.STARK_upload_elements[file_upload_element].progress_bar_val = parseInt((progress.loaded * 100) / progress.total);
-                            root.validation_properties[file_upload_element].state = true
-                            root.validation_properties[file_upload_element].feedback = "" 
+                        let payload = {{ 'object_name': obj_name, 'file': root.{entity_varname}[file_upload_element], 'rt': 's3_presigned_url' }}
+                        STARK.get_s3_presigned_url(payload).then(function(data) {{
+                            console.log(data)
+                            data['file'] = upload_processed['file_body']
+                            root.upload_file_to_tmp(data, file_upload_element)
+                            .then((response) => {{
+                                // Handle the upload response
+                                console.log('Upload successful:', response);
+                            }})
+                            .catch((error) => {{
+                                // Handle upload errors
+                                console.error('Upload failed:', error);
+                            }});
+                        }})
+                        .catch(function(error) {{
+                            console.log("Can't retrieve S3 presigned URL! [" + error + "]");
                         }});
                     }}
                     else {{
@@ -1086,6 +1065,59 @@ def create(data):
                         }}
                     }}
 
+                }},
+
+                upload_file_to_tmp: function(data, file_upload_element) {{
+                    // Get the pre-signed URL from the form action
+                    const preSignedUrl = data['url'];
+                
+                    // Get the file from the file input field
+                    const key = data['fields']['key'];
+                    const AWSAccessKeyId = data['fields']['AWSAccessKeyId'];
+                    const security_token = data['fields']['x-amz-security-token'];
+                    const policy = data['fields']['policy'];
+                    const signature = data['fields']['signature'];
+                    const file = data['file'];
+                
+                    // Create a new FormData object to send the file
+                    const formData = new FormData();
+                    formData.append('key', key);
+                    formData.append('AWSAccessKeyId', AWSAccessKeyId);
+                    formData.append('x-amz-security-token', security_token);
+                    formData.append('policy', policy);
+                    formData.append('signature', signature);
+                    formData.append('file', file);
+                    
+                    // Make a POST request to the pre-signed URL to upload the file
+                    return new Promise((resolve, reject) => {{
+                        const xhr = new XMLHttpRequest();
+                    
+                        xhr.upload.addEventListener('progress', (event) => {{
+                            if (event.lengthComputable) {{
+                                root.STARK_upload_elements[file_upload_element].progress_bar_val = parseInt((event.loaded * 100) / event.total);
+                                root.validation_properties[file_upload_element].state = true
+                                root.validation_properties[file_upload_element].feedback = "" 
+                            }}
+                        }});
+                    
+                        xhr.addEventListener('load', () => {{
+                            if (xhr.status >= 200 && xhr.status < 300) {{
+                                console.log('File uploaded successfully!');
+                                resolve(xhr.responseText);
+                            }} else {{
+                                console.error('Error uploading file:', xhr.status);
+                                reject(new Error(xhr.statusText));
+                            }}
+                        }});
+                    
+                        xhr.addEventListener('error', () => {{
+                            console.error('Error uploading file.');
+                            reject(new Error('Upload failed.'));
+                        }});
+                    
+                        xhr.open('POST', preSignedUrl);
+                        xhr.send(formData);
+                    }});
                 }},"""
     source_code += f"""
                 onOptionClick({{ option, addTag }}, reference) {{
