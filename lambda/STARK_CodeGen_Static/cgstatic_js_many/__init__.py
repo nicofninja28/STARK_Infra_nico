@@ -286,6 +286,97 @@ def create(data):
             }}
 
         }},
+        s3upload: function(file_upload_element, index) {{
+                
+            this.STARK_upload_elements[file_upload_element][index].progress_bar_val = 0;
+            var upload_processed = this.process_upload_file(file_upload_element, index);
+            console.log(file_upload_element)
+            if(upload_processed['message'] == "") {{
+                this.module_fields[index][file_upload_element] = upload_processed['filename']
+                this.STARK_uploaded_s3_keys[file_upload_element][index] = upload_processed['s3_key']
+                
+                obj_name = 'tmp/' + upload_processed['s3_key']
+                let payload = {{ 'object_name': obj_name, 'file': this.module_fields[index][file_upload_element], 'rt': 's3_presigned_url' }}
+                STARK.get_s3_presigned_url(payload).then(function(data) {{
+                    
+                    data['file'] = upload_processed['file_body']
+                    console.log(data)
+                    many_Transaction_Details.upload_file_to_tmp(data, file_upload_element, index)
+                    .then((response) => {{
+                        // Handle the upload response
+                        console.log('Upload successful:', response);
+                    }})
+                    .catch((error) => {{
+                        // Handle upload errors
+                        console.error('Upload failed:', error);
+                    }});
+                }})
+                .catch(function(error) {{
+                    console.log("Can't retrieve S3 presigned URL! [" + error + "]");
+                }}); 
+            }} else {{
+                //do not show alert when file upload is opened then closed
+                if(upload_processed['message'] != 'initial') {{
+                    many_{entity_varname}.validation_properties[index][file_upload_element].state = false
+                    many_{entity_varname}.validation_properties[index][file_upload_element].feedback = upload_processed['message'] 
+                }}
+            }}
+        }},
+
+        upload_file_to_tmp: function(data, file_upload_element, index) {{
+            // Get the pre-signed URL from the form action
+            const preSignedUrl = data['url'];
+        
+            // Get the file from the file input field
+            const key = data['fields']['key'];
+            const AWSAccessKeyId = data['fields']['AWSAccessKeyId'];
+            const security_token = data['fields']['x-amz-security-token'];
+            const policy = data['fields']['policy'];
+            const signature = data['fields']['signature'];
+            const file = data['file'];
+        
+            // Create a new FormData object to send the file
+            const formData = new FormData();
+            formData.append('key', key);
+            formData.append('AWSAccessKeyId', AWSAccessKeyId);
+            formData.append('x-amz-security-token', security_token);
+            formData.append('policy', policy);
+            formData.append('signature', signature);
+            formData.append('file', file);
+            
+            // Make a POST request to the pre-signed URL to upload the file
+            return new Promise((resolve, reject) => {{
+                const xhr = new XMLHttpRequest();
+                console.log(xhr)
+            
+                xhr.upload.addEventListener('progress', (event) => {{
+                    if (event.lengthComputable) {{
+                        many_{entity_varname}.STARK_upload_elements[file_upload_element][index].progress_bar_val = parseInt((event.loaded * 100) / event.total);
+                        many_{entity_varname}.validation_properties[index][file_upload_element].state = true
+                        many_{entity_varname}.validation_properties[index][file_upload_element].feedback = "" 
+                    }}
+                }});
+            
+                xhr.addEventListener('load', () => {{
+                    if (xhr.status >= 200 && xhr.status < 300) {{
+                        console.log('File uploaded successfully!');
+                        resolve(xhr.responseText);
+                    }} else {{
+                        console.error('Error uploading file:', xhr.status);
+                        reject(new Error(xhr.statusText));
+                    }}
+                }});
+            
+                xhr.addEventListener('error', () => {{
+                    console.error('Error uploading file.');
+                    reject(new Error('Upload failed.'));
+                }});
+                
+                xhr.open('POST', preSignedUrl);
+                xhr.send(formData);
+            }});
+        }},
+
         process_upload_file(file_upload_element, index) {{
             var upload_processed = {{
                 'message': 'initial'
