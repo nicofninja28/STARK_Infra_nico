@@ -254,38 +254,7 @@ def create(data):
             }}
             return upload_fields
         }},
-        s3upload: function(file_upload_element, index) {{
-            
-            this.STARK_upload_elements[file_upload_element][index].progress_bar_val = 0
-            var upload_processed = this.process_upload_file(file_upload_element, index)
-            if(upload_processed['message'] == "") {{
-                this.module_fields[index][file_upload_element] = upload_processed['filename']
-                var filePath = 'tmp/' + upload_processed['s3_key'];
-                this.STARK_uploaded_s3_keys[file_upload_element][index] = upload_processed['s3_key']
-                root.s3_access.upload({{
-                    Key: filePath,
-                    Body: upload_processed['file_body'],
-                    ACL: 'public-read'
-                    }}, function(err, data) {{
-                        console.log(data)
-                        if(err) {{
-                            console.log(err)
-                        }}
-                    }}).on('httpUploadProgress', function (progress) {{
-                    many_{entity_varname}.STARK_upload_elements[file_upload_element][index].progress_bar_val = parseInt((progress.loaded * 100) / progress.total);
-                    many_{entity_varname}.validation_properties[index][file_upload_element].state = true
-                    many_{entity_varname}.validation_properties[index][file_upload_element].feedback = "" 
-                }});
-            }}
-            else {{
-                //do not show alert when file upload is opened then closed
-                if(upload_processed['message'] != 'initial') {{
-                    this.validation_properties[index][file_upload_element].state = false
-                    this.validation_properties[index][file_upload_element].feedback = upload_processed['message'] 
-                }}
-            }}
-
-        }},
+        
         s3upload: function(file_upload_element, index) {{
                 
             this.STARK_upload_elements[file_upload_element][index].progress_bar_val = 0;
