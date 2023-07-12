@@ -105,7 +105,7 @@ def create_handler(event, context):
     #################################
     #Create default user and password
     user = "root"    
-    
+    timestamp = int(time.time())
     #FIXME: Default password is static right now, but in prod, this should be random each time and then saved to dev's local machine 
     #           (i.e., where he triggered the Stark CLI for the system generation request)
     # password = "welcome-2-STARK!"
@@ -113,15 +113,17 @@ def create_handler(event, context):
     # hashed = cloud_resources["Default Password"]
     hashed = def_password
 
-    item                  = {}
-    item['pk']            = {'S' : user}
-    item['sk']            = {'S' : "STARK|user|info"}
-    item['Role']          = {'S' : "Super Admin"}
-    item['Full_Name']     = {'S' : "The Amazing Mr. Root"}
-    item['Nickname']      = {'S' : "Root"}
-    item['Password_Hash'] = {'S' : hashed}
-    item['Last_Access']   = {'S' : str(datetime.datetime.now())}
-    item['Permissions']   = {'S' : ""}
+    item                     = {}
+    item['pk']               = {'S' : user}
+    item['sk']               = {'S' : "STARK|user|info"}
+    item['Role']             = {'S' : "Super Admin"}
+    item['Full_Name']        = {'S' : "The Amazing Mr. Root"}
+    item['Nickname']         = {'S' : "Root"}
+    item['Password_Hash']    = {'S' : hashed}
+    item['Last_Access']      = {'S' : str(datetime.datetime.now())}
+    item['Permissions']      = {'S' : ""}
+    item['STARK-Created-By'] = {'S': "SYSTEM"}
+    item['STARK-Created-TS'] = {'N': str(timestamp)}
    
     #This special attribute is to make this record show up in the GSI "STARK-ListView-Index",
     #   which is what the User List View module will need to query, and also serves as the main sort field for the List View
@@ -146,6 +148,8 @@ def create_handler(event, context):
         module_grp['Description']       = {'S' : module_group_yml[module_group]["Description"]}
         module_grp['Icon']              = {'S' : module_group_yml[module_group]["Icon"]}
         module_grp['Priority']          = {'N' : module_group_yml[module_group]["Priority"]}
+        module_grp['STARK-Created-By']  = {'S': "SYSTEM"}
+        module_grp['STARK-Created-TS']  = {'N': str(timestamp)}
         module_grp['STARK-ListView-sk'] = {'S' : module_group}
 
         response = ddb.put_item(
@@ -174,6 +178,9 @@ def create_handler(event, context):
         sys_modules['Image_Alt']         = {'S' : system_modules_yml[system_modules]["Image_Alt"]}
         sys_modules['Priority']          = {'N' : system_modules_yml[system_modules]["Priority"]}
         sys_modules['STARK-ListView-sk'] = {'S' : system_modules}
+        sys_modules['STARK-Created-By']  = {'S': "SYSTEM"}
+        sys_modules['STARK-Created-TS']  = {'N': str(timestamp)}
+        
 
         response = ddb.put_item(
             TableName=ddb_table_name,
@@ -215,6 +222,8 @@ def create_handler(event, context):
             business_module['Image_Alt']         = {'S' : ""}
             business_module['Priority']          = {'N' : "0"}
             business_module['STARK-ListView-sk'] = {'S' : pk}
+            business_module['STARK-Created-By']  = {'S': "SYSTEM"}
+            business_module['STARK-Created-TS']  = {'N': str(timestamp)}
 
             response = ddb.put_item(
                 TableName=ddb_table_name,
@@ -228,6 +237,8 @@ def create_handler(event, context):
     item['sk']                = {'S' : "STARK|user|permissions"}
     item['Permissions']       = {'S' : all_permissions}
     item['STARK-ListView-sk'] = {'S' : "root"}
+    item['STARK-Created-By']  = {'S': "SYSTEM"}
+    item['STARK-Created-TS']  = {'N': str(timestamp)}
 
     response = ddb.put_item(
         TableName=ddb_table_name,
@@ -242,6 +253,8 @@ def create_handler(event, context):
     item['Description']       = {'S' : "Super Admin, all permissions"}
     item['Permissions']       = {'S' : all_permissions}
     item['STARK-ListView-sk'] = {'S' : "Super Admin"}
+    item['STARK-Created-By']  = {'S': "SYSTEM"}
+    item['STARK-Created-TS']  = {'N': str(timestamp)}
 
     response = ddb.put_item(
         TableName=ddb_table_name,
@@ -255,6 +268,8 @@ def create_handler(event, context):
     item['Description']       = {'S' : "All system management permissions, no business permissions"}
     item['Permissions']       = {'S' : system_permissions}
     item['STARK-ListView-sk'] = {'S' : "Admin"}
+    item['STARK-Created-By']  = {'S': "SYSTEM"}
+    item['STARK-Created-TS']  = {'N': str(timestamp)}
 
     response = ddb.put_item(
         TableName=ddb_table_name,
@@ -268,6 +283,8 @@ def create_handler(event, context):
     item['Description']       = {'S' : "Business permissions only"}
     item['Permissions']       = {'S' : business_permissions}
     item['STARK-ListView-sk'] = {'S' : "General User"}
+    item['STARK-Created-By']  = {'S': "SYSTEM"}
+    item['STARK-Created-TS']  = {'N': str(timestamp)}
 
     response = ddb.put_item(
         TableName=ddb_table_name,

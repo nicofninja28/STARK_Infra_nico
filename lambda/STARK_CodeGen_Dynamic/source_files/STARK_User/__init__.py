@@ -91,7 +91,8 @@ def lambda_handler(event, context):
 
     #Get request type
     request_type = event.get('queryStringParameters',{}).get('rt','')
-
+    global username
+    username = event.get('requestContext',{}).get('authorizer',{}).get('lambda',{}).get('Username','')
     if request_type == '':
         ########################
         #Handle non-GET requests
@@ -160,7 +161,7 @@ def lambda_handler(event, context):
 
         if method == "DELETE":
             if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                response = delete(data)
+                response = delete_v2(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -277,6 +278,10 @@ def lambda_handler(event, context):
 def get_all(sk=default_sk, lv_token=None, db_handler = None):
     if db_handler == None:
         db_handler = ddb
+        
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
     items = []
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
@@ -285,7 +290,9 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
     ddb_arguments['Limit'] = page_limit
     ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
     ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
     ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
     if lv_token != None:
         ddb_arguments['ExclusiveStartKey'] = lv_token
@@ -332,6 +339,40 @@ def get_by_pk(pk, sk=default_sk, db_handler = None):
 
     return response
 
+def delete_v2(data, db_handler = None):
+    if db_handler == None:
+        db_handler = ddb
+
+    UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted, #ttl = :ttl" 
+    ExpressionAttributeNamesDict = {
+        '#STARKDeletedBy': 'STARK-Deleted-By',
+        '#STARKDeletedTs': 'STARK-Deleted-TS',
+        '#STARKIsDeleted': 'STARK-Is-Deleted',
+        '#ttl': 'TTL'
+    }
+    ExpressionAttributeValuesDict = utilities.append_record_metadata('delete', username)
+
+    pk = data.get('pk','')
+    sk = data.get('sk','')
+    if sk == '': sk = default_sk
+
+    ddb_arguments = {}
+    ddb_arguments['TableName'] = ddb_table
+    ddb_arguments['Key'] = {
+            'pk' : {'S' : pk},
+            'sk' : {'S' : sk}
+        }
+
+    ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+    ddb_arguments['UpdateExpression'] = UpdateExpressionString
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+
+    response = db_handler.update_item(**ddb_arguments)
+    global resp_obj
+    resp_obj = response
+    return "OK"
+
 def delete(data, db_handler = None):
     if db_handler == None:
         db_handler = ddb
@@ -368,8 +409,10 @@ def edit(data, db_handler = None):
         '#Full_Name' : 'Full_Name',
         '#Nickname' : 'Nickname',
         '#Role' : 'Role',
+        '#STARKUpdatedBy': 'STARK-Updated-By',
+        '#STARKUpdatedTs': 'STARK-Updated-TS'
     }
-    ExpressionAttributeValuesDict = {
+    tempExpressionAttributeValuesDict = {
         ':Full_Name' : {'S' : Full_Name },
         ':Nickname' : {'S' : Nickname },
         ':Role' : {'S' : Role },
@@ -379,15 +422,16 @@ def edit(data, db_handler = None):
     if Password_Hash != '':
         UpdateExpressionString += ", #Password_Hash = :Password_Hash"
         ExpressionAttributeNamesDict['#Password_Hash'] = 'Password_Hash'
-        ExpressionAttributeValuesDict[':Password_Hash'] = {'S': scrypt.create_hash(Password_Hash)}
+        tempExpressionAttributeValuesDict[':Password_Hash'] = {'S': scrypt.create_hash(Password_Hash)}
 
     STARK_ListView_sk = data.get('STARK-ListView-sk','')
     if STARK_ListView_sk == '':
         STARK_ListView_sk = create_listview_index_value(data)
 
-    UpdateExpressionString += ", #STARKListViewsk = :STARKListViewsk"
+    UpdateExpressionString += ", #STARKListViewsk = :STARKListViewsk, #STARKUpdatedBy = :STARKUpdatedBy, #STARKUpdatedTs = :STARKUpdatedTS"
     ExpressionAttributeNamesDict['#STARKListViewsk']  = 'STARK-ListView-sk'
-    ExpressionAttributeValuesDict[':STARKListViewsk'] = {'S' : data['STARK-ListView-sk']}
+    tempExpressionAttributeValuesDict[':STARKListViewsk'] = {'S' : data['STARK-ListView-sk']}
+    ExpressionAttributeValuesDict = tempExpressionAttributeValuesDict | utilities.append_record_metadata('edit', username)
 
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
@@ -421,7 +465,7 @@ def add(data, method='POST', db_handler=None):
     Password_Hash = str(data.get('Password_Hash', ''))
     Role = str(data.get('Role', ''))
 
-    item={}
+    item = utilities.append_record_metadata('add', username)
     item['pk'] = {'S' : pk}
     item['sk'] = {'S' : sk}
     item['Full_Name'] = {'S' : Full_Name}
@@ -743,7 +787,7 @@ def create_listview_index_value(data):
 def assign_role_permissions(data):
     print("Line 643")
 
-    username  = data['Username']
+    username_from_data  = data['Username']
     role_name = data['Role']
  
     from os import getcwd 
@@ -759,8 +803,9 @@ def assign_role_permissions(data):
     sys.path[0] = getcwd() + '/STARK_User_Permissions'
     import STARK_User_Permissions as user_permissions
     data = {
-        'pk': username,
-        'Permissions': permissions
+        'pk': username_from_data,
+        'Permissions': permissions,
+        'username': username
     }
     print(data)
     response = user_permissions.add(data)

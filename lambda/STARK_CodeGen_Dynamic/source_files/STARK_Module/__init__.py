@@ -121,6 +121,8 @@ def lambda_handler(event, context):
 
     #Get request type
     request_type = event.get('queryStringParameters',{}).get('rt','')
+    global username
+    username = event.get('requestContext',{}).get('authorizer',{}).get('lambda',{}).get('Username','')
 
     if request_type == '':
         ########################
@@ -193,7 +195,7 @@ def lambda_handler(event, context):
 
         if method == "DELETE":
             if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                response = delete(data)
+                response = delete_v2(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -293,7 +295,7 @@ def lambda_handler(event, context):
             #FIXME: Getting the username should be a STARK Core framework utility. Only here for now for MVP implem, to not hold up more urgent dependent features
             #FIXME: When framework-ized, getting the requestContext should be at the beginning of the handler, and will exit if handler needs the Username and is not present (i.e., not properly authorized)
             #FIXME: Make sure for this framework-ized implementation that it will still work when Framework components call each other directly through the STARK registry instead of through API Gateway.
-            username = event.get('requestContext', {}).get('authorizer', {}).get('lambda', {}).get('Username','')
+            
             response = get_user_modules(username, default_sk)
 
         else:
@@ -464,7 +466,9 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
     if db_handler == None:
         db_handler = ddb
 
-
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
     items = []
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
@@ -473,7 +477,9 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
     ddb_arguments['Limit'] = page_limit
     ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
     ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
     ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
     if lv_token != None:
         ddb_arguments['ExclusiveStartKey'] = lv_token
@@ -520,6 +526,40 @@ def get_by_pk(pk, sk=default_sk, db_handler = None):
 
     return response
 
+def delete_v2(data, db_handler = None):
+    if db_handler == None:
+        db_handler = ddb
+
+    UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted, #ttl = :ttl" 
+    ExpressionAttributeNamesDict = {
+        '#STARKDeletedBy': 'STARK-Deleted-By',
+        '#STARKDeletedTs': 'STARK-Deleted-TS',
+        '#STARKIsDeleted': 'STARK-Is-Deleted',
+        '#ttl': 'TTL'
+    }
+    ExpressionAttributeValuesDict = utilities.append_record_metadata('delete', username)
+
+    pk = data.get('pk','')
+    sk = data.get('sk','')
+    if sk == '': sk = default_sk
+
+    ddb_arguments = {}
+    ddb_arguments['TableName'] = ddb_table
+    ddb_arguments['Key'] = {
+            'pk' : {'S' : pk},
+            'sk' : {'S' : sk}
+        }
+
+    ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+    ddb_arguments['UpdateExpression'] = UpdateExpressionString
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+
+    response = db_handler.update_item(**ddb_arguments)
+    global resp_obj
+    resp_obj = response
+    return "OK"
+
 def delete(data, db_handler = None):
     if db_handler == None:
         db_handler = ddb
@@ -556,17 +596,7 @@ def edit(data, db_handler = None):
     Icon = str(data.get('Icon', ''))
     Priority = str(data.get('Priority', ''))
 
-    # if Is_Menu_Item == 'Y':
-    #     Is_Menu_Item = True
-    # else:
-    #     Is_Menu_Item = False
-    # Is_Enabled = str(data.get('Is_Enabled', ''))
-    # if Is_Enabled == 'Y':
-    #     Is_Enabled = True
-    # else:
-    #     Is_Enabled = False
-
-    UpdateExpressionString = "SET #Descriptive_Title = :Descriptive_Title, #Target = :Target, #Description = :Description, #Module_Group = :Module_Group, #Is_Menu_Item = :Is_Menu_Item, #Is_Enabled = :Is_Enabled, #Icon = :Icon, #Priority = :Priority, #STARKListViewsk = :STARKListViewsk" 
+    UpdateExpressionString = "SET #Descriptive_Title = :Descriptive_Title, #Target = :Target, #Description = :Description, #Module_Group = :Module_Group, #Is_Menu_Item = :Is_Menu_Item, #Is_Enabled = :Is_Enabled, #Icon = :Icon, #Priority = :Priority, #STARKListViewsk = :STARKListViewsk, #STARKUpdatedBy = :STARKUpdatedBy, #STARKUpdatedTs = :STARKUpdatedTS" 
     ExpressionAttributeNamesDict = {
         '#Descriptive_Title' : 'Descriptive_Title',
         '#Target' : 'Target',
@@ -576,9 +606,11 @@ def edit(data, db_handler = None):
         '#Is_Enabled' : 'Is_Enabled',
         '#Icon' : 'Icon',
         '#Priority' : 'Priority',
-        '#STARKListViewsk' : 'STARK-ListView-sk'
+        '#STARKListViewsk' : 'STARK-ListView-sk',
+        '#STARKUpdatedBy': 'STARK-Updated-By',
+        '#STARKUpdatedTs': 'STARK-Updated-TS'
     }
-    ExpressionAttributeValuesDict = {
+    tempExpressionAttributeValuesDict = {
         ':Descriptive_Title' : {'S' : Descriptive_Title },
         ':Target' : {'S' : Target },
         ':Description' : {'S' : Description },
@@ -589,7 +621,7 @@ def edit(data, db_handler = None):
         ':Priority' : {'N' : Priority },
 		':STARKListViewsk' : {'S' : data['STARK-ListView-sk']}
     }
-
+    ExpressionAttributeValuesDict = tempExpressionAttributeValuesDict | utilities.append_record_metadata('edit', username)
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
     ddb_arguments['Key'] = {
@@ -623,17 +655,7 @@ def add(data, method='POST', db_handler=None):
     Icon = str(data.get('Icon', ''))
     Priority = str(data.get('Priority', ''))
 
-    # if Is_Menu_Item == 'Y':
-    #     Is_Menu_Item = True
-    # else:
-    #     Is_Menu_Item = False
-    # 
-    # if Is_Enabled == 'Y':
-    #     Is_Enabled = True
-    # else:
-    #     Is_Enabled = False
-
-    item={}
+    item = utilities.append_record_metadata('add', username)
     item['pk'] = {'S' : pk}
     item['sk'] = {'S' : sk}
     item['Descriptive_Title'] = {'S' : Descriptive_Title}
@@ -821,24 +843,27 @@ def get_all_by_old_parent_value(old_pk_val, attribute, sk = default_sk):
 
 def get_fields(fields, sk = default_sk):
 
-    dd_arguments = {}
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
+    ddb_arguments = {}
     next_token = 'initial'
     items = []
     while next_token != None:
         next_token = '' if next_token == 'initial' else next_token
-        dd_arguments['TableName']=ddb_table
-        dd_arguments['IndexName']="STARK-ListView-Index"
-        dd_arguments['Limit']=5
-        dd_arguments['ReturnConsumedCapacity']='TOTAL'
-        dd_arguments['KeyConditionExpression']='sk = :sk'
-        dd_arguments['ExpressionAttributeValues']={
-            ':sk' : {'S' : sk}
-        }
+        ddb_arguments['TableName']=ddb_table
+        ddb_arguments['IndexName']="STARK-ListView-Index"
+        ddb_arguments['Limit']=5
+        ddb_arguments['ReturnConsumedCapacity']='TOTAL'
+        ddb_arguments['KeyConditionExpression']='sk = :sk'
+        ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
+        ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk}}
+        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
         if next_token != '':
-            dd_arguments['ExclusiveStartKey']=next_token
+            ddb_arguments['ExclusiveStartKey']=next_token
 
-        response = ddb.query(**dd_arguments)
+        response = ddb.query(**ddb_arguments)
         raw = response.get('Items')
 
         for record in raw:
