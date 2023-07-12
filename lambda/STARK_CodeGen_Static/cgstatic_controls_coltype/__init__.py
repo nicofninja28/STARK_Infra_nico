@@ -214,9 +214,9 @@ def create(data):
                             </b-form-group>
             """
         elif col_type["type"] == "file-upload":
-            html_code=f"""<b-form-file {preview_class} v-model="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" :placeholder="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" drop-placeholder="Drop file here..." @input="{js_object}{dot_compound}s3upload('{col_varname}'{s3_upload_index_param})" v-b-hover="init_s3_access" onfocus="root.init_s3_access()" {state_control}></b-form-file>
+            html_code=f"""<b-form-file {preview_class} v-model="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" :placeholder="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.file" drop-placeholder="Drop file here..." @input="{js_object}{dot_compound}s3upload('{col_varname}'{s3_upload_index_param})" {state_control}></b-form-file>
                             {preview_tooltip}
-                        <b-progress :value="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.progress_bar_val" :max="100" class="mt-2"></b-progress>"""
+                          <b-progress :value="{js_object}{dot_compound}STARK_upload_elements.{file_upload_col_varname}.progress_bar_val" :max="100" class="mt-2"></b-progress>"""
         elif col_type["type"] == "relationship":
             has_one = col_type.get('has_one', '')
             has_many = col_type.get('has_many', '')

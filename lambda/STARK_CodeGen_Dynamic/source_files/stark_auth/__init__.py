@@ -8,10 +8,12 @@ import boto3
 import stark_core
 
 ddb = boto3.client('dynamodb')
+s3 = boto3.client('s3')
 
 #######
 #CONFIG
 ddb_table  = stark_core.ddb_table
+bucket_name = stark_core.bucket_name
 
 def lambda_handler(event, context):
 
@@ -63,13 +65,23 @@ def lambda_handler(event, context):
                 item['access_key_id'] = record.get('sk',{}).get('S','')
                 item['secret_access_key'] = record.get('key',{}).get('S','')
                 items.append(item)
+            response = items
 
-            return {
-                "isBase64Encoded": False,
-                "statusCode": responseStatusCode,
-                "body": json.dumps(items),
-                "headers": {
-                    "Content-Type": "application/json",
-                }
+        elif request_type == 's3_presigned_url':
+            # print(event)
+            bucket = bucket_name
+            object_key = payload.get('object_name','')
+            response = generate_presigned_url(bucket, object_key)
+
+        return {
+            "isBase64Encoded": False,
+            "statusCode": responseStatusCode,
+            "body": json.dumps(response),
+            "headers": {
+                "Content-Type": "application/json",
             }
+        }
 
+def generate_presigned_url(bucket_name, object_key, expiration=3600):
+    response = s3.generate_presigned_post(bucket_name, object_key, ExpiresIn=expiration)
+    return response
