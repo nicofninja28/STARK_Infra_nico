@@ -17,6 +17,7 @@ import suggest_graphic as set_graphic
 import get_relationship as get_rel
 
 s3  = boto3.client('s3')
+timestamp = int(time.time())
 
 def lambda_handler(event, context):
     project_name    = event.get('ResourceProperties', {}).get('Project','')    
@@ -100,14 +101,16 @@ def lambda_handler(event, context):
     # hashed   = scrypt.create_hash(password)
     hashed = cloud_resources["Default Password"]
 
-    item                  = {}
-    item['_id']           =  user
-    item['Role']          =  "Super Admin"
-    item['Full_Name']     =  "The Amazing Mr. Root"
-    item['Nickname']      =  "Root"
-    item['Password_Hash'] =  hashed
-    item['Last_Access']   =  str(datetime.datetime.now())
-    item['Permissions']   =  ""
+    item                     = {}
+    item['_id']              =  user
+    item['Role']             =  "Super Admin"
+    item['Full_Name']        =  "The Amazing Mr. Root"
+    item['Nickname']         =  "Root"
+    item['Password_Hash']    =  hashed
+    item['Last_Access']      =  str(datetime.datetime.now())
+    item['Permissions']      =  ""
+    item['STARK-Created-By'] =  "SYSTEM"
+    item['STARK-Created-TS'] =  str(timestamp)
 
     collection = mdb_database["STARK_User"]
     collection.insert_one(item)
@@ -124,6 +127,8 @@ def lambda_handler(event, context):
         module_grp['Description']       =  module_group_yml[module_group]["Description"]
         module_grp['Icon']              =  module_group_yml[module_group]["Icon"]
         module_grp['Priority']          =  module_group_yml[module_group]["Priority"]
+        module_grp['STARK-Created-By']  =  "SYSTEM"
+        module_grp['STARK-Created-TS']  =  str(timestamp)
         module_group_list.append(module_grp)
 
     collection = mdb_database["STARK_Module_Groups"]
@@ -147,6 +152,8 @@ def lambda_handler(event, context):
         sys_modules['Icon']              =  system_modules_yml[system_modules]["Icon"]
         sys_modules['Image_Alt']         =  system_modules_yml[system_modules]["Image_Alt"]
         sys_modules['Priority']          =  system_modules_yml[system_modules]["Priority"]
+        sys_modules['STARK-Created-By']  =  "SYSTEM"
+        sys_modules['STARK-Created-TS']  =  str(timestamp)
         modules_list.append(sys_modules)
 
 
@@ -182,6 +189,8 @@ def lambda_handler(event, context):
             business_module['Icon']              =  icon
             business_module['Image_Alt']         =  ""
             business_module['Priority']          =  0
+            business_module['STARK-Created-By']  =  "SYSTEM"
+            business_module['STARK-Created-TS']  =  str(timestamp)
             modules_list.append(business_module)
 
     collection = mdb_database["STARK_Module"]
@@ -192,6 +201,8 @@ def lambda_handler(event, context):
     item['_id']               =  "root"
     item['Permissions']       =  all_permissions
     item['STARK-ListView-sk'] =  "root"
+    item['STARK-Created-By']  =  "SYSTEM"
+    item['STARK-Created-TS']  =  str(timestamp)
 
     collection = mdb_database["STARK_User_Permissions"]
     collection.insert_one(item)
@@ -202,12 +213,16 @@ def lambda_handler(event, context):
     item['_id']               =  "Super Admin"
     item['Description']       =  "Super Admin, all permissions"
     item['Permissions']       =  all_permissions
+    item['STARK-Created-By']  =  "SYSTEM"
+    item['STARK-Created-TS']  =  str(timestamp)
     user_roles_list.append(item)
 
     item                      = {}
     item['_id']               =  "Admin"
     item['Description']       =  "All system management permissions, no business permissions"
     item['Permissions']       =  system_permissions
+    item['STARK-Created-By']  =  "SYSTEM"
+    item['STARK-Created-TS']  =  str(timestamp)
     user_roles_list.append(item)
 
     item                      = {}
@@ -215,6 +230,8 @@ def lambda_handler(event, context):
     item['sk']                = "STARK|role"
     item['Description']       = "Business permissions only"
     item['Permissions']       = business_permissions
+    item['STARK-Created-By']  =  "SYSTEM"
+    item['STARK-Created-TS']  =  str(timestamp)
     user_roles_list.append(item)
 
     collection = mdb_database["STARK_User_Roles"]
