@@ -219,17 +219,21 @@ def create_handler(event, context):
     #Create the .gitignore file for the project repo - so that cruft doesn't get into commits by default
     add_to_commit(source_code=cg_git.create(), key=f".gitignore", files_to_commit=files_to_commit, file_path='')
 
-    ##############################################
-    #Commit our prebuilt files to the project repo
-    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
+    ##################################################
+    #Commit files to the project repo
+    #   There's a codecommit limit of 100 files and 7mb - this will fail if more than 100 static files or >7mb are needed,
     #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
     ctr                 = 0
     key                 = 0
+    total_commit_size   = 0
+    total_commit_limit  = 6500000 #we limit to 6500000 bytes
     chunked_commit_list = {}
     for item in files_to_commit:
-        if ctr == 100:
+        total_commit_size += len(item['fileContent'])
+        if ctr == 100 or total_commit_size > total_commit_limit:
             key = key + 1
             ctr = 0
+            total_commit_size = len(item['fileContent'])
         ctr = ctr + 1
         if chunked_commit_list.get(key, '') == '':
             chunked_commit_list[key] = []
