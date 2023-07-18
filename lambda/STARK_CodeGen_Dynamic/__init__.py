@@ -128,6 +128,8 @@ def create_handler(event, context):
             'fileContent': source_code.encode()
         })
 
+        
+
         # test cases
         files_to_commit.append({
             'filePath': f"lambda/test_cases/business_modules/test_{entity_varname.lower()}.py",
@@ -234,6 +236,26 @@ def create_handler(event, context):
                 #We use root[13:] because we want to strip out the "source_files/" part of the root path
                 files_to_commit.append({
                     'filePath': f"lambda/" + os.path.join(root[13:], source_file),
+                    'fileContent': source_code.encode()
+                })
+
+    #   admin module test_case
+    print(os.walk('/test_cases/admin_modules'))
+    for root, subdirs, files in os.walk('/test_cases/admin_modules'):
+        for admin_test_case in files:
+            with open(os.path.join(root, admin_test_case)) as f:
+                files_to_commit.append({
+                    'filePath': f"lambda/" + os.path.join(admin_test_case),
+                    'fileContent': source_code.encode()
+                })
+                
+    #   admin module fixtures
+    print(os.walk('/test_cases/admin_fixtures'))
+    for root, subdirs, files in os.walk('/test_cases/admin_fixtures'):
+        for admin_fixtures in files:
+            with open(os.path.join(root, admin_fixtures)) as f:
+                files_to_commit.append({
+                    'filePath': f"lambda/" + os.path.join(admin_fixtures),
                     'fileContent': source_code.encode()
                 })
 
