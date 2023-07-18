@@ -160,6 +160,28 @@ def create_handler(event, context):
     }
     conftest_code = cg_conftest.create(data)
 
+    #   admin module test_case
+    print('admin module test')
+    print(os.walk('/test_cases/admin_modules'))
+    for root, subdirs, files in os.walk('/test_cases/admin_modules'):
+        for admin_test_case in files:
+            with open(os.path.join(root, admin_test_case)) as f:
+                files_to_commit.append({
+                    'filePath': f"lambda/" + os.path.join(admin_test_case),
+                    'fileContent': source_code.encode()
+                })
+                
+    #   admin module fixtures
+    print('admin module fixtures')
+    print(os.walk('/test_cases/admin_fixtures'))
+    for root, subdirs, files in os.walk('/test_cases/admin_fixtures'):
+        for admin_fixtures in files:
+            with open(os.path.join(root, admin_fixtures)) as f:
+                files_to_commit.append({
+                    'filePath': f"lambda/" + os.path.join(admin_fixtures),
+                    'fileContent': source_code.encode()
+                })
+
     files_to_commit.append({
         'filePath': f"lambda/test_cases/conftest.py",
         'fileContent': conftest_code.encode()
@@ -239,25 +261,7 @@ def create_handler(event, context):
                     'fileContent': source_code.encode()
                 })
 
-    #   admin module test_case
-    print(os.walk('/test_cases/admin_modules'))
-    for root, subdirs, files in os.walk('/test_cases/admin_modules'):
-        for admin_test_case in files:
-            with open(os.path.join(root, admin_test_case)) as f:
-                files_to_commit.append({
-                    'filePath': f"lambda/" + os.path.join(admin_test_case),
-                    'fileContent': source_code.encode()
-                })
-                
-    #   admin module fixtures
-    print(os.walk('/test_cases/admin_fixtures'))
-    for root, subdirs, files in os.walk('/test_cases/admin_fixtures'):
-        for admin_fixtures in files:
-            with open(os.path.join(root, admin_fixtures)) as f:
-                files_to_commit.append({
-                    'filePath': f"lambda/" + os.path.join(admin_fixtures),
-                    'fileContent': source_code.encode()
-                })
+
 
     ############################################
     #Create build files we need for our pipeline:
