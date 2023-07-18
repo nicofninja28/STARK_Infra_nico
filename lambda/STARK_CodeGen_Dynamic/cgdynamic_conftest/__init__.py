@@ -31,12 +31,12 @@ def create(data):
         from fixtures import {entity_varname} as {entity_varname.lower()}"""
 
     source_code += f"""    
-        from fixtures import STARK_Module as stark_module
-        from fixtures import STARK_Module_Groups as stark_module_groups
-        from fixtures import STARK_User as stark_user
-        from fixtures import STARK_User_Roles as stark_user_roles
-        from fixtures import STARK_User_Permissions as stark_user_permissions
-        from fixtures import STARK_User_Sessions as stark_user_sessions"""
+        from admin_fixtures import STARK_Module as stark_module
+        from admin_fixtures import STARK_Module_Groups as stark_module_groups
+        from admin_fixtures import STARK_User as stark_user
+        from admin_fixtures import STARK_User_Roles as stark_user_roles
+        from admin_fixtures import STARK_User_Permissions as stark_user_permissions
+        from admin_fixtures import STARK_User_Sessions as stark_user_sessions"""
     
     source_code += f"""
     

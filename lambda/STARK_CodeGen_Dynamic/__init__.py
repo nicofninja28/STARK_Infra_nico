@@ -173,10 +173,10 @@ def create_handler(event, context):
         'fileContent': "#blank init for business modules"
     })
 
-    files_to_commit.append({
-        'filePath': f"lambda/test_cases/admin_modules/__init__.py",
-        'fileContent': "#blank init for STARK admin modules"
-    })
+    # files_to_commit.append({
+    #     'filePath': f"lambda/test_cases/admin_modules/__init__.py",
+    #     'fileContent': "#blank init for STARK admin modules"
+    # })
 
     files_to_commit.append({
         'filePath': f"lambda/test_cases/core_modules/__init__.py",
