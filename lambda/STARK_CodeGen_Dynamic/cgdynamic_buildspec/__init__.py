@@ -27,7 +27,6 @@ def create(data):
                 - WEBSITE=$(cat template_configuration.json | python3 -c "import sys, json; print(json.load(sys.stdin)['Parameters']['UserWebsiteBucketNameParameter'])")
                 - sed -i "s/RandomTokenFromBuildScript/$(date)/" template.yml
                 - cp -R lambda lambda_src
-                - rm -r bin/libstark/STARK_CodeGen_Dynamic/test_cases
                 - pip install pyyaml
                 - python3 ./builder.py
                 - aws cloudformation package --template-file template.yml --s3-bucket $BUCKET --s3-prefix {project_varname} --output-template-file outputtemplate.yml
