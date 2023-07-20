@@ -192,7 +192,7 @@ def create(data):
         request_type = req.params.get("rt", "")
 
         global username
-        username = req.headers.get('x-STARK-Username', '')
+        username = req.headers.get('x-STARK-Username', username)
         if request_type == '':
             ########################
             #Handle non-GET requests
@@ -418,22 +418,14 @@ def create(data):
     def report(data, sk=default_sk):
         #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
         #   ENHANCED LISTVIEW LOGIC LATER WHEN WE ACTUALLY IMPLEMENT REPORTING
-        
-        string_filter = 'attribute_not_exists(#isDeleted) '
-        ExpressionAttributeNamesDict = {{
-            '#isDeleted' : 'STARK-Is-Deleted',
-        }}
-        temp_string_filter = ""
-        object_expression_value = {{':sk' : {{'S' : sk}}}}
+        ojbect_expression_values = {{}}
         report_param_dict = {{}}
         for key, index in data.items():
             #FIXME: : 1-M SEARCH CRITERIA: do not include fields with 1-M relationship in composing of operators and parameters for now
             # Fetch all records for now then do necessary logic thru python for each operator in 1-M fields
             if "STARK_" not in key and metadata.get(key,{{}}).get('relationship','') != "1-M":
                 if index['value'] != "":
-                    processed_operator_and_parameter_dict = utilities.compose_report_operators_and_parameters(key, index, metadata) 
-                    temp_string_filter += processed_operator_and_parameter_dict['filter_string']
-                    object_expression_value.update(processed_operator_and_parameter_dict['expression_values'])
+                    processed_operator_and_parameter_dict = utilities.az_compose_report_operators_and_parameters(key, index, metadata) 
                     report_param_dict.update(processed_operator_and_parameter_dict['report_params'])
                     
         if temp_string_filter != "":
@@ -457,152 +449,138 @@ def create(data):
                             }}
                         composed_operator_for_one_to_many.update(temp_dict)
 
-        next_token = 'initial'
         items = []
         ddb_arguments = {{}}
         aggregated_results = {{}}
-        # ddb_arguments['TableName'] = ddb_table
-        ddb_arguments['IndexName'] = "STARK-ListView-Index"
-        ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-        ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
-        ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
-        ddb_arguments['FilterExpression'] = string_filter
-        ddb_arguments['ExpressionAttributeValues'] = object_expression_value
-        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
-            
-        while next_token != None:
-            next_token = '' if next_token == 'initial' else next_token
 
-            if next_token != '':
-                ddb_arguments['ExclusiveStartKey']=next_token
+        # response = ddb.query(**ddb_arguments)
+        compound_query = {{"$and": processed_operator_and_parameter_dict["operators"]}}
+        documents = list(mdb_collection.find(compound_query))
+        aggregate_report = False if data['STARK_group_by_1'] == '' else True
+        # Checker if report has many in report fields
+        has_many = False
+        many_sk = []
+        many_entity = []
+        for rel in relationships.get('has_many', ''):
+            for report_fields in data['STARK_report_fields']:
+                if rel.get('entity').replace('_', ' ') in report_fields:
+                    has_many = True 
+                    # Get 1-M entity
+                    # Make List of 1-M entity
+                    rel_entity = rel.get('entity')
+                    many_entity.append(rel_entity.replace('_', ' ')) 
+                    
+        many_entity_dict = {{}}
+        for ent in many_entity:
+            ent_filter = ent
+            many_val = []
+            for report_fields in data['STARK_report_fields']:
+                if ent in report_fields:
+                    many_val.append(report_fields.replace(ent_filter, '').replace(' ', '_').replace("_", "", 1))
+            many_entity_dict.update({{ent.replace(' ', '_') : many_val}})
 
-            # response = ddb.query(**ddb_arguments)
-            raw = response.get('Items')
-            next_token = response.get('LastEvaluatedKey')
-            aggregate_report = False if data['STARK_group_by_1'] == '' else True
-            # Checker if report has many in report fields
-            has_many = False
-            many_sk = []
-            many_entity = []
-            for rel in relationships.get('has_many', ''):
-                for report_fields in data['STARK_report_fields']:
-                    if rel.get('entity').replace('_', ' ') in report_fields:
-                        has_many = True 
-                        # Get 1-M entity
-                        # Make List of 1-M entity
-                        rel_entity = rel.get('entity')
-                        many_entity.append(rel_entity.replace('_', ' ')) 
+        for record in raw:
+            item = []
+            record[pk_field] = record['_id']
+            item.append(record)
+
+            new_item = []
+            for each_item in item:
+                if(has_many):
+                    # Get transaction number per report result
+                    many_pk = each_item.get(pk_field)
+                    for many_rel_entity, many_rel_field in many_entity_dict.items():
+                        many_sk = '{entity_varname}|' + many_rel_entity
                         
-            many_entity_dict = {{}}
-            for ent in many_entity:
-                ent_filter = ent
-                many_val = []
-                for report_fields in data['STARK_report_fields']:
-                    if ent in report_fields:
-                        many_val.append(report_fields.replace(ent_filter, '').replace(' ', '_').replace("_", "", 1))
-                many_entity_dict.update({{ent.replace(' ', '_') : many_val}})
+                        many_result = data_abstraction.get_many_by_pk(many_pk, many_sk)
+                        response = None
+                        response = json.loads(many_result[0].get(many_sk, '').get('S'))
+                        temp_list = []
+                        for res in response:  
+                            temp_item = {{}}
+                            is_included = True
+                            for item_key, item_val in each_item.items():
+                                temp_item.update({{item_key: item_val}})
+                            consolidated_items = {{}}
+                            for rel_field in many_rel_field:
+                                rel_entity = many_rel_entity.replace(' ', '_')
+                                many_field = rel_field.replace(' ', '_')
+                                new_rel_field = rel_entity + '_' + many_field
 
-            for record in raw:
-                item = []
-                item.append(map_results(record))
-
-                new_item = []
-                for each_item in item:
-                    if(has_many):
-                        # Get transaction number per report result
-                        many_pk = each_item.get(pk_field)
-                        for many_rel_entity, many_rel_field in many_entity_dict.items():
-                            many_sk = '{entity_varname}|' + many_rel_entity
-                            
-                            many_result = data_abstraction.get_many_by_pk(many_pk, many_sk)
-                            response = None
-                            response = json.loads(many_result[0].get(many_sk, '').get('S'))
-                            temp_list = []
-                            for res in response:  
-                                temp_item = {{}}
-                                is_included = True
-                                for item_key, item_val in each_item.items():
-                                    temp_item.update({{item_key: item_val}})
-                                consolidated_items = {{}}
-                                for rel_field in many_rel_field:
-                                    rel_entity = many_rel_entity.replace(' ', '_')
-                                    many_field = rel_field.replace(' ', '_')
-                                    new_rel_field = rel_entity + '_' + many_field
-
-                                    temp_item.update({{new_rel_field : res[rel_field]}})
-                                    
-                                no_val_items = {{}}
-                                for dict in data['STARK_report_fields']:
-                                    if dict.replace(' ', '_') not in temp_item:
-                                        no_val_items.update({{dict.replace(' ', '_') : ''}})       
-                                consolidated_items = temp_item | no_val_items
-                            
-                                if len(composed_operator_for_one_to_many) > 0:
-                                    is_included = False
-
-                                for field_name, field_criteria in composed_operator_for_one_to_many.items():
-                                    is_included = utilities.filter_criteria_for_many_fields(consolidated_items[field_name], field_criteria)
-                                    if is_included == False:
-                                        break
+                                temp_item.update({{new_rel_field : res[rel_field]}})
                                 
-                                if is_included:
-                                    new_item.append(consolidated_items)
+                            no_val_items = {{}}
+                            for dict in data['STARK_report_fields']:
+                                if dict.replace(' ', '_') not in temp_item:
+                                    no_val_items.update({{dict.replace(' ', '_') : ''}})       
+                            consolidated_items = temp_item | no_val_items
+                        
+                            if len(composed_operator_for_one_to_many) > 0:
+                                is_included = False
+
+                            for field_name, field_criteria in composed_operator_for_one_to_many.items():
+                                is_included = utilities.filter_criteria_for_many_fields(consolidated_items[field_name], field_criteria)
+                                if is_included == False:
+                                    break
+                            
+                            if is_included:
+                                new_item.append(consolidated_items)
+                else:
+                    new_item = item
+
+            for each_item in new_item:
+
+                if aggregate_report:
+                    aggregate_key = data['STARK_group_by_1'].replace(" ","_")
+                    aggregate_key_value = each_item.get(aggregate_key)
+                    if aggregate_key_value in aggregated_results:
+                        for field in data['STARK_count_fields']:
+                            field_name = field.replace(" ","_")
+                            count_index_name = f"Count of {{field_name}}"
+                            aggregated_results[aggregate_key_value][count_index_name] += 1
+
+                        for field in data['STARK_sum_fields']:
+                            field_name = field.replace(" ","_")
+                            sum_index_name = f"Sum of {{field_name}}"
+                            if each_item.get(field) != '':
+                                sum_value = float(each_item.get(field))
+                            else:
+                                sum_value = 0.00
+                            aggregated_results[aggregate_key_value][sum_index_name] = round(aggregated_results[aggregate_key_value][sum_index_name], 1) + sum_value
+
+                        for column in data['STARK_report_fields']:
+                            if column != aggregate_key:  
+                                aggregated_results[aggregate_key_value][column.replace(" ","_")] = each_item.get(column.replace(" ","_"))
+
                     else:
-                        new_item = item
+                        temp_dict = {{ aggregate_key : aggregate_key_value}}
+                        for field in data['STARK_count_fields']:
+                            field_name = field.replace(" ","_")
+                            count_index_name = f"Count of {{field_name}}"
+                            temp_dict.update({{
+                                count_index_name:  1
+                            }})
 
-                for each_item in new_item:
+                        for field in data['STARK_sum_fields']:
+                            field_name = field.replace(" ","_")
+                            sum_index_name = f"Sum of {{field_name}}"
+                            if each_item.get(field) != None:
+                                sum_value = float(each_item.get(field))
+                            else:
+                                sum_value = 0.00
+                            temp_dict.update({{
+                                sum_index_name: sum_value
+                            }})
 
-                    if aggregate_report:
-                        aggregate_key = data['STARK_group_by_1'].replace(" ","_")
-                        aggregate_key_value = each_item.get(aggregate_key)
-                        if aggregate_key_value in aggregated_results:
-                            for field in data['STARK_count_fields']:
-                                field_name = field.replace(" ","_")
-                                count_index_name = f"Count of {{field_name}}"
-                                aggregated_results[aggregate_key_value][count_index_name] += 1
-
-                            for field in data['STARK_sum_fields']:
-                                field_name = field.replace(" ","_")
-                                sum_index_name = f"Sum of {{field_name}}"
-                                if each_item.get(field) != '':
-                                    sum_value = float(each_item.get(field))
-                                else:
-                                    sum_value = 0.00
-                                aggregated_results[aggregate_key_value][sum_index_name] = round(aggregated_results[aggregate_key_value][sum_index_name], 1) + sum_value
-
-                            for column in data['STARK_report_fields']:
-                                if column != aggregate_key:  
-                                    aggregated_results[aggregate_key_value][column.replace(" ","_")] = each_item.get(column.replace(" ","_"))
-
-                        else:
-                            temp_dict = {{ aggregate_key : aggregate_key_value}}
-                            for field in data['STARK_count_fields']:
-                                field_name = field.replace(" ","_")
-                                count_index_name = f"Count of {{field_name}}"
+                        for column in data['STARK_report_fields']:
+                            if column != aggregate_key:  
                                 temp_dict.update({{
-                                    count_index_name:  1
+                                    column.replace(" ","_"): each_item.get(column.replace(" ","_"))
                                 }})
 
-                            for field in data['STARK_sum_fields']:
-                                field_name = field.replace(" ","_")
-                                sum_index_name = f"Sum of {{field_name}}"
-                                if each_item.get(field) != None:
-                                    sum_value = float(each_item.get(field))
-                                else:
-                                    sum_value = 0.00
-                                temp_dict.update({{
-                                    sum_index_name: sum_value
-                                }})
-
-                            for column in data['STARK_report_fields']:
-                                if column != aggregate_key:  
-                                    temp_dict.update({{
-                                        column.replace(" ","_"): each_item.get(column.replace(" ","_"))
-                                    }})
-
-                            aggregated_results[aggregate_key_value] = temp_dict
-                    else:
-                        items.append(each_item)
+                        aggregated_results[aggregate_key_value] = temp_dict
+                else:
+                    items.append(each_item)
 
 
         report_list = []
@@ -635,7 +613,7 @@ def create(data):
                 temp_dict = {{}}
                 #remove primary identifiers and STARK attributes
                 if not aggregate_report:
-                    key.pop("sk")"""
+                    key.pop("_id")"""
     if with_upload or with_upload_on_many:
         source_code += f"""
                     key.pop("STARK_uploaded_s3_keys")"""
@@ -650,8 +628,8 @@ def create(data):
                         report.update({{dict : ''}})
 
             report_list = utilities.filter_report_list(report_list, diff_list)
-            csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
-            utilities.save_object_to_bucket(file_buff_value, csv_file)"""
+            # csv_file, file_buff_value = utilities.create_csv(report_list, report_header)
+            # utilities.save_object_to_bucket(file_buff_value, csv_file)"""
             
     if len(rel_model) > 0:
                 source_code += f"""
@@ -668,12 +646,15 @@ def create(data):
             metadata.update(merge_metadata)"""
 
     source_code += f"""
-            pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
-            utilities.save_object_to_bucket(pdf_output, pdf_file)
+            # pdf_file, pdf_output = utilities.prepare_pdf_data(report_list, report_header, report_param_dict, metadata, pk_field)
+            # utilities.save_object_to_bucket(pdf_output, pdf_file)
 
-        csv_file_storage_key = file_storage_tmp + csv_file
-        pdf_file_storage_key = file_storage_tmp + pdf_file
-
+        # csv_file_storage_key = file_storage_tmp + csv_file
+        # pdf_file_storage_key = file_storage_tmp + pdf_file
+        
+        csv_file_storage_key = ""
+        pdf_file_storage_key = ""
+        
         if not aggregate_report:
             report_list = items
             new_report_list = []
@@ -716,10 +697,10 @@ def create(data):
         many_rel = relationships['has_many']
         for rel in many_rel:
             entity = rel['entity']
-            sk = '{entity_varname}|' + entity
-            many_result = data_abstraction.get_many_by_pk(pk, sk)
-            for result in many_result:
-                response[entity] = result.get(sk, '').get('S')
+            temp_import = importlib.import_module(entity)
+            collection = stark_core.mdb_database[entity]
+            many_result = data_abstraction.get_many_by_foreign_key(pk, pk_field, collection, temp_import.pk_field)
+            response[entity] = json.dumps(many_result)
         """
 
     if with_upload or with_upload_on_many: 
@@ -760,7 +741,7 @@ def create(data):
         for rel in many_rel:
             entity = rel['entity']
             sk = '{entity_varname}|' + entity
-            delete_many(pk, sk)"""
+            # delete_many(pk, sk)"""
 
     source_code+= f"""
         return "OK"
@@ -843,39 +824,62 @@ def create(data):
             cascade_pk_change_to_child(data, relation['entity'], relation['attribute'])
         """
     source_code += f"""
+        many_rel = relationships['has_many']
+        for rel in many_rel:
+            entity = rel['entity']
+            temp_import = importlib.import_module(entity)
+            many_data = json.loads(data.get(entity, ''))
+            for data in many_data:
+                item = {{
+                    pk_field : pk
+                }}
+                for key, attribute in data.items():
+                    if key == temp_import.pk_field:
+                        item['pk'] = attribute
+                    else:
+                        item[key] = attribute
+                        
+                temp_import.username = username
+                temp_import.edit(item)
+
+        for relation in relationships.get('belongs_to', []):
+            logging.info(relation)
+            if relation['rel_type'] == 'has_many':
+                foreign_key = relation['pk_field']
+                temp_values[foreign_key] = data[foreign_key]
 
         global resp_obj
         resp_obj = response
         return "OK"
         """
 
-    if len(rel_model) > 0:
-            source_code+= f"""
-    def edit_many(pk, sk, data, db_handler = None):
-        if db_handler == None:
-            db_handler = ddb  
+    # if len(rel_model) > 0:
+    #         source_code+= f"""
+    # def edit_many(pk, sk, data, db_handler = None):
+    #     if db_handler == None:
+    #         db_handler = ddb  
         
-        UpdateExpressionString = "SET #field = :data"
-        ExpressionAttributeNamesDict = {{
-            # '#' + sk : sk
-            '#field' : sk
-        }}
-        ExpressionAttributeValuesDict = {{
-            ':data' : {{'S' : data }}
-        }}
+    #     UpdateExpressionString = "SET #field = :data"
+    #     ExpressionAttributeNamesDict = {{
+    #         # '#' + sk : sk
+    #         '#field' : sk
+    #     }}
+    #     ExpressionAttributeValuesDict = {{
+    #         ':data' : {{'S' : data }}
+    #     }}
         
-        ddb_arguments = {{}}
-        ddb_arguments['TableName'] = ddb_table
-        ddb_arguments['Key'] = {{
-                'pk' : {{'S' : pk}},
-                'sk' : {{'S' : sk}}
-            }}
-        ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
-        ddb_arguments['UpdateExpression'] = UpdateExpressionString
-        ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
-        ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+    #     ddb_arguments = {{}}
+    #     ddb_arguments['TableName'] = ddb_table
+    #     ddb_arguments['Key'] = {{
+    #             'pk' : {{'S' : pk}},
+    #             'sk' : {{'S' : sk}}
+    #         }}
+    #     ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+    #     ddb_arguments['UpdateExpression'] = UpdateExpressionString
+    #     ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    #     ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
 
-        response = db_handler.update_item(**ddb_arguments)"""
+    #     response = db_handler.update_item(**ddb_arguments)"""
             
     source_code+= f"""
     def add(data, method='POST', db_handler=None):
@@ -940,6 +944,12 @@ def create(data):
         """
     source_code += f"""
         item = utilities.az_append_record_metadata('add', username)
+        
+        for relation in relationships.get('belongs_to', []):
+            if relation['rel_type'] == 'has_many':
+                foreign_key = relation['pk_field']
+                item[foreign_key] = data[foreign_key]
+
         item['_id'] = pk"""
 
     for col, col_type in columns.items():
@@ -984,9 +994,20 @@ def create(data):
         many_rel = relationships['has_many']
         for rel in many_rel:
             entity = rel['entity']
-            sk = '{entity_varname}|' + entity
-            many_data = data.get(entity, '')
-            add_many(pk, sk, many_data)"""
+            temp_import = importlib.import_module(entity)
+            many_data = json.loads(data.get(entity, ''))
+            for data in many_data:
+                item = {{
+                    pk_field : pk
+                }}
+                for key, attribute in data.items():
+                    if key == temp_import.pk_field:
+                        item['pk'] = attribute
+                    else:
+                        item[key] = attribute
+                logging.info(item)
+                temp_import.username = username
+                temp_import.add(item)"""
     
     source_code += f"""
         global resp_obj

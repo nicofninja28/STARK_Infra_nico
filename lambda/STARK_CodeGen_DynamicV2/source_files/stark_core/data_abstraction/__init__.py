@@ -68,25 +68,25 @@ def az_get_fields(fields, pk_field, collection):
 #     return items
 
 
-# def get_many_by_pk(pk, sk, db_handler = None):
-#     if db_handler == None:
-#         db_handler = ddb
+def get_many_by_foreign_key(foreign_key_value, foreign_key_field, collection, pk_field):
+    items = []
+    ojbect_expression_values = {
+        'STARK-Is-Deleted' : {'$exists': False},
+        foreign_key_field : foreign_key_value
+    }
+    
+    documents = list(collection.find(ojbect_expression_values))
+    for record in documents:
+        item = {}
+        for field, value in record.items():
+            if field == "_id":
+                item[pk_field] = record.get("_id")
+            else:
+                item[field] = value
+        
+        items.append(item)
 
-#     ddb_arguments = {}
-#     ddb_arguments['TableName'] = stark_core.ddb_table
-#     ddb_arguments['Select'] = "ALL_ATTRIBUTES"
-#     ddb_arguments['KeyConditionExpression'] = "#pk = :pk and #sk = :sk"
-#     ddb_arguments['ExpressionAttributeNames'] = {
-#                                                 '#pk' : 'pk',
-#                                                 '#sk' : 'sk'
-#                                             }
-#     ddb_arguments['ExpressionAttributeValues'] = {
-#                                                 ':pk' : {'S' : pk },
-#                                                 ':sk' : {'S' : sk }
-#                                             }
-                                            
-#     response = db_handler.query(**ddb_arguments).get('Items')
-#     return response
+    return items
 
 
 # def get_report_data(report_payload, object_expression_value, string_filter, is_aggregate_report, map_results_func):
