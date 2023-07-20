@@ -476,7 +476,7 @@ def create(data):
                     many_val.append(report_fields.replace(ent_filter, '').replace(' ', '_').replace("_", "", 1))
             many_entity_dict.update({{ent.replace(' ', '_') : many_val}})
 
-        for record in raw:
+        for record in documents:
             item = []
             record[pk_field] = record['_id']
             item.append(record)
