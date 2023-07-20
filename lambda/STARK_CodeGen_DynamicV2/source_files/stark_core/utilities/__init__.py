@@ -5,7 +5,9 @@ import time
 
 from io import StringIO
 # from fpdf import FPDF
+import re
 import csv
+import logging
 
 import stark_core
 
@@ -62,6 +64,79 @@ def compose_report_operators_and_parameters(key, data, metadata):
         elif data['operator'] == '<=':
             operator_string_equivalent = 'Is less than or equal to'
         elif data['operator'] == '<>':
+            operator_string_equivalent = 'Is not equal to'
+        else:
+            operator_string_equivalent = 'Invalid operator'
+        composed_filter_dict['report_params'] = {key : f" {operator_string_equivalent} {data['value'].strip()}" }
+
+    return composed_filter_dict
+
+def az_compose_report_operators_and_parameters(key, data, metadata):
+    logging.info(key)
+    if key == "pk":
+        key = "_id"
+    logging.info(f"new key {key}")
+    
+    composed_filter_dict = {
+        "operators" : [{
+            'STARK-Is-Deleted' : {'$exists': False}
+        }],
+        "report_params": {}
+    }
+    if data['operator'] == "IN":
+        composed_filter_dict["operators"].append({ key : {'$in' : data['value']}})
+        composed_filter_dict['report_params'] = {key : f"Is in {data['value']}"}
+        
+    elif data['operator'] == "contains":
+        composed_filter_dict["operators"].append({ key : {'$text' : data['value'].strip()}})
+        composed_filter_dict['report_params'] = {key : f"{data['operator'].capitalize().replace('_', ' ')} {data['value']}"}
+
+    elif data['operator'] ==  "begins_with":
+        regex_pattern = re.compile("^" + re.escape(data['value'].strip()))
+        composed_filter_dict["operators"].append({ key : {'$regex' : regex_pattern}})
+        composed_filter_dict['report_params'] = {key : f"{data['operator'].capitalize().replace('_', ' ')} {data['value']}"}
+
+    elif data['operator'] == "between":
+        from_to_split = data['value'].split(',')
+        between_dict = {
+            '$gte' : from_to_split[0].strip(),
+            '$lte' : from_to_split[1].strip()
+        }
+        composed_filter_dict["operators"].append({ key : between_dict})
+        composed_filter_dict['report_params'] = {key : f"Between {from_to_split[0].strip()} and {from_to_split[1].strip()}"}
+    else:
+        # if key != 'pk':
+        #     if metadata[key]['data_type'] == 'list':
+        #         if data['operator'] == '=':
+        #             composed_filter_dict['filter_string'] += f" contains({key}, :{key}) AND"
+        #         elif data['operator'] == '<>':
+        #             composed_filter_dict['filter_string'] += f" not contains({key}, :{key}) AND"
+        #     else:
+        #         composed_filter_dict['filter_string'] += f" {key} {data['operator']} :{key} AND"
+        # else: 
+        #     composed_filter_dict['filter_string'] += f" {key} {data['operator']} :{key} AND"
+        
+        # composed_filter_dict['expression_values'][f":{key}"] = {data['type'] : data['value'].strip()}
+
+        clean_value = data['value'].strip()
+        operator_string_equivalent = ""
+        if data['operator'] == '=':
+            composed_filter_dict["operators"].append({ key : clean_value})
+            operator_string_equivalent = 'Is equal to'
+        elif data['operator'] == '>':
+            composed_filter_dict["operators"].append({ key : {'$gt' : clean_value}})
+            operator_string_equivalent = 'Is greater than'
+        elif data['operator'] == '>=':
+            composed_filter_dict["operators"].append({ key : {'$gte' : clean_value}})
+            operator_string_equivalent = 'Is greater than or equal to'
+        elif data['operator'] == '<':
+            composed_filter_dict["operators"].append({ key : {'$lt' : clean_value}})
+            operator_string_equivalent = 'Is less than'
+        elif data['operator'] == '<=':
+            composed_filter_dict["operators"].append({ key : {'$lte' : clean_value}})
+            operator_string_equivalent = 'Is less than or equal to'
+        elif data['operator'] == '<>':
+            composed_filter_dict["operators"].append({ key : {'$ne' : clean_value}})
             operator_string_equivalent = 'Is not equal to'
         else:
             operator_string_equivalent = 'Invalid operator'
