@@ -427,9 +427,6 @@ def create(data):
                 if index['value'] != "":
                     processed_operator_and_parameter_dict = utilities.az_compose_report_operators_and_parameters(key, index, metadata) 
                     report_param_dict.update(processed_operator_and_parameter_dict['report_params'])
-                    
-        if temp_string_filter != "":
-            string_filter = string_filter + "AND "+temp_string_filter[1:-3]
 
 
         #FIXME: 1-M SEARCH CRITERIA: filter result of 1-M report operators here
