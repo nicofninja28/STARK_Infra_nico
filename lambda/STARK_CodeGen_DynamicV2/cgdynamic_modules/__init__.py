@@ -451,8 +451,12 @@ def create(data):
         aggregated_results = {{}}
 
         # response = ddb.query(**ddb_arguments)
-        compound_query = {{"$and": processed_operator_and_parameter_dict["operators"]}}
-        documents = list(mdb_collection.find(compound_query))
+        if len(processed_operator_and_parameter_dict["operators"]) > 1:
+            final_query = {{"$and": processed_operator_and_parameter_dict["operators"]}}
+        else:
+            final_query = processed_operator_and_parameter_dict["operators"]
+        
+        documents = list(mdb_collection.find(final_query))
         aggregate_report = False if data['STARK_group_by_1'] == '' else True
         # Checker if report has many in report fields
         has_many = False
