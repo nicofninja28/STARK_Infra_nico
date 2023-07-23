@@ -418,7 +418,9 @@ def create(data):
     def report(data, sk=default_sk):
         #FIXME: THIS IS A STUB, WILL NEED TO BE UPDATED WITH
         #   ENHANCED LISTVIEW LOGIC LATER WHEN WE ACTUALLY IMPLEMENT REPORTING
-        ojbect_expression_values = {{}}
+        object_expression_values = [{{
+                'STARK-Is-Deleted' : {{'$exists': False}}
+            }}]
         report_param_dict = {{}}
         for key, index in data.items():
             #FIXME: : 1-M SEARCH CRITERIA: do not include fields with 1-M relationship in composing of operators and parameters for now
@@ -426,6 +428,7 @@ def create(data):
             if "STARK_" not in key and metadata.get(key,{{}}).get('relationship','') != "1-M":
                 if index['value'] != "":
                     processed_operator_and_parameter_dict = utilities.az_compose_report_operators_and_parameters(key, index, metadata) 
+                    object_expression_values.extend(processed_operator_and_parameter_dict['operators'])
                     report_param_dict.update(processed_operator_and_parameter_dict['report_params'])
 
 
@@ -450,13 +453,13 @@ def create(data):
         ddb_arguments = {{}}
         aggregated_results = {{}}
 
-        # response = ddb.query(**ddb_arguments)
-        if len(processed_operator_and_parameter_dict["operators"]) > 1:
-            final_query = {{"$and": processed_operator_and_parameter_dict["operators"]}}
+        if len(object_expression_values) > 1:
+            final_query = {{ "$and": object_expression_values }}
         else:
-            final_query = processed_operator_and_parameter_dict["operators"]
-        
+            final_query = object_expression_values[0]
+
         documents = list(mdb_collection.find(final_query))
+        
         aggregate_report = False if data['STARK_group_by_1'] == '' else True
         # Checker if report has many in report fields
         has_many = False
