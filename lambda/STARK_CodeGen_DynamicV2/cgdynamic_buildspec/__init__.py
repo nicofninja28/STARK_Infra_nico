@@ -55,6 +55,7 @@ def create(data):
                 - aws s3 sync s3://$BUCKET/codegen_dynamic/{project_varname}/terraform/ terraform/
                 - python3 ./packager.py
                 - pip install pymongo --target functions_package
+                - pip install azure-storage-blob --target functions_package
                 - cd terraform/database
                 - terraform init
                 - terraform apply --auto-approve
