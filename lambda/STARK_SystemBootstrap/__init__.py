@@ -94,12 +94,6 @@ def create_handler(event, context):
     ##FIXME: For clean up, leave here for the meantime while testing 
     data = {"project_name": project_name}
 
-    source_code = boot_initial_resource.create_store_terraform_files_to_bucket(data)
-    files_to_commit.append({
-        'filePath': "store_terraform_files_to_bucket.py",
-        'fileContent': source_code.encode()
-    }) 
-
     if cloud_provider != 'AWS':
         source_code = f"""\
         {{
@@ -134,6 +128,11 @@ def create_handler(event, context):
             'fileContent': source_code.encode()
         }) 
 
+        source_code = boot_initial_resource.create_store_terraform_files_to_bucket(data)
+        files_to_commit.append({
+            'filePath': "store_terraform_files_to_bucket.py",
+            'fileContent': source_code.encode()
+        }) 
 
     ############################################
     #Commit our static files to the project repo
