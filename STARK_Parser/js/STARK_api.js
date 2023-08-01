@@ -25,7 +25,7 @@ var root = new Vue({
         ui_visibility: 'block',
         visibility: 'visible',
         wait_counter: 0,
-        wait_limit: 30, 
+        wait_limit: 100, 
         validation_properties: {
             'project_name': {
                 'state': null,
@@ -67,7 +67,7 @@ var root = new Vue({
                         root.form.data_model_temp = fr.result;
                         root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__: ${root.default_pass}\n${fr.result}`
                         // root.form.data_model = `__STARK_project_name__: ${root.project_name}\n__STARK_default_password__:${root.default_pass}\n${fr.result}`
-                        console.log(root.form.data_model)
+                        // console.log(root.form.data_model)
                     }; 
                     this.validation_properties.yaml_file.state = true
                     this.validation_properties.yaml_file.feedback = ""

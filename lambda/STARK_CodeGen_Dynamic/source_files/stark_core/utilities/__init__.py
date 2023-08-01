@@ -274,7 +274,7 @@ def render_page_header(pdf, line_height, report_params, pk_field):
     param_width = pdf.epw / 4
     #Report Title
     pdf.set_font("Helvetica", size=14, style="B")
-    pdf.multi_cell(0,line_height, "Customer Report", 0, 'C',
+    pdf.multi_cell(0,line_height, "Report", 0, 'C',
                     new_x="RIGHT", new_y="TOP", max_line_height=pdf.font_size)
     pdf.ln()
 

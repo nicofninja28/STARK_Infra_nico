@@ -2,16 +2,27 @@
 #Produces the customized static content for a STARK system
 
 #Python Standard Library
+import os
 import base64
 import textwrap
+import importlib
 
 #Private modules
 import convert_friendly_to_system as converter
 
+#Private modules
+prepend_dir = ""
+if 'libstark' in os.listdir():
+    prepend_dir = "libstark.STARK_CodeGen_Static."
+
+cg_navbar  = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_navbar")
+
+
 def create(data, breadcrumb):
 
     project = data["Project Name"]
-    
+    navbar  = cg_navbar.create()
+
     if breadcrumb != "_HomePage":
         entity  = data["Entity"]
         #Convert human-friendly names to variable-friendly names
@@ -19,30 +30,12 @@ def create(data, breadcrumb):
 
     source_code = f"""\
         <body>
-        <div id="mySidenav" class="sidenav">
-            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-            <template v-for="(group, index) in modules" id="nav-groups-template">
-                <h4>
-                    <a v-b-toggle class="text-decoration-none" :href="'#nav-group-collapse-'+index" @click.prevent>
-                        <span class="when-open"><img src="images/chevron-up.svg" class="filter-fill-svg-link" height="20rem"></span>
-                        <span class="when-closed"><img src="images/chevron-down.svg" class="filter-fill-svg-link" height="20rem"></span>
-                        <span class="align-bottom">{{{{ group.group_name }}}}</span>
-                    </a>
-                </h4>
-                <b-collapse :id="'nav-group-collapse-'+index" visible class="mt-0 mb-2 pl-2">
-                    <div class="dropdown-container">
-                        <template v-for="module in group.modules" id="nav-modules-template">
-                            <div class="dropdown-btn" :onclick="'window.location.href=\\''  + module.href + '\\''">
-                                <a href="#"><img class="filter-fill-svg" :src="module.image" alt="Card image cap" height="25rem"> {{{{module.title}}}} </a>
-                            </div>
-                        </template>
-                    </div>
-                </b-collapse>
-            </template>
-        </div>
+"""
+    source_code += navbar
 
+    #Purposely makes a new line after navbar to make navbar code also reusable for semi-static code generation
+    source_code += f"""
         <div class="container-fluid" id="vue-root">
-
             <div class="row bg-primary mb-3 p-3 text-white" style="background-image: url('images/banner_generic_blue.png')">
                 <div class="col-12 col-md-10">
                 <h2>
@@ -77,7 +70,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{entity}</li>
                 </ol>
             </nav>
-
 """
     elif breadcrumb == "_HomePage":
         source_code += f"""\
@@ -86,7 +78,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">Home</li>
                 </ol>
             </nav>
-
 """
     else:
         source_code += f"""\
@@ -97,7 +88,6 @@ def create(data, breadcrumb):
                     <li class="breadcrumb-item active" aria-current="page">{breadcrumb}</li>
                 </ol>
             </nav>
-
 """
 
     return source_code

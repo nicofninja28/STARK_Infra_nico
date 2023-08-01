@@ -57,7 +57,8 @@ var root = new Vue({
             'Add': {'permission': 'User Permissions|Add', 'allowed': false},
             'Delete': {'permission': 'User Permissions|Delete', 'allowed': false},
             'Edit': {'permission': 'User Permissions|Edit', 'allowed': false},
-            'Report': {'permission': 'User Permissions|Report', 'allowed': false}
+            'Report': {'permission': 'User Permissions|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         STARK_report_fields: [],
         listview_table: '',
@@ -203,6 +204,7 @@ var root = new Vue({
             STARK_User_Permissions_app.delete(data).then( function(data) {
                 console.log("VIEW: DELETE DONE!");
                 STARK.local_storage_delete_key('Listviews', 'STARK_User_Permissions');
+                STARK.local_storage_delete_key('Permissions');
                 console.log(data);
                 loading_modal.hide()
                 window.location.href = "STARK_User_Permissions.html";
@@ -239,6 +241,7 @@ var root = new Vue({
                     }
                     console.log("VIEW: UPDATING DONE!");
                     STARK.local_storage_delete_key('Listviews', 'STARK_User_Permissions');
+                    STARK.local_storage_delete_key('Permissions');
                     window.location.href = "STARK_User_Permissions.html";
                 })
                 .catch(function(error) {
@@ -358,8 +361,10 @@ var root = new Vue({
 
         refresh_list () {
             root.listview_table = ''
+            root.curr_page = 1
             STARK.local_storage_delete_key('Listviews', 'STARK_User_Permissions'); //localStorage
             root.list()
+            root.prev_disabled = true
         },
 
         list_Permissions: function () {

@@ -115,7 +115,8 @@ var root = new Vue({
             'Add': {'permission': 'System Modules|Add', 'allowed': false},
             'Delete': {'permission': 'System Modules|Delete', 'allowed': false},
             'Edit': {'permission': 'System Modules|Edit', 'allowed': false},
-            'Report': {'permission': 'System Modules|Report', 'allowed': false}
+            'Report': {'permission': 'System Modules|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         STARK_report_fields: [],
         listview_table: '',
@@ -285,6 +286,7 @@ var root = new Vue({
             STARK_Module_app.delete(data).then( function(data) {
                 console.log("VIEW: DELETE DONE!");
                 STARK.local_storage_delete_key('Listviews', 'STARK_Module'); 
+                STARK.local_storage_delete_key('Permissions');
                 console.log(data);
                 loading_modal.hide()
                 window.location.href = "STARK_Module.html";
@@ -320,6 +322,7 @@ var root = new Vue({
                     }
                     console.log("VIEW: UPDATING DONE!");
                     STARK.local_storage_delete_key('Listviews', 'STARK_Module'); 
+                    STARK.local_storage_delete_key('Permissions');
                     window.location.href = "STARK_Module.html";
                 })
                 .catch(function(error) {
@@ -572,8 +575,10 @@ var root = new Vue({
 
         refresh_list () {
             root.listview_table = ''
+            root.curr_page = 1
             STARK.local_storage_delete_key('Listviews', 'STARK_Module'); //localStorage
             root.list()
+            root.prev_disabled = true
         }, 
         
         list_Module_Group: function () {

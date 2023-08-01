@@ -20,22 +20,27 @@ prepend_dir = ""
 if 'libstark' in os.listdir():
     prepend_dir = "libstark.STARK_CodeGen_Static."
 
-cg_js_app    = importlib.import_module(f"{prepend_dir}cgstatic_js_app")  
-cg_js_view   = importlib.import_module(f"{prepend_dir}cgstatic_js_view")  
-cg_js_many   = importlib.import_module(f"{prepend_dir}cgstatic_js_many")  
-cg_js_login  = importlib.import_module(f"{prepend_dir}cgstatic_js_login")  
-cg_js_home   = importlib.import_module(f"{prepend_dir}cgstatic_js_homepage")  
-cg_js_stark  = importlib.import_module(f"{prepend_dir}cgstatic_js_stark")  
-cg_css_login = importlib.import_module(f"{prepend_dir}cgstatic_css_login")  
-cg_git       = importlib.import_module(f"{prepend_dir}cgstatic_gitignore")  
-cg_add       = importlib.import_module(f"{prepend_dir}cgstatic_html_add")   
-cg_edit      = importlib.import_module(f"{prepend_dir}cgstatic_html_edit")  
-cg_view      = importlib.import_module(f"{prepend_dir}cgstatic_html_view")  
-cg_login     = importlib.import_module(f"{prepend_dir}cgstatic_html_login")  
-cg_delete    = importlib.import_module(f"{prepend_dir}cgstatic_html_delete")  
-cg_listview  = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")  
-cg_homepage  = importlib.import_module(f"{prepend_dir}cgstatic_html_homepage")  
-cg_report    = importlib.import_module(f"{prepend_dir}cgstatic_html_report")   
+cg_js_app            = importlib.import_module(f"{prepend_dir}cgstatic_js_app")  
+cg_js_view           = importlib.import_module(f"{prepend_dir}cgstatic_js_view")  
+cg_js_many           = importlib.import_module(f"{prepend_dir}cgstatic_js_many")
+cg_js_login          = importlib.import_module(f"{prepend_dir}cgstatic_js_login")  
+cg_js_home           = importlib.import_module(f"{prepend_dir}cgstatic_js_homepage")  
+cg_js_stark          = importlib.import_module(f"{prepend_dir}cgstatic_js_stark")  
+cg_css_login         = importlib.import_module(f"{prepend_dir}cgstatic_css_login")  
+cg_git               = importlib.import_module(f"{prepend_dir}cgstatic_gitignore")  
+cg_add               = importlib.import_module(f"{prepend_dir}cgstatic_html_add")   
+cg_edit              = importlib.import_module(f"{prepend_dir}cgstatic_html_edit")  
+cg_view              = importlib.import_module(f"{prepend_dir}cgstatic_html_view")  
+cg_login             = importlib.import_module(f"{prepend_dir}cgstatic_html_login")  
+cg_delete            = importlib.import_module(f"{prepend_dir}cgstatic_html_delete")  
+cg_listview          = importlib.import_module(f"{prepend_dir}cgstatic_html_listview")  
+cg_homepage          = importlib.import_module(f"{prepend_dir}cgstatic_html_homepage")  
+cg_report            = importlib.import_module(f"{prepend_dir}cgstatic_html_report")   
+cg_header            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_header")
+cg_footer            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_footer")
+cg_bodyhead          = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_bodyhead")
+cg_loadmod           = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_loadingmodal")
+cg_navbar            = importlib.import_module(f"{prepend_dir}cgstatic_html_generic_navbar")
 
 import convert_friendly_to_system as converter
 import get_relationship as get_rel
@@ -45,11 +50,14 @@ api  = boto3.client('apigatewayv2')
 git  = boto3.client('codecommit')
 cdpl = boto3.client('codepipeline')
 
+
 helper = CfnResource() #We're using the AWS-provided helper library to minimize the tedious boilerplate just to signal back to CloudFormation
 
 @helper.create
 @helper.update
 def create_handler(event, context):
+    # print('event here')
+    # print(event)
     #Project, bucket name and API Gateway ID from our CF template
     repo_name       = event.get('ResourceProperties', {}).get('RepoName','')
     bucket_name     = event.get('ResourceProperties', {}).get('Bucket','')
@@ -72,9 +80,16 @@ def create_handler(event, context):
     #raw_cloud_resources = response['Body'].read().decode('utf-8')
     #cloud_resources     = yaml.safe_load(raw_cloud_resources) 
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
+    print('cloud_resources here')
+    print(cloud_resources)
 
     #Get relevant info from cloud_resources
     models = cloud_resources["Data Model"]
+    print('models here')
+    print(models)
+
+    # #Analytics config
+    # analytics_config    = cloud_resources.get('Analytics', '')
 
     #Collect list of files to commit to project repository
     files_to_commit = []
@@ -82,6 +97,8 @@ def create_handler(event, context):
     #STARK main JS file
     data = { 'API Endpoint': endpoint, 'Entities': models, "Bucket Name": bucket_name, 'Project Name': project_varname }
     add_to_commit(cg_js_stark.create(data), key=f"js/STARK.js", files_to_commit=files_to_commit, file_path='static')
+
+    
 
     #For each entity, we'll create a set of HTML and JS Files and uploaded folder
     for entity in models:
@@ -108,14 +125,13 @@ def create_handler(event, context):
             many_entity_varname = converter.convert_to_system_name(rel)
             cgstatic_many_data = { "Entity": rel, "PK": pk, "Columns": cols, "Project Name": project_name, "Relationships": relationships }
             add_to_commit(source_code=cg_js_many.create(cgstatic_many_data), key=f"js/many_{many_entity_varname}.js", files_to_commit=files_to_commit, file_path='static')
-
-        seq = {}
-        if "sequence" in models[entity]:
-            seq = models[entity]["sequence"]
-        cgstatic_data["Sequence"] = seq
         
-        print('cgstatic_data')
-        print(cgstatic_data)
+        cgstatic_data["Sequence"] = {}
+        if "sequence" in models[entity]:
+            cgstatic_data["Sequence"] = models[entity]["sequence"]
+        # print('cgstatic_data')
+        # print(cgstatic_data)
+        
         add_to_commit(source_code=cg_add.create(cgstatic_data), key=f"{entity_varname}_add.html", files_to_commit=files_to_commit, file_path='static')
         add_to_commit(source_code=cg_edit.create(cgstatic_data), key=f"{entity_varname}_edit.html", files_to_commit=files_to_commit, file_path='static')
         add_to_commit(source_code=cg_delete.create(cgstatic_data), key=f"{entity_varname}_delete.html", files_to_commit=files_to_commit, file_path='static')
@@ -165,6 +181,9 @@ def create_handler(event, context):
         with open(dir + os.sep + html_file) as f:
             #replace all occurences of "[[STARK_PROJECT_NAME]]" with project_name
             source_code = f.read().replace("[[STARK_PROJECT_NAME]]", project_name)
+            source_code = source_code.replace("[[NAVBAR]]", textwrap.dedent(cg_navbar.create()))
+            source_code = source_code.replace("[[LOADING MODAL]]", textwrap.dedent(cg_loadmod.create()))
+            source_code = source_code.replace("[[FOOTER]]", textwrap.dedent(cg_footer.create()) )
             add_to_commit(source_code=source_code, key=html_file, files_to_commit=files_to_commit, file_path='static')
 
     ##################################################################
@@ -200,17 +219,21 @@ def create_handler(event, context):
     #Create the .gitignore file for the project repo - so that cruft doesn't get into commits by default
     add_to_commit(source_code=cg_git.create(), key=f".gitignore", files_to_commit=files_to_commit, file_path='')
 
-    ##############################################
-    #Commit our prebuilt files to the project repo
-    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
+    ##################################################
+    #Commit files to the project repo
+    #   There's a codecommit limit of 100 files and 7mb - this will fail if more than 100 static files or >7mb are needed,
     #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
     ctr                 = 0
     key                 = 0
+    total_commit_size   = 0
+    total_commit_limit  = 6500000 #we limit to 6500000 bytes
     chunked_commit_list = {}
     for item in files_to_commit:
-        if ctr == 100:
+        total_commit_size += len(item['fileContent'])
+        if ctr == 100 or total_commit_size > total_commit_limit:
             key = key + 1
             ctr = 0
+            total_commit_size = len(item['fileContent'])
         ctr = ctr + 1
         if chunked_commit_list.get(key, '') == '':
             chunked_commit_list[key] = []
@@ -249,8 +272,8 @@ def create_handler(event, context):
     pipeline_definition = pickle.loads(response['Body'].read()) 
     print(pipeline_definition)
     response = cdpl.update_pipeline(pipeline=pipeline_definition['pipeline'])
-    cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
-
+    #Bugfix: removed line below to avoid double-trigger of pipeline
+    #cdpl.start_pipeline_execution(name=f"STARK_{project_varname}_pipeline")
 
 @helper.delete
 def no_op(_, __):
@@ -262,6 +285,7 @@ def lambda_handler(event, context):
 
 
 def add_to_commit(source_code, key, files_to_commit, file_path=''):
+    # print(files_to_commit)
 
     if type(source_code) is str:
         source_code = source_code.encode()

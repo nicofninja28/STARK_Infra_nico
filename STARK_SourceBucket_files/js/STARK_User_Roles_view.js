@@ -65,7 +65,8 @@ var root = new Vue({
             'Add': {'permission': 'User Roles|Add', 'allowed': false},
             'Delete': {'permission': 'User Roles|Delete', 'allowed': false},
             'Edit': {'permission': 'User Roles|Edit', 'allowed': false},
-            'Report': {'permission': 'User Roles|Report', 'allowed': false}
+            'Report': {'permission': 'User Roles|Report', 'allowed': false},
+            'Custom_Query': {'permission': 'Analytics|Custom Report', 'allowed': false}
         },
         listview_table: '',
         STARK_report_fields: [],
@@ -536,8 +537,10 @@ var root = new Vue({
 
         refresh_list () {
             root.listview_table = ''
+            root.curr_page = 1
             STARK.local_storage_delete_key('Listviews', 'STARK_User_Roles'); //localStorage
             root.list()
+            root.prev_disabled = true
         },
         
         //Charting ------------------------------------------------

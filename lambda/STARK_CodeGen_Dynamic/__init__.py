@@ -98,8 +98,8 @@ def create_handler(event, context):
                         key[value] = converter.convert_to_system_name(key[value]) 
                         
         seq = {}
-        if len(models[entity].get("sequence",{})) > 0:
-            seq = models[entity].get("sequence")
+        if len(models[entity].get("sequence", {})) > 0:
+            seq = models[entity]["sequence"]
 
         data = {
                 "Entity": entity, 
@@ -127,6 +127,8 @@ def create_handler(event, context):
             'filePath': f"lambda/{entity_varname}/__init__.py",
             'fileContent': source_code.encode()
         })
+
+        
 
         # test cases
         files_to_commit.append({
@@ -174,11 +176,6 @@ def create_handler(event, context):
     })
 
     files_to_commit.append({
-        'filePath': f"lambda/test_cases/admin_modules/__init__.py",
-        'fileContent': "#blank init for STARK admin modules"
-    })
-
-    files_to_commit.append({
         'filePath': f"lambda/test_cases/core_modules/__init__.py",
         'fileContent': "#blank init for stark core functions"
     })
@@ -214,7 +211,8 @@ def create_handler(event, context):
     #########################################
     #Create Lambdas of built-in STARK modules 
     #    (Analytics)
-    analytics_source_code = cg_analytics.create({"Entities": entities})
+    analytics_data = { "Entities": entities, "S3 Bucket Athena" : s3_analytics_athena_bucket_name, "Project_Name" : project_varname }
+    analytics_source_code = cg_analytics.create(analytics_data)
     files_to_commit.append({
         'filePath': f"lambda/STARK_Analytics/__init__.py",
         'fileContent': analytics_source_code.encode()
@@ -229,11 +227,14 @@ def create_handler(event, context):
                 source_code = source_code.replace("[[STARK_RAW_BUCKET]]", s3_analytics_raw_bucket_name)
                 source_code = source_code.replace("[[STARK_PROCESSED_BUCKET]]", s3_analytics_processed_bucket_name)
                 source_code = source_code.replace("[[STARK_ATHENA_BUCKET]]", s3_analytics_athena_bucket_name)
+                source_code = source_code.replace("[[STARK_PROJECT_VARNAME]]", project_varname)
                 #We use root[13:] because we want to strip out the "source_files/" part of the root path
                 files_to_commit.append({
                     'filePath': f"lambda/" + os.path.join(root[13:], source_file),
                     'fileContent': source_code.encode()
                 })
+
+
 
     ############################################
     #Create build files we need for our pipeline:
@@ -296,15 +297,19 @@ def create_handler(event, context):
 
     ##################################################
     #Commit files to the project repo
-    #   There's a codecommit limit of 100 files - this will fail if more than 100 static files are needed,
+    #   There's a codecommit limit of 100 files and 7mb - this will fail if more than 100 static files or >7mb are needed,
     #   such as if a dozen or so entities are requested for code generation. Implement commit chunking here for safety.
     ctr                 = 0
     key                 = 0
+    total_commit_size   = 0
+    total_commit_limit  = 6500000 #we limit to 6500000 bytes
     chunked_commit_list = {}
     for item in files_to_commit:
-        if ctr == 100:
+        total_commit_size += len(item['fileContent'])
+        if ctr == 100 or total_commit_size > total_commit_limit:
             key = key + 1
             ctr = 0
+            total_commit_size = len(item['fileContent'])
         ctr = ctr + 1
         if chunked_commit_list.get(key, '') == '':
             chunked_commit_list[key] = []

@@ -64,10 +64,13 @@ else {
 
 function openNav() {
     // document.getElementById("mySidenav").style.width = "250px";
-    document.getElementById("mySidenav").style.minWidth = "20%";
-    document.getElementById("mySidenav").style.maxWidth = "40%";
-    document.getElementById("vue-root").style.marginLeft = "20%";
+    document.getElementById("mySidenav").style.minWidth = "250px";
+    document.getElementById("mySidenav").style.maxWidth = "400px";
+    document.getElementById("vue-root").style.marginLeft = "250px";
     document.getElementById("main-burger-menu").style.display = "none";
+
+    //Make main body div shrink to fit in remaining screen space
+    handleResize();
 }
     
 function closeNav() {
@@ -76,4 +79,19 @@ function closeNav() {
     document.getElementById("mySidenav").style.maxWidth = "0";
     document.getElementById("vue-root").style.marginLeft= "0";
     document.getElementById("main-burger-menu").style.display = "inline";
+
+    //Make main body div stretchable again
+    document.getElementById("vue-root").style.width = "100%";
+
 }
+
+function handleResize() {
+    console.log("Width: " + document.getElementById("mySidenav").style.minWidth)
+    if (document.getElementById("mySidenav").style.minWidth == "250px")  {
+        const screenWidth = window.innerWidth;
+        const adjustedWidth = screenWidth - 250;
+        document.getElementById("vue-root").style.width = adjustedWidth + "px";
+    }
+}
+
+window.addEventListener('resize', handleResize);

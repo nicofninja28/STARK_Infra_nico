@@ -4,7 +4,8 @@
 # FIXME: allow actual commit message as an optional parameter 
 
 auto_datetime=$(date '+%Y-%m-%d %H:%M:%S')
-python bin\\run_tests.py
+#FIXME: make running of tests more portable, not a fixed relative dir. "python" vs "python3" also an issue
+python3 bin\\run_tests.py
 test=$?
 if [ $test -eq 0 ] 
 then

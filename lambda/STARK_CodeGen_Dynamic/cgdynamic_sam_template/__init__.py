@@ -230,6 +230,7 @@ def create(data, cli_mode=False):
                             - '*'
                           AllowedMethods:
                             - PUT
+                            - POST
                           AllowedOrigins:
                             - '*'
                           ExposedHeaders:
@@ -412,9 +413,56 @@ def create(data, cli_mode=False):
                             Action: 'sts:AssumeRole'
                 ManagedPolicyArns:
                     - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+                    - 'arn:aws:iam::aws:policy/AmazonAthenaFullAccess'
                 Policies:
                     - 
                         PolicyName: PolicyForSTARKProjectDefaultLambdaServiceRole
+                        PolicyDocument:
+                            Version: '2012-10-17'
+                            Statement:
+                                - 
+                                    Sid: VisualEditor0
+                                    Effect: Allow
+                                    Action:
+                                        - 'iam:GetRole'
+                                        - 'dynamodb:BatchGetItem'
+                                        - 'dynamodb:BatchWriteItem'
+                                        - 'dynamodb:ConditionCheckItem'
+                                        - 'dynamodb:PutItem'
+                                        - 'dynamodb:DeleteItem'
+                                        - 'dynamodb:GetItem'
+                                        - 'dynamodb:Scan'
+                                        - 'dynamodb:Query'
+                                        - 'dynamodb:UpdateItem'
+                                        - 's3:PutObject'
+                                        - 's3:PutObjectAcl'
+                                        - 's3:GetObject'
+                                        - 's3:GetObjectAcl'
+                                        - 's3:ListBucket'
+                                        - 's3:DeleteObject'
+                                    Resource: 
+                                        - !Join [ ":", [ "arn:aws:dynamodb", !Ref AWS::Region, !Ref AWS::AccountId, "table/{ddb_table_name}"] ]
+                                        - !Join [ ":", [ "arn:aws:dynamodb", !Ref AWS::Region, !Ref AWS::AccountId, "table/{ddb_table_name}/index/STARK-ListView-Index", ] ]
+                                        - !Join [ "",  [ "arn:aws:s3:::", "{s3_bucket_name}", "/tmp/*"] ]
+                                        - !Join [ "",  [ "arn:aws:s3:::", "{s3_bucket_name}", "/uploaded_files/*"] ]
+        STARKProjectAnalyticsLambdaServiceRole:
+            Type: AWS::IAM::Role
+            Properties:
+                AssumeRolePolicyDocument:
+                    Version: '2012-10-17'
+                    Statement: 
+                        - 
+                            Effect: Allow
+                            Principal:
+                                Service: 
+                                    - 'lambda.amazonaws.com'
+                            Action: 'sts:AssumeRole'
+                ManagedPolicyArns:
+                    - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+                    - 'arn:aws:iam::aws:policy/AmazonAthenaFullAccess'
+                Policies:
+                    - 
+                        PolicyName: PolicyForSTARKProjectAnalyticsLambdaServiceRole
                         PolicyDocument:
                             Version: '2012-10-17'
                             Statement:
@@ -447,6 +495,8 @@ def create(data, cli_mode=False):
                                         - !Join [ "",  [ "arn:aws:s3:::", "{s3_raw_bucket_name}", "/*"] ]
                                         - !Join [ "",  [ "arn:aws:s3:::", "{s3_processed_bucket_name}"] ]
                                         - !Join [ "",  [ "arn:aws:s3:::", "{s3_processed_bucket_name}", "/*"] ]
+                                        - !Join [ "",  [ "arn:aws:s3:::", "{s3_athena_bucket_name}"] ]
+                                        - !Join [ "",  [ "arn:aws:s3:::", "{s3_athena_bucket_name}", "/*"] ]
         STARKProjectDefaultAuthorizerInvokeRole:
             Type: AWS::IAM::Role
             Properties:
@@ -503,6 +553,18 @@ def create(data, cli_mode=False):
                     - python3.7
                     - python3.8
                     - python3.9
+        OpenAILayer:
+            Type: AWS::Lambda::LayerVersion
+            Properties:
+                Content:
+                    S3Bucket: !Ref UserCICDPipelineBucketNameParameter
+                    S3Key: {project_varname}/STARKLambdaLayers/OpenAI_layer.zip
+                Description: OpenAI module for Python 3.x
+                LayerName: {project_varname}_OpenAI
+                CompatibleArchitectures:
+                    - x86_64
+                CompatibleRuntimes:
+                    - python3.10
         RequestsLayer:
             Type: AWS::Lambda::LayerVersion
             Properties:
@@ -857,14 +919,71 @@ def create(data, cli_mode=False):
                 Runtime: python3.9
                 Handler: __init__.lambda_handler
                 CodeUri: lambda/STARK_Analytics
-                Role: !GetAtt STARKProjectDefaultLambdaServiceRole.Arn
+                Role: !GetAtt STARKProjectAnalyticsLambdaServiceRole.Arn
                 Architectures:
                     - arm64
                 MemorySize: 128
-                Timeout: 10
+                Timeout: 60
                 Layers:
                     - !Ref Fpdf2Layer""" 
     cf_template += f"""
+        GenAIforSTARK:
+            Type: AWS::Serverless::Function
+            Properties:
+                Events:
+                    GenAIPostEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /GenAI
+                            Method: POST
+                            ApiId:
+                                Ref: STARKApiGateway
+                Runtime: python3.10
+                Handler: __init__.lambda_handler
+                CodeUri: lambda/GenAI
+                Policies:
+                    - AWSLambdaBasicExecutionRole
+                    - AmazonSSMReadOnlyAccess
+                    - CloudWatchLogsReadOnlyAccess
+                Architectures:
+                    - x86_64
+                MemorySize: 128
+                Timeout: 60
+                Layers:
+                    - !Ref OpenAILayer
+        ObservabilityforSTARK:
+            Type: AWS::Serverless::Function
+            Properties:
+                Events:
+                    ObservabilityGetEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /STARK_Observability
+                            Method: GET
+                            ApiId:
+                                Ref: STARKApiGateway
+                    ObservabilityPostEvent:
+                        Type: HttpApi
+                        Properties:
+                            Path: /STARK_Observability
+                            Method: POST
+                            ApiId:
+                                Ref: STARKApiGateway
+                Runtime: python3.9
+                Handler: __init__.lambda_handler
+                CodeUri: lambda/STARK_Observability
+                Policies:
+                    - AWSLambdaBasicExecutionRole
+                    - CloudWatchLogsReadOnlyAccess
+                    - AWSLambda_FullAccess
+                    - AmazonS3FullAccess
+                Architectures:
+                    - x86_64
+                MemorySize: 128
+                Timeout: 60
+                Layers:
+                    - !Ref RequestsLayer
+                    - !Ref OpenAILayer
         STARKBackendApiForSTARKUser:
             Type: AWS::Serverless::Function
             Properties:
@@ -1196,6 +1315,13 @@ def create(data, cli_mode=False):
                 - STARKBucketCleaner
                 - STARKDynamoDB
                 - STARKProjectDefaultLambdaServiceRole
+        STARKOpenAIAPIKey:
+            Type: AWS::SSM::Parameter
+            Properties: 
+                Name: {project_varname}_OPENAI_API_KEY
+                Type: String
+                Description: Place your OpenAI API Key here
+                Value: (Your API Key)
         """
 
     return textwrap.dedent(cf_template)

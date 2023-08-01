@@ -47,6 +47,7 @@ def create(cloud_resources, project_basedir):
 
     with open("../cloud_resources.yml", "r") as f:
         current_cloud_resources = yaml.safe_load(f.read())
+        current_model = current_cloud_resources['Data Model']
         current_data_model =  current_cloud_resources['Data Model']
 
     current_entities = []
@@ -121,8 +122,12 @@ def create(cloud_resources, project_basedir):
         })
     ########################################
     #Update conftest of test_cases 
+    current_model.update(models)
     data = {
-        "Entities": [*current_entities, *entities]
+        "Entities": [*current_entities, *entities],
+        "Models": current_model,
+        "S3 Bucket Athena" : s3_analytics_athena_bucket_name,
+        "Project_Name" : project_varname
     }
     conftest_code = cg_conftest.create(data)
 

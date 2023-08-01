@@ -57,6 +57,8 @@ metadata          = {
         'feedback': ''
     },
 }
+resp_obj = None
+username = ""
 
 ############
 #PERMISSIONS
@@ -72,6 +74,8 @@ def lambda_handler(event, context):
     responseStatusCode = 200
     #Get request type
     request_type = event.get('queryStringParameters',{}).get('rt','')
+    global username
+    username = event.get('requestContext',{}).get('authorizer',{}).get('lambda',{}).get('Username','')
 
     if request_type == '':
         ########################
@@ -138,7 +142,7 @@ def lambda_handler(event, context):
 
         if method == "DELETE":
             if(stark_core.sec.is_authorized(stark_permissions['delete'], event, ddb)):
-                response = delete(data)
+                response = delete_v2(data)
             else:
                 responseStatusCode, response = stark_core.sec.authFailResponse
 
@@ -251,7 +255,9 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
     if db_handler == None:
         db_handler = ddb
 
-
+    ExpressionAttributeNamesDict = {
+        '#isDeleted' : 'STARK-Is-Deleted',
+    }
     items = []
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
@@ -260,7 +266,9 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
     ddb_arguments['Limit'] = page_limit
     ddb_arguments['ReturnConsumedCapacity'] = 'TOTAL'
     ddb_arguments['KeyConditionExpression'] = 'sk = :sk'
+    ddb_arguments['FilterExpression'] = 'attribute_not_exists(#isDeleted)'
     ddb_arguments['ExpressionAttributeValues'] = { ':sk' : {'S' : sk } }
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
 
     if lv_token != None:
         ddb_arguments['ExclusiveStartKey'] = lv_token
@@ -270,7 +278,7 @@ def get_all(sk=default_sk, lv_token=None, db_handler = None):
         if next_token != '':
             ddb_arguments['ExclusiveStartKey']=next_token
 
-        response = ddb.query(**ddb_arguments)
+        response = db_handler.query(**ddb_arguments)
         raw = response.get('Items')
         next_token = response.get('LastEvaluatedKey')
 
@@ -307,6 +315,40 @@ def get_by_pk(pk, sk=default_sk, db_handler = None):
 
     return response
 
+def delete_v2(data, db_handler = None):
+    if db_handler == None:
+        db_handler = ddb
+
+    UpdateExpressionString = "SET #STARKDeletedBy = :STARKDeletedBy, #STARKDeletedTs = :STARKDeletedTS, #STARKIsDeleted = :STARKIsDeleted, #ttl = :ttl" 
+    ExpressionAttributeNamesDict = {
+        '#STARKDeletedBy': 'STARK-Deleted-By',
+        '#STARKDeletedTs': 'STARK-Deleted-TS',
+        '#STARKIsDeleted': 'STARK-Is-Deleted',
+        '#ttl': 'TTL'
+    }
+    ExpressionAttributeValuesDict = utilities.append_record_metadata('delete', username)
+
+    pk = data.get('pk','')
+    sk = data.get('sk','')
+    if sk == '': sk = default_sk
+
+    ddb_arguments = {}
+    ddb_arguments['TableName'] = ddb_table
+    ddb_arguments['Key'] = {
+            'pk' : {'S' : pk},
+            'sk' : {'S' : sk}
+        }
+
+    ddb_arguments['ReturnValues'] = 'UPDATED_NEW'
+    ddb_arguments['UpdateExpression'] = UpdateExpressionString
+    ddb_arguments['ExpressionAttributeNames'] = ExpressionAttributeNamesDict
+    ddb_arguments['ExpressionAttributeValues'] = ExpressionAttributeValuesDict
+
+    response = db_handler.update_item(**ddb_arguments)
+    global resp_obj
+    resp_obj = response
+    return "OK"
+
 def delete(data, db_handler = None):
     if db_handler == None:
         db_handler = ddb
@@ -337,12 +379,14 @@ def edit(data, db_handler = None):
     Description = str(data.get('Description', ''))
     Permissions = str(data.get('Permissions', ''))
 
-    UpdateExpressionString = "SET #Description = :Description, #Permissions = :Permissions" 
+    UpdateExpressionString = "SET #Description = :Description, #Permissions = :Permissions, #STARKUpdatedBy = :STARKUpdatedBy, #STARKUpdatedTs = :STARKUpdatedTS" 
     ExpressionAttributeNamesDict = {
         '#Description' : 'Description',
         '#Permissions' : 'Permissions',
+        '#STARKUpdatedBy': 'STARK-Updated-By',
+        '#STARKUpdatedTs': 'STARK-Updated-TS'
     }
-    ExpressionAttributeValuesDict = {
+    tempExpressionAttributeValuesDict = {
         ':Description' : {'S' : Description },
         ':Permissions' : {'S' : Permissions },
     }
@@ -353,8 +397,8 @@ def edit(data, db_handler = None):
 
     UpdateExpressionString += ", #STARKListViewsk = :STARKListViewsk"
     ExpressionAttributeNamesDict['#STARKListViewsk']  = 'STARK-ListView-sk'
-    ExpressionAttributeValuesDict[':STARKListViewsk'] = {'S' : data['STARK-ListView-sk']}
-
+    tempExpressionAttributeValuesDict[':STARKListViewsk'] = {'S' : data['STARK-ListView-sk']}
+    ExpressionAttributeValuesDict_1stupdate = tempExpressionAttributeValuesDict | utilities.append_record_metadata('edit', username)
     response = ddb.update_item(
         TableName=ddb_table,
         Key={
@@ -363,9 +407,10 @@ def edit(data, db_handler = None):
         },
         UpdateExpression=UpdateExpressionString,
         ExpressionAttributeNames=ExpressionAttributeNamesDict,
-        ExpressionAttributeValues=ExpressionAttributeValuesDict
+        ExpressionAttributeValues=ExpressionAttributeValuesDict_1stupdate
     )
 
+    ExpressionAttributeValuesDict = tempExpressionAttributeValuesDict | utilities.append_record_metadata('edit', username)
     ddb_arguments = {}
     ddb_arguments['TableName'] = ddb_table
     ddb_arguments['Key'] = {
@@ -393,7 +438,7 @@ def add(data, method ='POST', db_handler=None):
     Description = str(data.get('Description', ''))
     Permissions = str(data.get('Permissions', ''))
 
-    item={}
+    item = utilities.append_record_metadata('add', username)
     item['pk'] = {'S' : pk}
     item['sk'] = {'S' : sk}
     item['Description'] = {'S' : Description}

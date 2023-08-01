@@ -34,6 +34,7 @@ def create(data):
 
     #STARK-provided common methods go here
     source_code += f"""
+            'Analytics_url':`${{api_endpoint_1}}/STARK_Analytics`,
             'STARK_User_url':`${{api_endpoint_1}}/STARK_User`,
             'STARK_Module_url':`${{api_endpoint_1}}/STARK_Module`,
             'STARK_User_Roles_url':`${{api_endpoint_1}}/STARK_User_Roles`,
@@ -51,7 +52,10 @@ def create(data):
             'local_storage_item_ttl': {{ //in minutes
                                         'default': 1,
                                         'Permissions': 360,
-                                        'Listviews': 10
+                                        'Listviews': 10,
+                                        'Analytics_Input': 360,
+                                        'Analytics_Data': 360,
+                                        'Analytics_Table': 360
                                     }}, 
 
             request: function(method, fetchURL, payload='') {{
@@ -136,6 +140,12 @@ def create(data):
                 fetchUrl = STARK.auth_url
                 return this.request('POST', fetchUrl, {{'rt': 's3'}})
             }},
+
+            get_s3_presigned_url: function(payload){{
+                fetchUrl = STARK.auth_url
+                return this.request('POST', fetchUrl, payload)
+            }},
+
             get_file_ext_whitelist: function(field_settings, table_settings = "", mode="overwrite") {{
                 //two modes: overwrite = overwrites the whitelist in the following order: field defined > table defined > globally defined
                 //           mix       = combines the all the whitelist
@@ -179,7 +189,10 @@ def create(data):
                                 root.auth_list.Delete.permission, 
                                 root.auth_list.Add.permission, 
                                 root.auth_list.View.permission
-                            ]
+                            ],
+                    'Custom_Query': [
+                        root.auth_list.Custom_Query.permission
+                    ]
                 }}
             }},
 
@@ -314,7 +327,7 @@ def create(data):
 
                 if(item == "Listviews") {{
                     if(temp) {{
-                        if(temp_item && temp.hasOwnProperty(key)) {{
+                        if(temp_item && temp_item.hasOwnProperty(key)) {{
                             let old_data = temp_item[key]["data"]
                             let new_data = data 
                             data = {{...old_data, ...new_data}}
@@ -367,19 +380,30 @@ def create(data):
                 return false
             }},
 
-            local_storage_delete_key: function(item, key)  {{
+            local_storage_delete_key: function(item, key="")  {{
                 fetched_data = JSON.parse(localStorage.getItem(project_name))
-                if(fetched_data) {{
-                    arr_storage_type = Object.keys(fetched_data)
+                if(key != "")
+                {{
+                    if(fetched_data) {{
+                        arr_storage_type = Object.keys(fetched_data)
+                        if(arr_storage_type.filter(elem => elem == item).length > 0) {{
+                            item_data = fetched_data[item]
+                            if(item_data && item_data.hasOwnProperty(key)) {{
+                                arr_keys = Object.keys(item_data)
+                                if(arr_keys.filter(elem => elem == key).length > 0) {{
+                                    delete item_data[key]
+                                    localStorage.setItem(project_name,JSON.stringify(fetched_data))
+                                    console.log(`${{item}} ${{key}} deleted.`)
+                                }}
+                            }}
+                        }}
+                    }}
+                }} else {{
                     if(arr_storage_type.filter(elem => elem == item).length > 0) {{
                         item_data = fetched_data[item]
-                        if(item_data && item_data.hasOwnProperty(key)) {{
-                            arr_keys = Object.keys(item_data)
-                            if(arr_keys.filter(elem => elem == key).length > 0) {{
-                                delete item_data[key]
-                                localStorage.setItem(project_name,JSON.stringify(fetched_data))
-                                console.log(`${{item}} ${{key}} deleted.`)
-                            }}
+                        if(item_data) {{
+                            delete fetched_data[item]
+                            localStorage.setItem(project_name,JSON.stringify(fetched_data))
                         }}
                     }}
                 }}
