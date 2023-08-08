@@ -37,13 +37,18 @@ def lambda_handler(event, context):
     data_model        = yaml.safe_load(jsonified_payload['data_model'])
     project_name      = data_model.get('__STARK_project_name__')
     project_stackname = converter.convert_to_system_name(project_name, 'cf-stack')
+    cloud_provider    = data_model.get('__STARK_advanced__',{}).get("Cloud Provider", 'AWS')
 
     #Stack to track is either the CI/CD Pipeline stack, the bootstrapper, or the main application
     #   The bootstrapper and the main application operate on the same stack (same name)
-    if current_stack == 0:
+    if cloud_provider == 'Azure':
         CF_stack_name = f"CICD-pipeline-{project_stackname}"
+
     else:
-        CF_stack_name = f"STARK-project-{project_stackname}"
+        if current_stack == 0:
+            CF_stack_name = f"CICD-pipeline-{project_stackname}"
+        else:
+            CF_stack_name = f"STARK-project-{project_stackname}"
 
     print('Sleeping for 10!')
     sleep(10)
@@ -84,14 +89,13 @@ def lambda_handler(event, context):
 
         stack_description = response['Stacks'][0]['Description']
         print("Stack description: " + stack_description)
-
         if current_stack < 2:
             result = 'SUCCESS'
             retry = True
             #Tell client to ask for tracking of the next stack
             current_stack = current_stack + 1
 
-        elif current_stack == 2 and stack_description != "Bootstrapper":
+        elif current_stack == 2 and cloud_provider == 'AWS' and stack_description != "Bootstrapper": 
             response = cfn.describe_stack_resource(
                 StackName=CF_stack_name,
                 LogicalResourceId='STARKSystemBucket'
@@ -145,6 +149,36 @@ def lambda_handler(event, context):
                 #a dot instead of dash before the region (this seems to be the preferred separator
                 #for newer regions), and ends in just ".com"
                 url = f"http://{bucket_name}.s3-website.{bucket_location}.amazonaws.com/"
+        elif current_stack == 2 and cloud_provider == 'Azure' and stack_description != "Bootstrapper":
+            codebuild = boto3.client('codebuild')
+            project_varname = converter.convert_to_system_name(project_name)
+            CB_project_name = f"STARK_{project_varname}_build"
+
+            response = codebuild.batch_get_projects(names=[CB_project_name])
+            end = False
+            if response['projects']:
+                project = response['projects'][0]
+                
+                environment_variables = project.get('environmentVariables')
+                
+                if environment_variables:
+                    print("Environment Variables:")
+                    end = True
+                    for env_var in environment_variables:
+                        print(f"{env_var['name']} = {env_var['value']}")
+                else:
+                    print("No environment variables defined for the project.")
+            else:
+                print(f"Project '{project_name}' not found.")
+                
+            if end:
+                retry = False
+                result = env_var['value']
+            else:
+                retry         = True
+                result        = ''
+                current_stack = 2
+
         else:
             #Tell client to keep tracking stack 2. We're still waiting for the
             #   CI/CD pipeline to update the stack from bootstrapper to main application
