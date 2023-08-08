@@ -155,6 +155,7 @@ def lambda_handler(event, context):
             CB_project_name = f"STARK_{project_varname}_build"
 
             response = codebuild.batch_get_projects(names=[CB_project_name])
+            print(response)
             end = False
             if response['projects']:
                 project = response['projects'][0]
