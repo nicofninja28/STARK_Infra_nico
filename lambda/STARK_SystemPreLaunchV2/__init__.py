@@ -39,6 +39,12 @@ def lambda_handler(event, context):
     )
     cloud_resources = yaml.safe_load(response['Body'].read().decode('utf-8')) 
 
+    #Default password
+    response = s3.get_object(
+        Bucket=codegen_bucket_name,
+        Key=f'codegen_dynamic/{project_varname}/default_password.txt'
+    )
+    def_password = response['Body'].read().decode('utf-8')
 
     models   = cloud_resources["Data Model"]
     entities = []
@@ -99,7 +105,7 @@ def lambda_handler(event, context):
     #           (i.e., where he triggered the Stark CLI for the system generation request)
     # password = "welcome-2-STARK!"
     # hashed   = scrypt.create_hash(password)
-    hashed = cloud_resources["Default Password"]
+    hashed = def_password
 
     item                     = {}
     item['_id']              =  user
