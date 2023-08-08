@@ -64,7 +64,7 @@ def create(data):
                 - terraform init
                 - terraform apply --auto-approve
                 - python ../store_terraform_files_to_bucket.py
-                - EXPORT TEST_ENV_VAR=ALLDONE
+                - export TEST_ENV_VAR=ALLDONE
                 - aws lambda invoke --function-name {system_prelaunch_arn} --payload file://../cgdynamic_payload.json response.json
 
         artifacts:
