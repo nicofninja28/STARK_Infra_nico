@@ -63,6 +63,7 @@ def create(data):
                 - cd ..
                 - terraform init
                 - terraform apply --auto-approve
+                - python ../terraform_output_static_site_url.py
                 - python ../store_terraform_files_to_bucket.py
                 - echo "TF_OUTPUT=val_TF_OUTPUT" >> /tmp/env_vars.txt
                 - aws lambda invoke --function-name {system_prelaunch_arn} --payload file://../cgdynamic_payload.json response.json

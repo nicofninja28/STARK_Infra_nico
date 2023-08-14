@@ -280,6 +280,12 @@ def lambda_handler(event, context):
         'filePath': "terraform_output_utility.py",
         'fileContent': source_code.encode()
     })
+
+    source_code = cg_packager.get_terraform_output_static_site_url()
+    files_to_commit.append({
+        'filePath': "terraform_output_static_site_url.py",
+        'fileContent': source_code.encode()
+    })
     
     data = {
         "entities": entities,

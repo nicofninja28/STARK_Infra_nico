@@ -116,3 +116,39 @@ def create_terraform_output_utility():
                 f.write(source_code)
     """
     return textwrap.dedent(source_code)
+
+def get_terraform_output_static_site_url():
+    source_code = f"""\
+    import os
+    import sys
+    import json
+    import yaml
+    import subprocess
+    import boto3
+
+    s3  = boto3.client('s3')
+
+    def get_terraform_output():
+        output_dict = {{}}
+        # Run the `terraform output` command and capture the output
+        output = subprocess.check_output(["terraform", "output", "static_site_url"])
+        # Decode the output from bytes to string
+        output_str = output.decode("utf-8").strip()
+        output_dict['static_site_url'] = output_str
+        return output_dict
+        
+    # Call the function to get the Terraform output
+    tf_output = get_terraform_output()
+
+    print(tf_output)
+
+    response = s3.put_object(
+        Body=tf_output,
+        Bucket=codegen_bucket_name,
+        Key=f'l{{project_varname}}/static_site_url.txt',
+        Metadata={
+            'STARK_Description': 'static site url fetching for deployment'
+        }
+    )
+    """
+    return textwrap.dedent(source_code)
