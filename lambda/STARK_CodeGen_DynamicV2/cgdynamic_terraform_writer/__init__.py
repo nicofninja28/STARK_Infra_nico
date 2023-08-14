@@ -175,7 +175,14 @@ def tf_writer_storage_account(data):
         storage_account_name   = azurerm_storage_account.{resource_name}.name
         storage_container_name = "$web"
         content_type = lookup(tomap(local.mime_types), element(split(".", each.value), length(split(".", each.value)) - 1))
-    }}"""
+    }}
+    
+    
+    output "static_website_url" {{
+        description = "static site url"
+        value       = azurerm_storage_account.{resource_name}.primary_web_endpoint
+    }}
+    """
     else:
         source_code += f"""
     }}

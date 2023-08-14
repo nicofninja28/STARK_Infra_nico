@@ -62,6 +62,7 @@ def create(data):
                 - cd ..
                 - terraform init
                 - terraform apply --auto-approve
+                - python ../terraform_output_static_site_url.py
                 - python ../store_terraform_files_to_bucket.py
                 - aws lambda invoke --function-name {system_prelaunch_arn} --payload file://../cgdynamic_payload.json response.json
 
