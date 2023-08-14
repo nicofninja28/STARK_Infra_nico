@@ -154,27 +154,27 @@ def lambda_handler(event, context):
             project_varname = converter.convert_to_system_name(project_name)
             CB_project_name = f"STARK_{project_varname}_build"
 
-            response = codebuild.list_builds_for_project(names=[CB_project_name])
+            response = codebuild.list_builds_for_project(projectName=CB_project_name)
             print(response)
             end = False
-            if response['projects']:
-                project = response['projects'][0]
+            # if response['projects']:
+            #     project = response['projects'][0]
                 
-                environment_variables = project.get('environmentVariables')
+            #     environment_variables = project.get('environmentVariables')
                 
-                if environment_variables:
-                    print("Environment Variables:")
-                    end = True
-                    for env_var in environment_variables:
-                        print(f"{env_var['name']} = {env_var['value']}")
-                else:
-                    print("No environment variables defined for the project.")
-            else:
-                print(f"Project '{project_name}' not found.")
+            #     if environment_variables:
+            #         print("Environment Variables:")
+            #         end = True
+            #         for env_var in environment_variables:
+            #             print(f"{env_var['name']} = {env_var['value']}")
+            #     else:
+            #         print("No environment variables defined for the project.")
+            # else:
+            #     print(f"Project '{project_name}' not found.")
                 
             if end:
                 retry = False
-                result = env_var['value']
+                # result = env_var['value']
             else:
                 retry         = True
                 result        = ''
