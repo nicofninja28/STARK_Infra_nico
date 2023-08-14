@@ -154,7 +154,7 @@ def lambda_handler(event, context):
             project_varname = converter.convert_to_system_name(project_name)
             CB_project_name = f"STARK_{project_varname}_build"
 
-            response = codebuild.batch_get_projects(names=[CB_project_name])
+            response = codebuild.list_builds_for_project(names=[CB_project_name])
             print(response)
             end = False
             if response['projects']:
