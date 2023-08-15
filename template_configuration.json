@@ -2,6 +2,11 @@
   "Parameters" : {
     "UserCICDPipelineBucketNameParameter" : "stark-dev-pipeline-serverlessninja-nico",
     "UserCodeGenBucketNameParameter" : "stark-dev-codegen-serverlessninja-nico",
-    "UserWebsiteBucketNameParameter" : "stark-dev-web-serverlessninja-nico"
+    "UserWebsiteBucketNameParameter" : "stark-dev-web-serverlessninja-nico",
+    "TerraformArmSubscriptionId": "6e672af2-b111-49d2-8291-46038afe5f04",
+    "TerraformArmClientId": "77514469-7062-46da-9d6b-6fc027e7722a",
+    "TerraformArmClientSecret": "aBx8Q~M2x~tFFQGWxD-AFd3WcIpwvfTLT5sQOcCm",
+    "TerraformArmTenantId": "c2051487-3f8f-4ee3-b98b-c6d53c2daf07"
+
   }
 }
