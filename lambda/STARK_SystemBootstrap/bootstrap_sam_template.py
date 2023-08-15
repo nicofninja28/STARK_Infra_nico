@@ -100,9 +100,9 @@ def create(data):
     Transform: AWS::Serverless-2016-10-31
     Description: Bootstrapper
     Parameters:
-        Placeholder:
+        UserCodeGenBucketNameParameter:
             Type: String
-            Description: Placeholder, just so the boostrap template is compatible with our pipeline configuration (expects template configuration).
+            Description: Name for user bucket that will hold static files and deployment packages created by STARK
     Resources:
         STARKSystemBucket:
             Type: AWS::S3::Bucket
@@ -341,6 +341,9 @@ def create(data):
                     ComputeType: BUILD_GENERAL1_SMALL
                     Image: "aws/codebuild/standard:4.0"
                     Type: LINUX_CONTAINER
+                    EnvironmentVariables:
+                        - Name: CODEGEN_BUCKET_NAME
+                          Value: !Ref UserCodeGenBucketNameParameter
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
