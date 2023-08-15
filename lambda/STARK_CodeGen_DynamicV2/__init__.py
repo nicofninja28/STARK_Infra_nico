@@ -281,7 +281,7 @@ def lambda_handler(event, context):
         'fileContent': source_code.encode()
     })
 
-    source_code = cg_packager.get_terraform_output_static_site_url()
+    source_code = cg_packager.get_terraform_output_static_site_url(project_varname)
     files_to_commit.append({
         'filePath': "terraform_output_static_site_url.py",
         'fileContent': source_code.encode()
