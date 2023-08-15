@@ -355,6 +355,8 @@ def tf_writer_cosmosdb_stark_modules(data):
 def tf_writer_function_app(data):
     project_name = data["project_name"]
     storage_account_name = data['storage_account_name']
+    function_app_name = converter.convert_to_system_name(project_name, 'az-cosmos-db') 
+
     source_code = f"""
     data "archive_file" "functions" {{
         type        = "zip"
@@ -405,7 +407,7 @@ def tf_writer_function_app(data):
     }}
 
     resource "azurerm_linux_function_app" "starkzipdeployment" {{
-        name                = "{project_name}-zip-deploy"
+        name                = "{function_app_name}-zip-deploy"
         location            = var.rglocation
         resource_group_name = var.rgname
         service_plan_id     = azurerm_service_plan.{project_name}_sp.id
