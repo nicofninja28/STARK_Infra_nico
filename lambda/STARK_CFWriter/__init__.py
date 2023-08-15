@@ -261,6 +261,10 @@ def lambda_handler(event, context):
                     ComputeType: BUILD_GENERAL1_SMALL
                     Image: "aws/codebuild/standard:4.0"
                     Type: LINUX_CONTAINER
+                    EnvironmentVariables:
+                        - Name: CODEGEN_BUCKET_NAME
+                            Type: PLAINTEXT
+                            Value: !Ref UserCodeGenBucketNameParameter
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
