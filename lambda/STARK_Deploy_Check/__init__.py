@@ -10,6 +10,7 @@ from time import sleep
 import yaml
 import boto3
 import botocore
+import os
 
 #Private modules
 import convert_friendly_to_system as converter
@@ -38,6 +39,7 @@ def lambda_handler(event, context):
     project_name      = data_model.get('__STARK_project_name__')
     project_stackname = converter.convert_to_system_name(project_name, 'cf-stack')
     cloud_provider    = data_model.get('__STARK_advanced__',{}).get("Cloud Provider", 'AWS')
+    codegen_bucket_name = os.environ['CODEGEN_BUCKET_NAME']
 
     #Stack to track is either the CI/CD Pipeline stack, the bootstrapper, or the main application
     #   The bootstrapper and the main application operate on the same stack (same name)
@@ -155,13 +157,40 @@ def lambda_handler(event, context):
             CB_project_name = f"STARK_{project_varname}_build"
 
             response = codebuild.list_builds_for_project(projectName=CB_project_name)
-            print(response)
+            build_summaries = codebuild.batch_get_builds(ids=response['ids'])
+            
+            for build in build_summaries:
+                #check for build #2 since this is where the building of terraform services is being done
+                if build.get("buildNumber") == 2:
+                    if build.get("buildStatus") == 'IN_PROGRESS':
+                        retry         = True
+                        result        = ''
+                        current_stack = 2
+                    else:
+                        retry = False
+                
+                        s3_resp = s3.get_object(Bucket=codegen_bucket_name, Key=f"{project_varname}/static_site_url.txt")
+                        url_txt = s3_resp['Body'].read().decode('utf-8')
+                        if url_txt == '':
+                            result = "FAILED"
+                        else:
+                            result = url_txt
+                    
+                else:  
+                    retry         = True
+                    result        = ''
+                    current_stack = 2
+
+
+
             end = False
-            # if response['projects']:
+            # if response:
             #     project = response['projects'][0]
                 
-            #     environment_variables = project.get('environmentVariables')
-                
+            #     response = s3_client.get_object(Bucket=codegen_bucket_name, Key=f"{project_varname}/static_site_url.txt")
+            #     content = response['Body'].read().decode('utf-8')
+            #     
+            #     print(content)
             #     if environment_variables:
             #         print("Environment Variables:")
             #         end = True
@@ -171,14 +200,6 @@ def lambda_handler(event, context):
             #         print("No environment variables defined for the project.")
             # else:
             #     print(f"Project '{project_name}' not found.")
-                
-            if end:
-                retry = False
-                # result = env_var['value']
-            else:
-                retry         = True
-                result        = ''
-                current_stack = 2
 
         else:
             #Tell client to keep tracking stack 2. We're still waiting for the
