@@ -131,10 +131,10 @@ def get_terraform_output_static_site_url():
     def get_terraform_output():
         output_dict = {{}}
         # Run the `terraform output` command and capture the output
-        output = subprocess.check_output(["terraform", "output", "static_site_url"])
+        output = subprocess.check_output(["terraform", "output", "static_website_url"])
         # Decode the output from bytes to string
         output_str = output.decode("utf-8").strip()
-        output_dict['static_site_url'] = output_str
+        output_dict['static_website_url'] = output_str
         return output_dict
         
     # Call the function to get the Terraform output
