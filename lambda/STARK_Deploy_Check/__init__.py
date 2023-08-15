@@ -169,7 +169,7 @@ def lambda_handler(event, context):
                     else:
                         retry = False
                 
-                        s3_resp = s3.get_object(Bucket=codegen_bucket_name, Key=f"{project_varname}/static_site_url.txt")
+                        s3_resp = s3.get_object(Bucket=codegen_bucket_name, Key=f"codegen_dynamic/{project_varname}/static_site_url.txt")
                         url_txt = s3_resp['Body'].read().decode('utf-8')
                         if url_txt == '':
                             result = "FAILED"
