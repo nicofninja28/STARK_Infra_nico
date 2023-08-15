@@ -95,10 +95,6 @@ def lambda_handler(event, context):
     AWSTemplateFormatVersion: '2010-09-09'
     Transform: AWS::Serverless-2016-10-31
     Description: STARK-generated CI/CD Pipeline for Project [{project_name}]
-    Parameters:
-        UserCodeGenBucketNameParameter:
-            Type: String
-            Description: Name for user bucket that will hold static files and deployment packages created by STARK
     Resources:
         STARKProjectCodeBuildServiceRole:
             Type: AWS::IAM::Role
@@ -268,7 +264,7 @@ def lambda_handler(event, context):
                     EnvironmentVariables:
                         - Name: CODEGEN_BUCKET_NAME
                           Type: PLAINTEXT
-                          Value: !Ref UserCodeGenBucketNameParameter
+                          Value: {codegen_bucket_name}
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
