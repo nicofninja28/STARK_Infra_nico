@@ -138,12 +138,12 @@ def get_terraform_output_static_site_url(project_varname):
         return output_dict
         
     # Call the function to get the Terraform output
-    tf_output = get_terraform_output()
+    tf_output = get_terraform_output().get("static_website_url")
 
     print(tf_output)
 
     response = s3.put_object(
-        Body=tf_output,
+        Body=tf_output.encode(),
         Bucket=codegen_bucket_name,
         Key=f'codegen_dynamic/{project_varname}/static_site_url.txt',
         Metadata={{
