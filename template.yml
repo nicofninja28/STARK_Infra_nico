@@ -260,6 +260,7 @@ Resources:
             Environment:
                 Variables:
                     STARK_ENVIRONMENT_TYPE: PROD
+                    CODEGEN_BUCKET_NAME: !Ref UserCodeGenBucketNameParameter
             Policies:
                 - AWSLambda_FullAccess
                 - AWSCloudFormationFullAccess
