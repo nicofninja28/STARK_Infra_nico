@@ -11,6 +11,18 @@ Parameters:
     UserWebsiteBucketNameParameter:
         Type: String
         Description: Name for user bucket that will be used as the website bucket for the STARK Parser UI. Not yet used in template, just needed for config.
+    TerraformArmSubscriptionId:
+        Type: String
+        Description: Credentials for Azure deployment through terraform
+    TerraformArmClientId:
+        Type: String
+        Description: Credentials for Azure deployment through terraform
+    TerraformArmClientSecret:
+        Type: String
+        Description: Credentials for Azure deployment through terraform
+    TerraformArmTenantId:
+        Type: String
+        Description: Credentials for Azure deployment through terraform
 Resources:
     STARKCloudFormationDeployServiceRole:
         Type: AWS::IAM::Role
@@ -356,6 +368,10 @@ Resources:
                 Variables:
                     STARK_ENVIRONMENT_TYPE: PROD
                     CODEGEN_BUCKET_NAME: !Ref UserCodeGenBucketNameParameter
+                    ARM_SUBSCRIPTION_ID: !Ref TerraformArmSubscriptionId
+                    ARM_CLIENT_ID: !Ref TerraformArmClientId
+                    ARM_CLIENT_SECRET: !Ref TerraformArmClientSecret
+                    ARM_TENANT_ID: !Ref TerraformArmTenantId
             Policies:
                 - AmazonS3FullAccess
                 - AWSLambda_FullAccess 
