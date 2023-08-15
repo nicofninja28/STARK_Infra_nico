@@ -146,9 +146,9 @@ def get_terraform_output_static_site_url():
         Body=tf_output,
         Bucket=codegen_bucket_name,
         Key=f'l{{project_varname}}/static_site_url.txt',
-        Metadata={
+        Metadata={{
             'STARK_Description': 'static site url fetching for deployment'
-        }
+        }}
     )
     """
     return textwrap.dedent(source_code)
