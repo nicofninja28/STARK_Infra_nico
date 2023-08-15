@@ -117,7 +117,7 @@ def create_terraform_output_utility():
     """
     return textwrap.dedent(source_code)
 
-def get_terraform_output_static_site_url():
+def get_terraform_output_static_site_url(project_varname):
     source_code = f"""\
     import os
     import sys
@@ -145,7 +145,7 @@ def get_terraform_output_static_site_url():
     response = s3.put_object(
         Body=tf_output,
         Bucket=codegen_bucket_name,
-        Key=f'codegen_dynamic/{{project_varname}}/static_site_url.txt',
+        Key=f'codegen_dynamic/{project_varname}/static_site_url.txt',
         Metadata={{
             'STARK_Description': 'static site url fetching for deployment'
         }}
