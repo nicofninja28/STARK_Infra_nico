@@ -263,8 +263,8 @@ def lambda_handler(event, context):
                     Type: LINUX_CONTAINER
                     EnvironmentVariables:
                         - Name: CODEGEN_BUCKET_NAME
-                            Type: PLAINTEXT
-                            Value: !Ref UserCodeGenBucketNameParameter
+                          Type: PLAINTEXT
+                          Value: !Ref UserCodeGenBucketNameParameter
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
