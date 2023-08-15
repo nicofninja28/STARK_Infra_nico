@@ -160,7 +160,7 @@ def lambda_handler(event, context):
             build_summaries = codebuild.batch_get_builds(ids=response['ids'])
             
             for build in build_summaries.get("builds", {}):
-                #check for build #2 since this is where the building of terraform services is being done
+                #check for build #2 since this is where the building of terraform files is being done
                 if build.get("buildNumber") == 2:
                     if build.get("buildStatus") == 'IN_PROGRESS':
                         retry         = True

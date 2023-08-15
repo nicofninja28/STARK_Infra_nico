@@ -341,6 +341,8 @@ def create(data):
                     ComputeType: BUILD_GENERAL1_SMALL
                     Image: "aws/codebuild/standard:4.0"
                     Type: LINUX_CONTAINER
+                    Variables:
+                        CODEGEN_BUCKET_NAME: !Ref UserCodeGenBucketNameParameter
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
