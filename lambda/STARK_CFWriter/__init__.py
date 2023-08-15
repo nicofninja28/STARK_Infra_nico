@@ -261,6 +261,9 @@ def lambda_handler(event, context):
                     ComputeType: BUILD_GENERAL1_SMALL
                     Image: "aws/codebuild/standard:4.0"
                     Type: LINUX_CONTAINER
+                    EnvironmentVariables:
+                        - Name: CODEGEN_BUCKET_NAME
+                          Value: {codegen_bucket_name}
                 ServiceRole: !GetAtt STARKProjectCodeBuildServiceRole.Arn
                 Source:
                     Type: CODEPIPELINE
@@ -391,14 +394,6 @@ def lambda_handler(event, context):
             }
         )
 
-        response = s3.put_object(
-            Body=cloud_resources["Default Password"],
-            Bucket=codegen_bucket_name,
-            Key=f'codegen_dynamic/{project_varname}/default_password.txt',
-            Metadata={
-                'STARK_Description': 'Default pass'
-            }
-        )
     else:
         print(textwrap.dedent(cf_template))
 
