@@ -414,7 +414,7 @@ def get_all(sk=default_sk, lv_token=None):
         record[pk_field] = record["_id"]
         items.append(record)
 
-    return items, next_token
+    return items
 
 def get_by_pk(pk, sk=default_sk, db_handler = None):
     ojbect_expression_values = {
