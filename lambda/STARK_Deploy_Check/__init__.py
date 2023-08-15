@@ -157,49 +157,30 @@ def lambda_handler(event, context):
             CB_project_name = f"STARK_{project_varname}_build"
 
             response = codebuild.list_builds_for_project(projectName=CB_project_name)
-            build_summaries = codebuild.batch_get_builds(ids=response['ids'])
+            build_summaries = codebuild.batch_get_builds(ids=response['ids']).get("builds", {})
             
-            for build in build_summaries.get("builds", {}):
-                #check for build #2 since this is where the building of terraform files is being done
-                if build.get("buildNumber") == 2:
-                    if build.get("buildStatus") == 'IN_PROGRESS':
-                        retry         = True
-                        result        = ''
-                        current_stack = 2
-                    else:
-                        retry = False
-                
-                        s3_resp = s3.get_object(Bucket=codegen_bucket_name, Key=f"codegen_dynamic/{project_varname}/static_site_url.txt")
-                        url_txt = s3_resp['Body'].read().decode('utf-8')
-                        if url_txt == '':
-                            result = "FAILED"
+            if len(build_summaries) > 1 :
+                for build in build_summaries:
+                    #check for build #2 since this is where the building of terraform files is being done
+                    if build.get("buildNumber") == 2:
+                        if build.get("buildStatus") == 'IN_PROGRESS':
+                            retry         = True
+                            result        = ''
+                            current_stack = 2
                         else:
-                            result = url_txt
+                            retry = False
                     
-                else:  
-                    retry         = True
-                    result        = ''
-                    current_stack = 2
-
-
-
-            end = False
-            # if response:
-            #     project = response['projects'][0]
-                
-            #     response = s3_client.get_object(Bucket=codegen_bucket_name, Key=f"{project_varname}/static_site_url.txt")
-            #     content = response['Body'].read().decode('utf-8')
-            #     
-            #     print(content)
-            #     if environment_variables:
-            #         print("Environment Variables:")
-            #         end = True
-            #         for env_var in environment_variables:
-            #             print(f"{env_var['name']} = {env_var['value']}")
-            #     else:
-            #         print("No environment variables defined for the project.")
-            # else:
-            #     print(f"Project '{project_name}' not found.")
+                            s3_resp = s3.get_object(Bucket=codegen_bucket_name, Key=f"codegen_dynamic/{project_varname}/static_site_url.txt")
+                            url_txt = s3_resp['Body'].read().decode('utf-8')
+                            url= url_txt.strip('"')
+                            if url == '':
+                                result = "FAILED"
+                            else:
+                                result = "SUCCESS"
+            else:  
+                retry         = True
+                result        = ''
+                current_stack = 2
 
         else:
             #Tell client to keep tracking stack 2. We're still waiting for the

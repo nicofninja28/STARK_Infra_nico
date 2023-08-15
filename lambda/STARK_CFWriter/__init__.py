@@ -394,7 +394,6 @@ def lambda_handler(event, context):
             }
         )
 
-        
     else:
         print(textwrap.dedent(cf_template))
 
