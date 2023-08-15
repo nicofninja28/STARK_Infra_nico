@@ -127,7 +127,7 @@ def get_terraform_output_static_site_url():
     import boto3
 
     s3  = boto3.client('s3')
-
+    codegen_bucket_name = os.environ["CODEGEN_BUCKET_NAME"]
     def get_terraform_output():
         output_dict = {{}}
         # Run the `terraform output` command and capture the output
